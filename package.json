@@ -33,7 +33,10 @@
       "package.json"
     ],
     "win": {
-      "target": ["nsis", "portable"],
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "build/icon.png"
     },
     "nsis": {
@@ -44,5 +47,8 @@
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
     }
+  },
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
   }
 }

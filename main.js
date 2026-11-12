@@ -1,4 +1,5 @@
 const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, Tray } = require('electron');
+const { uIOhook, UiohookKey } = require('uiohook-napi');
 const fs = require('fs');
 const path = require('path');
 
@@ -141,6 +142,96 @@ function toggleWindow() {
   else showWindow();
 }
 
+// La scorciatoia è intercettata in due modi (vedi sotto): quando funzionano
+// entrambi arrivano due eventi per la stessa pressione, e va considerato solo il primo.
+let lastShortcutToggle = 0;
+function toggleFromShortcut() {
+  const now = Date.now();
+  if (now - lastShortcutToggle < 300) return;
+  lastShortcutToggle = now;
+  toggleWindow();
+}
+
+// ---------- hook di tastiera a basso livello ----------
+//
+// globalShortcut usa RegisterHotKey di Windows, che non scatta quando in primo
+// piano c'è un gioco che legge la tastiera in modo esclusivo (es. Star Citizen).
+// Un hook a basso livello vede i tasti prima del gioco. L'hook osserva soltanto:
+// il tasto arriva comunque anche all'applicazione in primo piano.
+
+const MODIFIER_NAMES = {
+  ctrl: 'ctrl', control: 'ctrl', commandorcontrol: 'ctrl', cmdorctrl: 'ctrl',
+  alt: 'alt', option: 'alt', altgr: 'alt',
+  shift: 'shift',
+  super: 'meta', meta: 'meta', cmd: 'meta', command: 'meta',
+};
+const ACCEL_KEYS = {
+  space: 'Space', tab: 'Tab', enter: 'Enter', return: 'Enter', backspace: 'Backspace',
+  insert: 'Insert', delete: 'Delete', home: 'Home', end: 'End',
+  pageup: 'PageUp', pagedown: 'PageDown', escape: 'Escape', esc: 'Escape',
+  up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
+  '-': 'Minus', '=': 'Equal', '[': 'BracketLeft', ']': 'BracketRight', '\\': 'Backslash',
+  ';': 'Semicolon', "'": 'Quote', ',': 'Comma', '.': 'Period', '/': 'Slash', '`': 'Backquote',
+  numadd: 'NumpadAdd', numsub: 'NumpadSubtract', nummult: 'NumpadMultiply',
+  numdiv: 'NumpadDivide', numdec: 'NumpadDecimal',
+};
+
+// Converte un accelerator di Electron ("Ctrl+Shift+O") in { keycode, ctrl, alt, shift, meta }.
+function parseAccelerator(accelerator) {
+  const combo = { keycode: null, ctrl: false, alt: false, shift: false, meta: false };
+  for (const part of accelerator.split('+')) {
+    const p = part.trim().toLowerCase();
+    if (MODIFIER_NAMES[p]) { combo[MODIFIER_NAMES[p]] = true; continue; }
+    let name = ACCEL_KEYS[p];
+    if (!name && /^[a-z0-9]$/.test(p)) name = p.toUpperCase();
+    if (!name && /^f([1-9]|1\d|2[0-4])$/.test(p)) name = p.toUpperCase();
+    if (!name && /^num\d$/.test(p)) name = 'Numpad' + p.slice(3);
+    combo.keycode = UiohookKey[name] ?? null;
+  }
+  return combo.keycode === null ? null : combo;
+}
+
+let hookCombo = null;        // combinazione cercata dall'hook
+let hookSuspended = false;   // true mentre l'utente registra una nuova combinazione
+let hookKeyDown = false;     // evita di ripetere il toggle tenendo premuto il tasto
+
+// Log diagnostico in userData/overlay.log: avvio, registrazione della
+// scorciatoia ed errori dell'hook. Non registra mai i tasti premuti.
+const logFile = () => path.join(app.getPath('userData'), 'overlay.log');
+function log(msg) {
+  const line = `${new Date().toISOString()} ${msg}\n`;
+  try {
+    if (fs.statSync(logFile()).size > 512 * 1024) fs.writeFileSync(logFile(), '');
+  } catch { /* file non ancora creato */ }
+  try { fs.appendFileSync(logFile(), line); } catch { /* ignorato */ }
+}
+
+function setHookCombo(accelerator) {
+  hookCombo = accelerator ? parseAccelerator(accelerator) : null;
+  hookKeyDown = false;
+  log(`hook: combinazione ${accelerator || 'nessuna'} -> ${hookCombo ? 'ok' : 'non riconosciuta'}`);
+}
+
+function startKeyboardHook() {
+  uIOhook.on('keydown', (e) => {
+    const c = hookCombo;
+    if (!c || hookSuspended || e.keycode !== c.keycode) return;
+    if (e.ctrlKey !== c.ctrl || e.altKey !== c.alt || e.shiftKey !== c.shift || e.metaKey !== c.meta) return;
+    if (hookKeyDown) return;
+    hookKeyDown = true;
+    toggleFromShortcut();
+  });
+  uIOhook.on('keyup', (e) => {
+    if (hookCombo && e.keycode === hookCombo.keycode) hookKeyDown = false;
+  });
+  try {
+    uIOhook.start();
+    log('hook: avviato');
+  } catch (err) {
+    log(`hook: ERRORE all'avvio: ${err}`);
+  }
+}
+
 // ---------- icona nell'area di notifica ----------
 
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
@@ -169,7 +260,7 @@ function createTray() {
 // false se la combinazione è già usata da un'altra applicazione.
 function tryRegister(accelerator) {
   try {
-    return globalShortcut.register(accelerator, toggleWindow);
+    return globalShortcut.register(accelerator, toggleFromShortcut);
   } catch {
     return false;
   }
@@ -180,6 +271,7 @@ function setShortcut(accelerator) {
   globalShortcut.unregisterAll();
   if (tryRegister(accelerator)) {
     shortcut = accelerator;
+    setHookCombo(accelerator);
     prefs.shortcut = accelerator;
     savePrefs();
     updateTray();
@@ -210,14 +302,25 @@ ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerat
 // Mentre l'utente registra una nuova combinazione, quella attuale va sospesa,
 // altrimenti premendola si nasconderebbe la finestra invece di catturarla.
 ipcMain.handle('shortcut:suspend', (_e, suspended) => {
+  hookSuspended = !!suspended;
   globalShortcut.unregisterAll();
   if (!suspended && shortcut) tryRegister(shortcut);
 });
 
 // ---------- avvio ----------
 
-app.whenReady().then(() => {
+// Una sola istanza: due copie si contenderebbero la scorciatoia (la seconda
+// non riuscirebbe a registrarla). Se l'app è già aperta, si mostra quella.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => { if (win) showWindow(); });
+  app.whenReady().then(start);
+}
+
+function start() {
   prefs = loadPrefs();
+  log(`avvio (versione ${app.getVersion()}, ${app.isPackaged ? 'pacchettizzata' : 'sviluppo'})`);
 
   win = new BrowserWindow({
     ...initialBounds(),
@@ -238,7 +341,15 @@ app.whenReady().then(() => {
 
   if (tryRegister(prefs.shortcut)) shortcut = prefs.shortcut;
   else if (tryRegister(DEFAULT_SHORTCUT)) shortcut = DEFAULT_SHORTCUT;
+  log(`globalShortcut: ${shortcut ? `registrata ${shortcut}` : `impossibile registrare ${prefs.shortcut}`}`);
+  // L'hook usa comunque la combinazione scelta, anche se globalShortcut
+  // non è riuscito a registrarla (es. già usata da un'altra applicazione).
+  setHookCombo(shortcut || prefs.shortcut);
+  startKeyboardHook();
   createTray();
+}
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+  try { uIOhook.stop(); } catch { /* già fermo */ }
 });
-app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());
