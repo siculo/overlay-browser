@@ -15,6 +15,10 @@ const MIN_SIZE = { width: 480, height: 320 };
 
 // ---------- preferenze ----------
 
+// Cartella dati fissa: senza questa riga l'app pacchettizzata userebbe il
+// productName ("Overlay Browser") e non troverebbe le preferenze esistenti.
+app.setPath('userData', path.join(app.getPath('appData'), 'overlay-browser'));
+
 const prefsFile = () => path.join(app.getPath('userData'), 'prefs.json');
 let prefs;
 

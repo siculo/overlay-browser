@@ -1,17 +1,48 @@
 {
   "name": "overlay-browser",
   "version": "1.0.0",
-  "description": "",
+  "description": "Browser in overlay da mostrare e nascondere con una scorciatoia",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable",
+    "dist:installer": "electron-builder --win nsis"
   },
   "keywords": [],
-  "author": "",
+  "author": "Fabrizio Di Giuseppe",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "electron": "^45.3.1"
+    "electron": "^45.3.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "it.fdg.overlay-browser",
+    "productName": "Overlay Browser",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
+    }
   }
 }
