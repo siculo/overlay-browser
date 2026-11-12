@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('overlay', {
   fetchTitle: (url) => ipcRenderer.invoke('site:title', url),
   setShortcut: (accelerator) => ipcRenderer.invoke('shortcut:set', accelerator),
   suspendShortcut: (suspended) => ipcRenderer.invoke('shortcut:suspend', suspended),
+  onHome: (callback) => ipcRenderer.on('nav:home', () => callback()),
 });

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, net, screen } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, Tray } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -123,11 +123,42 @@ async function fetchTitle(url) {
 // ---------- scorciatoia globale ----------
 
 let win;
+let tray;              // riferimento globale: se venisse raccolto dal GC l'icona sparirebbe
 let shortcut = null;   // scorciatoia attualmente registrata
 
+function showWindow() {
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+}
+
 function toggleWindow() {
-  if (win.isVisible()) win.hide();
-  else { win.show(); win.focus(); }
+  if (win.isVisible() && !win.isMinimized()) win.hide();
+  else showWindow();
+}
+
+// ---------- icona nell'area di notifica ----------
+
+const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
+
+function updateTray() {
+  if (!tray) return;
+  tray.setToolTip(shortcut ? `Overlay browser (${shortcut})` : 'Overlay browser');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: win.isVisible() ? 'Nascondi' : 'Mostra', accelerator: shortcut || undefined, click: toggleWindow },
+    { label: 'Home', click: () => { showWindow(); win.webContents.send('nav:home'); } },
+    { type: 'separator' },
+    { label: 'Esci', click: () => app.quit() },
+  ]));
+}
+
+function createTray() {
+  tray = new Tray(nativeImage.createFromPath(ICON_PATH));
+  tray.on('click', toggleWindow);
+  // Le voci del menu dipendono dallo stato della finestra e dalla scorciatoia.
+  win.on('show', updateTray);
+  win.on('hide', updateTray);
+  updateTray();
 }
 
 // register() lancia un'eccezione se l'accelerator non è valido e restituisce
@@ -147,6 +178,7 @@ function setShortcut(accelerator) {
     shortcut = accelerator;
     prefs.shortcut = accelerator;
     savePrefs();
+    updateTray();
     return { ok: true, shortcut };
   }
   if (previous) tryRegister(previous);
@@ -188,6 +220,7 @@ app.whenReady().then(() => {
     minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height,
     frame: false, show: false, opacity: 0.95,
     alwaysOnTop: true,
+    icon: ICON_PATH,
     webPreferences: {
       webviewTag: true,
       preload: path.join(__dirname, 'preload.js'),
@@ -200,6 +233,7 @@ app.whenReady().then(() => {
 
   if (tryRegister(prefs.shortcut)) shortcut = prefs.shortcut;
   else if (tryRegister(DEFAULT_SHORTCUT)) shortcut = DEFAULT_SHORTCUT;
+  createTray();
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());

@@ -273,6 +273,7 @@
   }
 
   homeBtn.onclick = () => activate(null);
+  window.overlay.onHome(() => activate(null));
   $('add').onsubmit = (e) => {
     e.preventDefault();
     if (addSite($('add-url').value)) $('add-url').value = '';
