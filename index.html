@@ -4,7 +4,7 @@
     <h1 style="margin:0;font-weight:500">Scegli un sito</h1>
     <div id="tiles" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:600px"></div>
   </div>
-  <webview id="view" style="flex:1;display:none"></webview>
+  <div id="views" style="flex:1;display:none"></div>
   <script>
     const SITES = {
       'SCMDB': 'https://scmdb.net/',
@@ -14,16 +14,36 @@
     const bar = document.getElementById('bar');
     const home = document.getElementById('home');
     const tiles = document.getElementById('tiles');
-    const view = document.getElementById('view');
+    const views = document.getElementById('views');
 
-    function openSite(url) {
-      home.style.display = 'none';
-      view.style.display = 'flex';
-      view.src = url;
+    // Un webview per sito, creato al primo accesso e poi solo nascosto/mostrato:
+    // così ogni "tab" conserva pagina, scroll, form e cronologia.
+    const tabs = {};          // name -> webview
+    const barButtons = {};    // name -> pulsante nella barra
+    let active = null;        // nome del tab attivo, null = Home
+
+    function setActive(name) {
+      active = name;
+      home.style.display = name === null ? 'flex' : 'none';
+      views.style.display = name === null ? 'none' : 'flex';
+      for (const [n, wv] of Object.entries(tabs)) {
+        wv.style.display = n === name ? 'flex' : 'none';
+      }
+      for (const [n, b] of Object.entries(barButtons)) {
+        b.style.fontWeight = n === name ? 'bold' : 'normal';
+      }
+      barButtons.Home.style.fontWeight = name === null ? 'bold' : 'normal';
     }
-    function showHome() {
-      view.style.display = 'none';
-      home.style.display = 'flex';
+
+    function openSite(name) {
+      if (!tabs[name]) {
+        const wv = document.createElement('webview');
+        wv.style.cssText = 'flex:1;display:none';
+        wv.src = SITES[name];
+        views.append(wv);
+        tabs[name] = wv;
+      }
+      setActive(name);
     }
 
     function addBarButton(label, onclick) {
@@ -32,11 +52,12 @@
       b.style.cssText = '-webkit-app-region:no-drag;margin-right:4px';
       b.onclick = onclick;
       bar.append(b);
+      return b;
     }
 
-    addBarButton('Home', showHome);
+    barButtons.Home = addBarButton('Home', () => setActive(null));
     for (const [name, url] of Object.entries(SITES)) {
-      addBarButton(name, () => openSite(url));
+      barButtons[name] = addBarButton(name, () => openSite(name));
 
       const t = document.createElement('button');
       t.textContent = name;
@@ -44,8 +65,9 @@
       t.style.cssText = 'width:160px;height:100px;font-size:18px;border:1px solid #333;border-radius:8px;background:#1c1c1c;color:#eee;cursor:pointer';
       t.onmouseenter = () => (t.style.background = '#2a2a2a');
       t.onmouseleave = () => (t.style.background = '#1c1c1c');
-      t.onclick = () => openSite(url);
+      t.onclick = () => openSite(name);
       tiles.append(t);
     }
+    setActive(null);
   </script>
 </body>
