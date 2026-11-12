@@ -49,6 +49,7 @@
     }
   },
   "dependencies": {
+    "koffi": "^3.3.7",
     "uiohook-napi": "^1.5.5"
   }
 }

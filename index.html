@@ -272,6 +272,12 @@
     if (active === id) activate(null); else render();
   }
 
+  // Quando la finestra riceve il focus, la tastiera va al sito aperto
+  // (altrimenti resterebbe sulla pagina che contiene le tab).
+  window.addEventListener('focus', () => {
+    if (active !== null) webviews.get(active)?.focus();
+  });
+
   homeBtn.onclick = () => activate(null);
   window.overlay.onHome(() => activate(null));
   $('add').onsubmit = (e) => {

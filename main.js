@@ -131,14 +131,90 @@ let win;
 let tray;              // riferimento globale: se venisse raccolto dal GC l'icona sparirebbe
 let shortcut = null;   // scorciatoia attualmente registrata
 
+// ---------- focus (API Win32 via koffi) ----------
+//
+// Windows impedisce a un'app in background di prendersi il focus, e Electron
+// non può ridarlo alla finestra di un'altra app. Servono le API native:
+// - alla comparsa si ricorda la finestra in primo piano (es. il gioco) e ci si
+//   "aggancia" temporaneamente al suo input (AttachThreadInput), condizione
+//   che Windows richiede per concedere SetForegroundWindow;
+// - alla scomparsa si ridà il focus a quella finestra, PRIMA di nascondersi:
+//   finché l'overlay è in primo piano Windows lo consente.
+
+const win32 = (() => {
+  if (process.platform !== 'win32') return null;
+  try {
+    const koffi = require('koffi');
+    const user32 = koffi.load('user32.dll');
+    const kernel32 = koffi.load('kernel32.dll');
+    koffi.pointer('HWND', koffi.opaque());
+    const api = {
+      koffi,
+      GetForegroundWindow: user32.func('HWND __stdcall GetForegroundWindow()'),
+      SetForegroundWindow: user32.func('bool __stdcall SetForegroundWindow(HWND)'),
+      BringWindowToTop: user32.func('bool __stdcall BringWindowToTop(HWND)'),
+      IsWindow: user32.func('bool __stdcall IsWindow(HWND)'),
+      GetWindowThreadProcessId: user32.func('uint32_t __stdcall GetWindowThreadProcessId(HWND, _Out_ uint32_t *)'),
+      AttachThreadInput: user32.func('bool __stdcall AttachThreadInput(uint32_t, uint32_t, bool)'),
+      GetCurrentThreadId: kernel32.func('uint32_t __stdcall GetCurrentThreadId()'),
+    };
+    return api;
+  } catch (err) {
+    console.error('API Win32 non disponibili, gestione del focus semplificata:', err);
+    return null;
+  }
+})();
+
+let previousForeground = null;   // finestra che aveva il focus prima dell'overlay
+
+const hwndOf = (w) => win32.koffi.decode(w.getNativeWindowHandle(), 'HWND');
+const sameHwnd = (a, b) => a && b && win32.koffi.address(a) === win32.koffi.address(b);
+function processOf(hwnd) {
+  const pid = [0];
+  win32.GetWindowThreadProcessId(hwnd, pid);
+  return pid[0];
+}
+
+function forceForeground(hwnd) {
+  const fg = win32.GetForegroundWindow();
+  const fgThread = fg ? win32.GetWindowThreadProcessId(fg, null) : 0;
+  const ourThread = win32.GetCurrentThreadId();
+  const attach = fgThread && fgThread !== ourThread;
+  if (attach) win32.AttachThreadInput(ourThread, fgThread, true);
+  try {
+    win32.BringWindowToTop(hwnd);
+    win32.SetForegroundWindow(hwnd);
+  } finally {
+    if (attach) win32.AttachThreadInput(ourThread, fgThread, false);
+  }
+}
+
 function showWindow() {
+  if (win32) {
+    const fg = win32.GetForegroundWindow();
+    // Si ricorda solo una finestra di un'altra applicazione.
+    if (fg && processOf(fg) !== process.pid) previousForeground = fg;
+  }
   if (win.isMinimized()) win.restore();
   win.show();
+  if (win32) {
+    try { forceForeground(hwndOf(win)); } catch (err) { console.error(err); }
+  }
   win.focus();
 }
 
+function hideWindow() {
+  // Si restituisce il focus solo se ce l'aveva l'overlay: se l'utente nel
+  // frattempo è passato a un'altra finestra, non va disturbato.
+  if (win32 && win.isFocused() && previousForeground && win32.IsWindow(previousForeground) &&
+      !sameHwnd(previousForeground, hwndOf(win))) {
+    try { win32.SetForegroundWindow(previousForeground); } catch (err) { console.error(err); }
+  }
+  win.hide();
+}
+
 function toggleWindow() {
-  if (win.isVisible() && !win.isMinimized()) win.hide();
+  if (win.isVisible() && !win.isMinimized()) hideWindow();
   else showWindow();
 }
 
