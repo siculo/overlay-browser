@@ -14,10 +14,28 @@
   /* Barra superiore: Home fisso, poi le tab scorrevoli con le frecce */
   #bar { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
   #bar button { -webkit-app-region: no-drag; }
-  #tabs { flex: 1; min-width: 0; display: flex; gap: 4px; overflow-x: hidden; scroll-behavior: smooth; }
-  #tabs button { flex: none; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+  /* #tabs non si allarga oltre il contenuto, così il "+" sta subito dopo l'ultima tab */
+  #tabs { flex: 0 1 auto; min-width: 0; display: flex; gap: 4px; overflow-x: hidden; scroll-behavior: smooth; }
   #tabs-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
   .arrow { padding: 3px 8px; }
+  #add-tab { padding: 3px 9px; font-weight: bold; }
+
+  /* Tab: etichetta con puntini di sospensione + pulsante di chiusura */
+  .tab { flex: none; display: flex; align-items: center; gap: 4px; max-width: 200px; padding: 3px 4px 3px 10px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; cursor: pointer; -webkit-app-region: no-drag; user-select: none; }
+  .tab:hover { background: #363636; }
+  .tab.active { background: #4a4a4a; font-weight: bold; }
+  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab .close { flex: none; width: 18px; height: 18px; line-height: 16px; text-align: center; border-radius: 3px; color: #aaa; font-weight: normal; }
+  .tab .close:hover { background: #5a5a5a; color: #fff; }
+
+  /* Finestra di dialogo (conferme e inserimento indirizzo) */
+  #dialog { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); -webkit-app-region: no-drag; }
+  #dialog .box { width: min(440px, calc(100vw - 32px)); padding: 18px; background: #1c1c1c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+  #dialog-msg { margin-bottom: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+  #dialog-input { width: 100%; }
+  #dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  #dialog-ok.danger { background: #7a2a2a; border-color: #944; }
+  #dialog-ok.danger:hover { background: #8e3333; }
 
   /* Barra di navigazione del sito attivo, sotto le tab */
   #nav { display: flex; align-items: center; gap: 4px; padding: 0 6px 6px; -webkit-app-region: drag; }
@@ -56,6 +74,7 @@
       <button class="arrow" id="left" hidden>&#9664;</button>
       <div id="tabs"></div>
       <button class="arrow" id="right" hidden>&#9654;</button>
+      <button id="add-tab" title="Aggiungi un sito">+</button>
     </div>
   </div>
 
@@ -86,6 +105,18 @@
   </div>
 
   <div id="views" hidden></div>
+
+  <div id="dialog" hidden>
+    <form class="box" id="dialog-form">
+      <div id="dialog-msg"></div>
+      <input id="dialog-input" hidden>
+      <div class="error" id="dialog-error"></div>
+      <div class="buttons">
+        <button type="button" id="dialog-cancel">Annulla</button>
+        <button type="submit" id="dialog-ok">OK</button>
+      </div>
+    </form>
+  </div>
 
 <script>
   const $ = (id) => document.getElementById(id);
@@ -196,12 +227,26 @@
   function renderTabs() {
     homeBtn.classList.toggle('active', active === null);
     tabsEl.replaceChildren(...prefs.sites.map((site) => {
-      const b = document.createElement('button');
-      b.textContent = siteName(site);
-      b.title = siteName(site);
-      b.classList.toggle('active', site.id === active);
-      b.onclick = () => activate(site.id);
-      return b;
+      const tab = document.createElement('div');
+      tab.className = 'tab';
+      tab.classList.toggle('active', site.id === active);
+      tab.title = siteName(site);
+      tab.onclick = () => activate(site.id);
+      // Clic centrale sulla tab: chiusura, come nei browser.
+      tab.onauxclick = (e) => { if (e.button === 1) confirmRemove(site.id); };
+
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = siteName(site);
+
+      const close = document.createElement('span');
+      close.className = 'close';
+      close.textContent = '×';
+      close.title = 'Rimuovi';
+      close.onclick = (e) => { e.stopPropagation(); confirmRemove(site.id); };
+
+      tab.append(label, close);
+      return tab;
     }));
     tabsEl.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     updateArrows();
@@ -244,7 +289,7 @@
         edit.onclick = () => { editing = site.id; showError(); renderList(); };
         const del = document.createElement('button');
         del.textContent = 'Rimuovi';
-        del.onclick = () => removeSite(site.id);
+        del.onclick = () => confirmRemove(site.id);
         row.append(info, edit, del);
       }
       return row;
@@ -275,16 +320,16 @@
 
   // ---------- modifiche all'elenco ----------
 
+  // Restituisce il sito aggiunto, oppure null se l'indirizzo non è valido.
   function addSite(raw) {
     const url = normalizeUrl(raw);
-    if (!url) return showError('Indirizzo non valido.');
+    if (!url) return null;
     const site = { id: crypto.randomUUID(), url, title: null };
     prefs.sites.push(site);
     save();
-    showError();
     render();
     resolveTitle(site);
-    return true;
+    return site;
   }
 
   function updateSite(id, raw) {
@@ -312,17 +357,94 @@
     if (active === id) activate(null); else render();
   }
 
+  async function confirmRemove(id) {
+    const site = findSite(id);
+    if (!site) return;
+    const ok = await openDialog({
+      message: `Rimuovere "${siteName(site)}" dall'elenco dei siti?`,
+      okLabel: 'Rimuovi',
+      danger: true,
+    });
+    if (ok) removeSite(id);
+  }
+
+  // Aggiunta dal "+" nella barra: chiede l'indirizzo e apre subito la nuova tab.
+  async function promptAddTab() {
+    const url = await openDialog({
+      message: 'Indirizzo del sito da aggiungere:',
+      input: '',
+      placeholder: 'es. https://example.com',
+      okLabel: 'Aggiungi',
+      validate: (v) => (normalizeUrl(v) ? null : 'Indirizzo non valido.'),
+    });
+    if (url === null) return;
+    const site = addSite(url);
+    if (site) activate(site.id);
+  }
+
+  // ---------- finestra di dialogo ----------
+  //
+  // openDialog({ message, input?, placeholder?, okLabel?, danger?, validate? })
+  // Senza `input` è una conferma e restituisce true/false; con `input` (valore
+  // iniziale) restituisce il testo inserito, oppure null se si annulla.
+
+  const dialog = $('dialog'), dialogForm = $('dialog-form'), dialogInput = $('dialog-input');
+  const dialogOk = $('dialog-ok'), dialogError = $('dialog-error');
+  let closeDialog = null;
+
+  function openDialog({ message, input, placeholder = '', okLabel = 'OK', danger = false, validate }) {
+    closeDialog?.(null);   // una sola finestra alla volta
+    const withInput = input !== undefined;
+    $('dialog-msg').textContent = message;
+    dialogInput.hidden = !withInput;
+    dialogInput.value = withInput ? input : '';
+    dialogInput.placeholder = placeholder;
+    dialogError.textContent = '';
+    dialogOk.textContent = okLabel;
+    dialogOk.classList.toggle('danger', danger);
+    dialog.hidden = false;
+    setTimeout(() => (withInput ? dialogInput : dialogOk).focus());
+
+    return new Promise((resolve) => {
+      closeDialog = (confirmed) => {
+        closeDialog = null;
+        dialog.hidden = true;
+        dialogForm.onsubmit = null;
+        resolve(withInput ? (confirmed ? dialogInput.value : null) : !!confirmed);
+      };
+      dialogForm.onsubmit = (e) => {
+        e.preventDefault();
+        const err = withInput && validate ? validate(dialogInput.value) : null;
+        if (err) { dialogError.textContent = err; dialogInput.focus(); return; }
+        closeDialog(true);
+      };
+    });
+  }
+  $('dialog-cancel').onclick = () => closeDialog?.(false);
+  // Clic sullo sfondo scuro o Esc: annulla.
+  dialog.addEventListener('mousedown', (e) => { if (e.target === dialog) closeDialog?.(false); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && closeDialog) { e.preventDefault(); closeDialog(false); }
+  });
+
   // Quando la finestra riceve il focus, la tastiera va al sito aperto
-  // (altrimenti resterebbe sulla pagina che contiene le tab).
+  // (altrimenti resterebbe sulla pagina che contiene le tab), a meno che
+  // non sia aperta una finestra di dialogo.
   window.addEventListener('focus', () => {
-    if (active !== null) webviews.get(active)?.focus();
+    if (active !== null && !closeDialog) webviews.get(active)?.focus();
   });
 
   homeBtn.onclick = () => activate(null);
+  $('add-tab').onclick = promptAddTab;
   window.overlay.onHome(() => activate(null));
   $('add').onsubmit = (e) => {
     e.preventDefault();
-    if (addSite($('add-url').value)) $('add-url').value = '';
+    if (addSite($('add-url').value)) {
+      $('add-url').value = '';
+      showError();
+    } else {
+      showError('Indirizzo non valido.');
+    }
   };
 
   // ---------- scorciatoia ----------
