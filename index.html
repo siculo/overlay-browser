@@ -19,6 +19,12 @@
   #tabs-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
   .arrow { padding: 3px 8px; }
 
+  /* Barra di navigazione del sito attivo, sotto le tab */
+  #nav { display: flex; align-items: center; gap: 4px; padding: 0 6px 6px; -webkit-app-region: drag; }
+  #nav button { -webkit-app-region: no-drag; min-width: 32px; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button:disabled:hover { background: #2a2a2a; }
+
   /* Home */
   #home { flex: 1; overflow-y: auto; padding: 24px; }
   #home h1 { margin: 0 0 16px; font-weight: 500; font-size: 22px; }
@@ -51,6 +57,13 @@
       <div id="tabs"></div>
       <button class="arrow" id="right" hidden>&#9654;</button>
     </div>
+  </div>
+
+  <div id="nav" hidden>
+    <button id="nav-site" title="Home del sito">&#8962;</button>
+    <button id="nav-back" title="Indietro">&#8592;</button>
+    <button id="nav-forward" title="Avanti">&#8594;</button>
+    <button id="nav-reload" title="Ricarica">&#8635;</button>
   </div>
 
   <div id="home">
@@ -129,6 +142,10 @@
         const s = findSite(site.id);
         if (s && !s.title && e.title) { s.title = e.title; save(); render(); }
       });
+      // La cronologia cambia a ogni navigazione: si aggiornano Indietro/Avanti.
+      for (const ev of ['dom-ready', 'did-navigate', 'did-navigate-in-page', 'did-stop-loading']) {
+        wv.addEventListener(ev, () => { if (active === site.id) updateNav(); });
+      }
       views.append(wv);
       webviews.set(site.id, wv);
     }
@@ -149,7 +166,30 @@
     views.hidden = id === null;
     for (const [wid, wv] of webviews) wv.style.display = wid === id ? 'flex' : 'none';
     renderTabs();
+    updateNav();
   }
+
+  // ---------- navigazione ----------
+
+  const navEl = $('nav'), navBack = $('nav-back'), navForward = $('nav-forward');
+
+  function updateNav() {
+    navEl.hidden = active === null;
+    const wv = active !== null ? webviews.get(active) : null;
+    // canGoBack/canGoForward lanciano un'eccezione finché il webview non è pronto.
+    let back = false, forward = false;
+    try { back = wv.canGoBack(); forward = wv.canGoForward(); } catch { /* non ancora pronto */ }
+    navBack.disabled = !back;
+    navForward.disabled = !forward;
+  }
+
+  navBack.onclick = () => webviews.get(active)?.goBack();
+  navForward.onclick = () => webviews.get(active)?.goForward();
+  $('nav-reload').onclick = () => webviews.get(active)?.reload();
+  $('nav-site').onclick = () => {
+    const site = findSite(active);
+    if (site) webviews.get(active)?.loadURL(site.url);
+  };
 
   // ---------- render ----------
 
