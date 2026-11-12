@@ -285,30 +285,13 @@ function isSnapped(bounds, wa) {
 }
 
 let expandedBounds = null;   // ultimo ridimensionamento fatto da noi (evita di ripeterlo)
-let preMaximizeBounds = null; // dimensioni da ripristinare dopo una "massimizzazione" a tutto schermo
+let restoreBounds = null;    // dimensioni da ripristinare uscendo dallo stato esteso
+let lastFreeBounds = null;   // ultime dimensioni "libere", cioè non agganciate né estese
+// Trascinando verso l'alto, Windows segnala la massimizzazione PRIMA della fine
+// del trascinamento: quell'evento 'moved' arriva subito dopo, con le dimensioni
+// intermedie, e va ignorato per non annullare lo stato appena impostato.
+let ignoreMovedUntil = 0;
 
-function expandSnapToFullScreen() {
-  if (win.isDestroyed() || !win.isVisible() || win.isMinimized() || win.isMaximized()) return;
-  const bounds = win.getBounds();
-  if (sameRect(bounds, expandedBounds)) return;
-  const display = screen.getDisplayMatching(bounds);
-  const wa = display.workArea, b = display.bounds;
-  if (sameRect(wa, b) || !isSnapped(bounds, wa) || !fullscreenAppBelow(display)) return;
-  // Proporzione lineare dall'area di lavoro allo schermo intero: metà e
-  // quarti restano tali, ma occupano anche lo spazio della barra.
-  const mapX = (x) => b.x + Math.round((x - wa.x) * b.width / wa.width);
-  const mapY = (y) => b.y + Math.round((y - wa.y) * b.height / wa.height);
-  const x = mapX(bounds.x), y = mapY(bounds.y);
-  expandedBounds = {
-    x, y,
-    width: mapX(bounds.x + bounds.width) - x,
-    height: mapY(bounds.y + bounds.height) - y,
-  };
-  win.setBounds(expandedBounds);
-}
-
-// La massimizzazione si sostituisce con un ridimensionamento a tutto schermo;
-// ripetendola (es. doppio clic sulla barra) si torna alle dimensioni precedenti.
 // Riporta un rettangolo dentro lo schermo (trascinando verso l'alto per
 // massimizzare, le dimensioni "normali" possono restare in parte fuori).
 function clampToDisplay(r, b) {
@@ -320,6 +303,39 @@ function clampToDisplay(r, b) {
   };
 }
 
+function expandSnapToFullScreen() {
+  if (win.isDestroyed() || !win.isVisible() || win.isMinimized() || win.isMaximized()) return;
+  const bounds = win.getBounds();
+  if (sameRect(bounds, expandedBounds)) return;
+  const display = screen.getDisplayMatching(bounds);
+  const wa = display.workArea, b = display.bounds;
+  if (!isSnapped(bounds, wa)) {
+    // Finestra estesa che si sta trascinando: non è una dimensione "libera".
+    if (expandedBounds && near(bounds.width, expandedBounds.width, 1) &&
+        near(bounds.height, expandedBounds.height, 1)) return;
+    expandedBounds = null;
+    restoreBounds = null;
+    lastFreeBounds = bounds;
+    return;
+  }
+  if (sameRect(wa, b) || !fullscreenAppBelow(display)) return;
+  // Proporzione lineare dall'area di lavoro allo schermo intero: metà e
+  // quarti restano tali, ma occupano anche lo spazio della barra.
+  const mapX = (x) => b.x + Math.round((x - wa.x) * b.width / wa.width);
+  const mapY = (y) => b.y + Math.round((y - wa.y) * b.height / wa.height);
+  const x = mapX(bounds.x), y = mapY(bounds.y);
+  // Da un aggancio all'altro si conservano le dimensioni di partenza.
+  if (!restoreBounds) restoreBounds = lastFreeBounds;
+  expandedBounds = {
+    x, y,
+    width: mapX(bounds.x + bounds.width) - x,
+    height: mapY(bounds.y + bounds.height) - y,
+  };
+  win.setBounds(expandedBounds);
+}
+
+// La massimizzazione si sostituisce con un ridimensionamento a tutto schermo;
+// ripetendola (es. doppio clic sulla barra) si torna alle dimensioni precedenti.
 function onMaximize() {
   const normal = win.getNormalBounds();
   const display = screen.getDisplayMatching(normal);
@@ -327,11 +343,13 @@ function onMaximize() {
   if (sameRect(display.workArea, b) || !fullscreenAppBelow(display)) return;
 
   let target;
-  if (preMaximizeBounds && sameRect(normal, b)) {
-    target = preMaximizeBounds;      // era già a tutto schermo: si ripristina
-    preMaximizeBounds = null;
+  if (restoreBounds && sameRect(normal, b)) {
+    target = clampToDisplay(restoreBounds, b);   // era già a tutto schermo: si ripristina
+    expandedBounds = null;
+    restoreBounds = null;
   } else {
-    preMaximizeBounds = clampToDisplay(normal, b);
+    // Se era già esteso (es. metà schermo) si conservano le dimensioni originali.
+    if (!restoreBounds) restoreBounds = clampToDisplay(normal, b);
     target = { ...b };
     expandedBounds = target;
   }
@@ -342,10 +360,89 @@ function onMaximize() {
     if (win.isDestroyed() || win.isMaximized()) return;
     if (!sameRect(win.getBounds(), target)) win.setBounds(target);
   };
+  ignoreMovedUntil = Date.now() + 500;
   win.once('unmaximize', () => setTimeout(apply, 0));
   win.unmaximize();
   setTimeout(apply, 100);
   setTimeout(apply, 300);
+}
+
+// Sgancio all'inizio del trascinamento, come fa Windows con le finestre
+// massimizzate. Al primo spostamento da uno stato esteso la finestra torna
+// alle dimensioni precedenti sotto il cursore; da lì in poi è l'app a
+// posizionarla seguendo il cursore, perché il ciclo di trascinamento di Windows
+// continuerebbe a calcolare la posizione sulla finestra grande. L'aggancio ai
+// bordi resta di Windows (dipende dalla posizione del cursore).
+let unsnapDrag = null;   // { width, height, anchorX, anchorY } durante lo sgancio
+
+function onWillMove(e) {
+  const cursor = screen.getCursorScreenPoint();
+  if (!unsnapDrag) {
+    if (!expandedBounds || !restoreBounds || Date.now() < ignoreMovedUntil) return;
+    const cur = win.getBounds();
+    if (!sameRect(cur, expandedBounds)) return;
+    const restore = restoreBounds;
+    const fx = (cursor.x - cur.x) / cur.width;
+    unsnapDrag = {
+      width: restore.width,
+      height: restore.height,
+      anchorX: Math.round(fx * restore.width),
+      anchorY: Math.min(cursor.y - cur.y, restore.height - 10),
+    };
+    // Un eventuale nuovo aggancio a fine trascinamento ricorderà queste dimensioni.
+    lastFreeBounds = { ...restore };
+    expandedBounds = null;
+    restoreBounds = null;
+  }
+  // Electron, se l'evento è annullato, restituisce a Windows la posizione
+  // corrente della finestra: quella appena impostata qui sotto.
+  e.preventDefault();
+  win.setBounds({
+    x: cursor.x - unsnapDrag.anchorX,
+    y: cursor.y - unsnapDrag.anchorY,
+    width: unsnapDrag.width,
+    height: unsnapDrag.height,
+  });
+}
+
+// Riserva, se lo sgancio all'inizio non è avvenuto:
+// trascinando via la finestra da uno stato esteso (tutto schermo o aggancio),
+// Windows non la rimpicciolisce perché per lui è una finestra normale: lo si fa
+// a fine trascinamento, tornando alle dimensioni precedenti all'aggancio e
+// lasciando il cursore nello stesso punto relativo della barra.
+function onMoved() {
+  if (unsnapDrag) {        // sgancio già gestito durante il trascinamento
+    unsnapDrag = null;
+    return;
+  }
+  if (!expandedBounds || Date.now() < ignoreMovedUntil) return;
+  const cur = win.getBounds();
+  const sameSize = near(cur.width, expandedBounds.width, 1) && near(cur.height, expandedBounds.height, 1);
+  // Dimensioni cambiate (es. trascinata in un altro aggancio): se ne occupa
+  // expandSnapToFullScreen, che conserva restoreBounds se è ancora agganciata.
+  if (!sameSize) {
+    expandedBounds = null;
+    return;
+  }
+  if (near(cur.x, expandedBounds.x, 1) && near(cur.y, expandedBounds.y, 1)) return;
+
+  const restore = restoreBounds;
+  expandedBounds = null;
+  restoreBounds = null;
+  if (!restore) return;
+  const cursor = screen.getCursorScreenPoint();
+  const fx = (cursor.x - cur.x) / cur.width;
+  const offY = Math.min(cursor.y - cur.y, restore.height - 10);
+  const target = {
+    x: Math.round(cursor.x - fx * restore.width),
+    y: Math.round(cursor.y - offY),
+    width: restore.width,
+    height: restore.height,
+  };
+  const final = clampToDisplay(target, screen.getDisplayNearestPoint(cursor).bounds);
+  // Dopo la fine del ciclo di trascinamento di Windows, che altrimenti
+  // potrebbe annullare il ridimensionamento.
+  setTimeout(() => { if (!win.isDestroyed()) win.setBounds(final); }, 0);
 }
 
 function trackSnap() {
@@ -355,6 +452,8 @@ function trackSnap() {
   win.on('move', schedule);
   win.on('resize', schedule);
   win.on('maximize', onMaximize);
+  win.on('will-move', onWillMove);
+  win.on('moved', onMoved);
 }
 
 // Quando l'overlay perde il focus (clic su un'altra finestra, Alt+Tab...) si
