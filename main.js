@@ -11,6 +11,10 @@ const DEFAULT_SITES = [
 ].map((url) => ({ id: crypto.randomUUID(), url, title: null }));
 
 const DEFAULT_SHORTCUT = 'F10';
+// Opzioni della pagina Impostazioni (solo booleane per ora): chiave -> default.
+const DEFAULT_SETTINGS = {
+  hideOnBlur: true,   // nasconde l'overlay quando perde il focus
+};
 const DEFAULT_SIZE = { width: 1000, height: 700 };
 const MIN_SIZE = { width: 480, height: 320 };
 
@@ -35,7 +39,19 @@ function loadPrefs() {
     window: loaded.window ?? null,
     activeTab: typeof loaded.activeTab === 'string' ? loaded.activeTab : null,
     shortcut: typeof loaded.shortcut === 'string' && loaded.shortcut ? loaded.shortcut : DEFAULT_SHORTCUT,
+    settings: loadSettings(loaded.settings),
   };
+}
+
+// Tiene solo le chiavi note con il tipo giusto; le altre prendono il default.
+function loadSettings(saved) {
+  const settings = { ...DEFAULT_SETTINGS };
+  if (saved && typeof saved === 'object') {
+    for (const key of Object.keys(DEFAULT_SETTINGS)) {
+      if (typeof saved[key] === typeof DEFAULT_SETTINGS[key]) settings[key] = saved[key];
+    }
+  }
+  return settings;
 }
 
 function savePrefs() {
@@ -218,6 +234,15 @@ function toggleWindow() {
   else showWindow();
 }
 
+// Quando l'overlay perde il focus (clic su un'altra finestra, Alt+Tab...) si
+// nasconde. Il focus in quel caso è già altrove, quindi hideWindow non lo sposta.
+let lastBlurHide = 0;
+function hideOnBlur() {
+  if (!prefs.settings.hideOnBlur || !win.isVisible()) return;
+  lastBlurHide = Date.now();
+  hideWindow();
+}
+
 // La scorciatoia è intercettata in due modi (vedi sotto): quando funzionano
 // entrambi arrivano due eventi per la stessa pressione, e va considerato solo il primo.
 let lastShortcutToggle = 0;
@@ -318,6 +343,7 @@ function updateTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: win.isVisible() ? 'Nascondi' : 'Mostra', accelerator: shortcut || undefined, click: toggleWindow },
     { label: 'Home', click: () => { showWindow(); win.webContents.send('nav:home'); } },
+    { label: 'Impostazioni', click: () => { showWindow(); win.webContents.send('nav:settings'); } },
     { type: 'separator' },
     { label: 'Esci', click: () => app.quit() },
   ]));
@@ -325,7 +351,12 @@ function updateTray() {
 
 function createTray() {
   tray = new Tray(nativeImage.createFromPath(ICON_PATH));
-  tray.on('click', toggleWindow);
+  tray.on('click', () => {
+    // Cliccando l'icona con l'overlay aperto, la finestra perde prima il focus
+    // e si nasconde (vedi 'blur'): il clic non deve riaprirla subito dopo.
+    if (!win.isVisible() && Date.now() - lastBlurHide < 500) return;
+    toggleWindow();
+  });
   // Le voci del menu dipendono dallo stato della finestra e dalla scorciatoia.
   win.on('show', updateTray);
   win.on('hide', updateTray);
@@ -363,7 +394,13 @@ ipcMain.handle('state:load', () => ({
   sites: prefs.sites,
   activeTab: prefs.activeTab,
   shortcut,
+  settings: prefs.settings,
 }));
+ipcMain.handle('settings:set', (_e, key, value) => {
+  if (!(key in DEFAULT_SETTINGS) || typeof value !== typeof DEFAULT_SETTINGS[key]) return;
+  prefs.settings[key] = value;
+  savePrefs();
+});
 ipcMain.handle('sites:save', (_e, sites) => {
   if (!Array.isArray(sites)) return;
   prefs.sites = sites;
@@ -412,6 +449,7 @@ function start() {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.loadFile('index.html');
+  win.on('blur', hideOnBlur);
   trackBounds(win);
 
   if (tryRegister(prefs.shortcut)) shortcut = prefs.shortcut;

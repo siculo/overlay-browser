@@ -22,10 +22,10 @@ Succede solo la prima volta. Se l'antivirus segnala il file, è quasi sicurament
 
 ## Uso
 
-- All'avvio la finestra resta nascosta: l'app si mette in attesa nell'area di notifica. Premi **F10** per mostrarla e premilo di nuovo per nasconderla.
+- All'avvio la finestra resta nascosta: l'app si mette in attesa nell'area di notifica. Premi **F10** per mostrarla e premilo di nuovo per nasconderla. Di default si nasconde da sola anche quando clicchi su un'altra finestra (ad esempio tornando al gioco); si può disattivare dalle Impostazioni.
 - L'app **non compare nella barra delle applicazioni** né in Alt+Tab: la trovi nell'area di notifica in basso a destra, vicino all'orologio (icona nera con una finestrella bianca). Se non la vedi, clicca sulla freccia **^** e trascina l'icona sulla barra per tenerla sempre visibile.
   - **Clic** sull'icona: mostra/nasconde la finestra.
-  - **Tasto destro**: menu con *Mostra/Nascondi*, *Home* ed *Esci*.
+  - **Tasto destro**: menu con *Mostra/Nascondi*, *Home*, *Impostazioni* ed *Esci*.
 - Per **chiudere** l'app usa *Esci* dal menu dell'icona (oppure Alt+F4 con la finestra in primo piano).
 - La finestra si **sposta** trascinando la barra in alto (lo spazio libero accanto ai pulsanti) e si **ridimensiona** dai bordi. Posizione e dimensione vengono ricordate.
 
@@ -44,7 +44,7 @@ Dalla **Home** puoi gestire l'elenco:
 
 ### Cambiare il tasto
 
-Nella Home, sezione **Impostazioni**:
+Apri le **Impostazioni** con il pulsante ⚙ in alto a destra (o dal menu dell'icona), sezione *Tastiera*:
 
 1. clicca **Cambia**;
 2. premi la combinazione che preferisci, ad esempio `Ctrl+Shift+O` (Esc per annullare).
