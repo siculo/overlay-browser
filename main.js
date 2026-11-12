@@ -411,7 +411,6 @@ function start() {
     },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
-  win.once('ready-to-show', () => win.show());
   win.loadFile('index.html');
   trackBounds(win);
 

@@ -22,7 +22,7 @@ Succede solo la prima volta. Se l'antivirus segnala il file, è quasi sicurament
 
 ## Uso
 
-- All'avvio la finestra compare subito. Premi **F10** per nasconderla e premilo di nuovo per farla ricomparire.
+- All'avvio la finestra resta nascosta: l'app si mette in attesa nell'area di notifica. Premi **F10** per mostrarla e premilo di nuovo per nasconderla.
 - L'app **non compare nella barra delle applicazioni** né in Alt+Tab: la trovi nell'area di notifica in basso a destra, vicino all'orologio (icona nera con una finestrella bianca). Se non la vedi, clicca sulla freccia **^** e trascina l'icona sulla barra per tenerla sempre visibile.
   - **Clic** sull'icona: mostra/nasconde la finestra.
   - **Tasto destro**: menu con *Mostra/Nascondi*, *Home* ed *Esci*.
