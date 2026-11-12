@@ -51,6 +51,8 @@ Nella Home, sezione **Impostazioni**:
 
 Sono ammessi i tasti F1–F24 da soli, oppure qualunque tasto insieme a Ctrl, Alt, Shift o Win. Se la combinazione è già usata da un altro programma compare un messaggio e resta quella precedente. *Ripristina F10* torna al tasto di default.
 
+> **Attenzione in gioco:** mentre giochi (ad esempio a Star Citizen) la combinazione arriva anche al gioco, oltre che all'overlay. Scegline una che nel gioco non è assegnata a nessun comando, altrimenti aprendo l'overlay attiverai anche quel comando.
+
 > **Nota per i giochi:** alcuni giochi in schermo intero "esclusivo" coprono qualsiasi finestra. In quel caso imposta il gioco in modalità *finestra senza bordi* (borderless).
 
 ## Preferenze e disinstallazione
