@@ -220,6 +220,7 @@ app.whenReady().then(() => {
     minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height,
     frame: false, show: false, opacity: 0.95,
     alwaysOnTop: true,
+    skipTaskbar: true,   // niente icona nella barra delle applicazioni: si usa quella nell'area di notifica
     icon: ICON_PATH,
     webPreferences: {
       webviewTag: true,
