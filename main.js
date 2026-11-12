@@ -9,6 +9,7 @@ const DEFAULT_SITES = [
   'https://starcitizen.tools',
 ].map((url) => ({ id: crypto.randomUUID(), url, title: null }));
 
+const DEFAULT_SHORTCUT = 'F10';
 const DEFAULT_SIZE = { width: 1000, height: 700 };
 const MIN_SIZE = { width: 480, height: 320 };
 
@@ -27,6 +28,8 @@ function loadPrefs() {
   return {
     sites: Array.isArray(loaded.sites) ? loaded.sites : DEFAULT_SITES,
     window: loaded.window ?? null,
+    activeTab: typeof loaded.activeTab === 'string' ? loaded.activeTab : null,
+    shortcut: typeof loaded.shortcut === 'string' && loaded.shortcut ? loaded.shortcut : DEFAULT_SHORTCUT,
   };
 }
 
@@ -117,22 +120,70 @@ async function fetchTitle(url) {
   }
 }
 
+// ---------- scorciatoia globale ----------
+
+let win;
+let shortcut = null;   // scorciatoia attualmente registrata
+
+function toggleWindow() {
+  if (win.isVisible()) win.hide();
+  else { win.show(); win.focus(); }
+}
+
+// register() lancia un'eccezione se l'accelerator non è valido e restituisce
+// false se la combinazione è già usata da un'altra applicazione.
+function tryRegister(accelerator) {
+  try {
+    return globalShortcut.register(accelerator, toggleWindow);
+  } catch {
+    return false;
+  }
+}
+
+function setShortcut(accelerator) {
+  const previous = shortcut;
+  globalShortcut.unregisterAll();
+  if (tryRegister(accelerator)) {
+    shortcut = accelerator;
+    prefs.shortcut = accelerator;
+    savePrefs();
+    return { ok: true, shortcut };
+  }
+  if (previous) tryRegister(previous);
+  return { ok: false, shortcut: previous, error: `Impossibile usare ${accelerator}: combinazione non valida o già in uso.` };
+}
+
 // ---------- IPC ----------
 
-ipcMain.handle('sites:load', () => prefs.sites);
+ipcMain.handle('state:load', () => ({
+  sites: prefs.sites,
+  activeTab: prefs.activeTab,
+  shortcut,
+}));
 ipcMain.handle('sites:save', (_e, sites) => {
   if (!Array.isArray(sites)) return;
   prefs.sites = sites;
   savePrefs();
 });
+ipcMain.handle('tab:setActive', (_e, id) => {
+  prefs.activeTab = typeof id === 'string' ? id : null;
+  savePrefs();
+});
 ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
+ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerator)));
+// Mentre l'utente registra una nuova combinazione, quella attuale va sospesa,
+// altrimenti premendola si nasconderebbe la finestra invece di catturarla.
+ipcMain.handle('shortcut:suspend', (_e, suspended) => {
+  globalShortcut.unregisterAll();
+  if (!suspended && shortcut) tryRegister(shortcut);
+});
 
 // ---------- avvio ----------
 
 app.whenReady().then(() => {
   prefs = loadPrefs();
 
-  const win = new BrowserWindow({
+  win = new BrowserWindow({
     ...initialBounds(),
     minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height,
     frame: false, show: false, opacity: 0.95,
@@ -143,12 +194,12 @@ app.whenReady().then(() => {
     },
   });
   win.setAlwaysOnTop(true, 'screen-saver');
+  win.once('ready-to-show', () => win.show());
   win.loadFile('index.html');
   trackBounds(win);
 
-  globalShortcut.register('F10', () => {
-    if (win.isVisible()) win.hide();
-    else { win.show(); win.focus(); }
-  });
+  if (tryRegister(prefs.shortcut)) shortcut = prefs.shortcut;
+  else if (tryRegister(DEFAULT_SHORTCUT)) shortcut = DEFAULT_SHORTCUT;
 });
+app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => app.quit());

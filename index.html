@@ -32,6 +32,12 @@
   #add { display: flex; gap: 8px; max-width: 720px; margin-top: 16px; }
   #add input { flex: 1; }
   .error { color: #f77; font-size: 13px; margin-top: 6px; min-height: 1em; }
+  #home h2 { margin: 28px 0 12px; font-weight: 500; font-size: 18px; }
+  .setting { display: flex; align-items: center; gap: 8px; }
+  kbd { font: inherit; font-family: ui-monospace, monospace; padding: 3px 8px; border: 1px solid #555; border-radius: 4px; background: #1c1c1c; min-width: 3em; text-align: center; }
+  kbd.capturing { border-color: #6af; color: #6af; }
+  .hint { font-size: 13px; color: #999; margin-top: 6px; min-height: 1em; }
+  .hint.err { color: #f77; }
 
   #views { flex: 1; display: flex; }
   #views webview { flex: 1; }
@@ -55,6 +61,15 @@
       <button type="submit">Aggiungi</button>
     </form>
     <div class="error" id="error"></div>
+
+    <h2>Impostazioni</h2>
+    <div class="setting">
+      <span>Mostra/nascondi overlay:</span>
+      <kbd id="shortcut"></kbd>
+      <button id="shortcut-change">Cambia</button>
+      <button id="shortcut-reset">Ripristina F10</button>
+    </div>
+    <div class="hint" id="shortcut-hint"></div>
   </div>
 
   <div id="views" hidden></div>
@@ -126,6 +141,8 @@
   }
 
   function activate(id) {
+    if (id !== active) window.overlay.setActiveTab(id);
+    if (id !== null) cancelCapture();
     active = id;
     if (id !== null) getWebview(findSite(id));
     home.hidden = id !== null;
@@ -261,11 +278,104 @@
     if (addSite($('add-url').value)) $('add-url').value = '';
   };
 
+  // ---------- scorciatoia ----------
+
+  const shortcutEl = $('shortcut'), shortcutHint = $('shortcut-hint');
+  const changeBtn = $('shortcut-change');
+  let capturing = false;
+  let currentShortcut = null;
+
+  function showShortcut(acc, msg, isError) {
+    shortcutEl.textContent = acc || 'nessuna';
+    shortcutHint.textContent = msg || '';
+    shortcutHint.classList.toggle('err', !!isError);
+  }
+
+  // Converte un KeyboardEvent nel tasto di un accelerator di Electron.
+  // Si usa e.code (tasto fisico) così il risultato non dipende dal layout.
+  const CODE_KEYS = {
+    Space: 'Space', Tab: 'Tab', Enter: 'Enter', Backspace: 'Backspace',
+    Insert: 'Insert', Delete: 'Delete', Home: 'Home', End: 'End',
+    PageUp: 'PageUp', PageDown: 'PageDown',
+    ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+    Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\',
+    Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backquote: '`',
+    NumpadAdd: 'numadd', NumpadSubtract: 'numsub', NumpadMultiply: 'nummult',
+    NumpadDivide: 'numdiv', NumpadDecimal: 'numdec',
+  };
+  function keyFromCode(code) {
+    let m;
+    if ((m = code.match(/^Key([A-Z])$/))) return m[1];
+    if ((m = code.match(/^Digit(\d)$/))) return m[1];
+    if ((m = code.match(/^Numpad(\d)$/))) return 'num' + m[1];
+    if (/^F([1-9]|1\d|2[0-4])$/.test(code)) return code;
+    return CODE_KEYS[code] ?? null;
+  }
+
+  function startCapture() {
+    capturing = true;
+    window.overlay.suspendShortcut(true);
+    shortcutEl.classList.add('capturing');
+    showShortcut('…', 'Premi la nuova combinazione (Esc per annullare).');
+    changeBtn.disabled = true;
+  }
+  function endCapture() {
+    capturing = false;
+    shortcutEl.classList.remove('capturing');
+    changeBtn.disabled = false;
+  }
+  // Annulla la cattura e riattiva la scorciatoia attuale.
+  function cancelCapture() {
+    if (!capturing) return;
+    endCapture();
+    window.overlay.suspendShortcut(false);
+    showShortcut(currentShortcut);
+  }
+  async function applyShortcut(acc) {
+    const res = await window.overlay.setShortcut(acc);
+    currentShortcut = res.shortcut;
+    if (res.ok) showShortcut(res.shortcut, 'Scorciatoia aggiornata.');
+    else showShortcut(res.shortcut, res.error, true);
+  }
+  window.addEventListener('blur', cancelCapture);
+
+  document.addEventListener('keydown', async (e) => {
+    if (!capturing) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.code === 'Escape' && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+      cancelCapture();
+      return;
+    }
+    const key = keyFromCode(e.code);
+    if (!key) return;   // tasto modificatore da solo o non supportato: si aspetta il prossimo
+    const mods = [];
+    if (e.ctrlKey) mods.push('Ctrl');
+    if (e.altKey) mods.push('Alt');
+    if (e.shiftKey) mods.push('Shift');
+    if (e.metaKey) mods.push('Super');
+    // Senza modificatori sono ammessi solo i tasti funzione, per non
+    // "rubare" a tutto il sistema un tasto usato normalmente per scrivere.
+    if (!mods.length && !/^F\d+$/.test(key)) {
+      showShortcut('…', 'Usa un tasto funzione (F1–F24) o una combinazione con Ctrl, Alt, Shift o Win.', true);
+      return;
+    }
+    endCapture();
+    await applyShortcut([...mods, key].join('+'));
+  }, true);
+
+  changeBtn.onclick = startCapture;
+  $('shortcut-reset').onclick = () => { cancelCapture(); applyShortcut('F10'); };
+
   // ---------- avvio ----------
 
   (async () => {
-    prefs = { sites: await window.overlay.loadSites() };
-    activate(null);
+    const state = await window.overlay.loadState();
+    prefs = { sites: state.sites };
+    currentShortcut = state.shortcut;
+    showShortcut(currentShortcut);
+    // Riapre l'ultima tab scelta, se il sito esiste ancora.
+    activate(findSite(state.activeTab) ? state.activeTab : null);
     renderList();
     for (const site of prefs.sites) if (!site.title) resolveTitle(site);
   })();
