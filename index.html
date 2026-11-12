@@ -1,73 +1,274 @@
-<body style="margin:0;display:flex;flex-direction:column;height:100vh;background:#111;font-family:system-ui,sans-serif;color:#eee">
-  <div id="bar" style="padding:6px;-webkit-app-region:drag"></div>
-  <div id="home" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
-    <h1 style="margin:0;font-weight:500">Scegli un sito</h1>
-    <div id="tiles" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:600px"></div>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #111; color: #eee; font-family: system-ui, sans-serif; }
+  button { font: inherit; color: #eee; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; padding: 3px 10px; cursor: pointer; white-space: nowrap; }
+  button:hover { background: #363636; }
+  button.active { background: #4a4a4a; font-weight: bold; }
+  input { font: inherit; color: #eee; background: #1c1c1c; border: 1px solid #3a3a3a; border-radius: 4px; padding: 5px 8px; }
+
+  /* Barra superiore: Home fisso, poi le tab scorrevoli con le frecce */
+  #bar { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
+  #bar button { -webkit-app-region: no-drag; }
+  #tabs { flex: 1; min-width: 0; display: flex; gap: 4px; overflow-x: hidden; scroll-behavior: smooth; }
+  #tabs button { flex: none; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+  #tabs-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
+  .arrow { padding: 3px 8px; }
+
+  /* Home */
+  #home { flex: 1; overflow-y: auto; padding: 24px; }
+  #home h1 { margin: 0 0 16px; font-weight: 500; font-size: 22px; }
+  #list { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
+  .site { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #1c1c1c; border: 1px solid #333; border-radius: 6px; }
+  .site .info { flex: 1; min-width: 0; cursor: pointer; }
+  .site .info:hover .title { text-decoration: underline; }
+  .site .title { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site .url { font-size: 12px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .site input { flex: 1; min-width: 0; }
+  #add { display: flex; gap: 8px; max-width: 720px; margin-top: 16px; }
+  #add input { flex: 1; }
+  .error { color: #f77; font-size: 13px; margin-top: 6px; min-height: 1em; }
+
+  #views { flex: 1; display: flex; }
+  #views webview { flex: 1; }
+</style>
+</head>
+<body>
+  <div id="bar">
+    <button id="home-btn">Home</button>
+    <div id="tabs-wrap">
+      <button class="arrow" id="left" hidden>&#9664;</button>
+      <div id="tabs"></div>
+      <button class="arrow" id="right" hidden>&#9654;</button>
+    </div>
   </div>
-  <div id="views" style="flex:1;display:none"></div>
-  <script>
-    const SITES = {
-      'SCMDB': 'https://scmdb.net/',
-      '#DPSCalculator': 'https://erkul.games/calculator',
-      'Star Citizen Tools': 'https://starcitizen.tools',
-    };
-    const bar = document.getElementById('bar');
-    const home = document.getElementById('home');
-    const tiles = document.getElementById('tiles');
-    const views = document.getElementById('views');
 
-    // Un webview per sito, creato al primo accesso e poi solo nascosto/mostrato:
-    // così ogni "tab" conserva pagina, scroll, form e cronologia.
-    const tabs = {};          // name -> webview
-    const barButtons = {};    // name -> pulsante nella barra
-    let active = null;        // nome del tab attivo, null = Home
+  <div id="home">
+    <h1>Siti</h1>
+    <div id="list"></div>
+    <form id="add">
+      <input id="add-url" placeholder="Indirizzo del sito da aggiungere (es. https://example.com)">
+      <button type="submit">Aggiungi</button>
+    </form>
+    <div class="error" id="error"></div>
+  </div>
 
-    function setActive(name) {
-      active = name;
-      home.style.display = name === null ? 'flex' : 'none';
-      views.style.display = name === null ? 'none' : 'flex';
-      for (const [n, wv] of Object.entries(tabs)) {
-        wv.style.display = n === name ? 'flex' : 'none';
-      }
-      for (const [n, b] of Object.entries(barButtons)) {
-        b.style.fontWeight = n === name ? 'bold' : 'normal';
-      }
-      barButtons.Home.style.fontWeight = name === null ? 'bold' : 'normal';
+  <div id="views" hidden></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const homeBtn = $('home-btn'), tabsEl = $('tabs'), leftBtn = $('left'), rightBtn = $('right');
+  const home = $('home'), list = $('list'), views = $('views'), errorEl = $('error');
+
+  let prefs = { sites: [] };
+  const webviews = new Map();   // id -> webview (una "tab" per sito, creata al primo accesso)
+  let active = null;            // id del sito attivo, null = Home
+  let editing = null;           // id del sito in modifica nella Home
+
+  // ---------- utilità ----------
+
+  function normalizeUrl(raw) {
+    let s = raw.trim();
+    if (!s) return null;
+    if (!/^[a-z][a-z\d+.-]*:\/\//i.test(s)) s = 'https://' + s;
+    try {
+      const u = new URL(s);
+      return /^https?:$/.test(u.protocol) ? u.href : null;
+    } catch {
+      return null;
     }
+  }
 
-    function openSite(name) {
-      if (!tabs[name]) {
-        const wv = document.createElement('webview');
-        wv.style.cssText = 'flex:1;display:none';
-        wv.src = SITES[name];
-        views.append(wv);
-        tabs[name] = wv;
-      }
-      setActive(name);
+  const siteName = (site) => site.title || new URL(site.url).hostname;
+  const findSite = (id) => prefs.sites.find((s) => s.id === id);
+  const save = () => window.overlay.saveSites(prefs.sites);
+
+  function showError(msg) { errorEl.textContent = msg || ''; }
+
+  // Recupera il titolo dalla pagina; se non ci riesce resta il nome host.
+  async function resolveTitle(site) {
+    const url = site.url;
+    const title = await window.overlay.fetchTitle(url);
+    if (title && site.url === url && findSite(site.id)) {
+      site.title = title;
+      save();
+      render();
     }
+  }
 
-    function addBarButton(label, onclick) {
+  // ---------- tab / webview ----------
+
+  function getWebview(site) {
+    let wv = webviews.get(site.id);
+    if (!wv) {
+      wv = document.createElement('webview');
+      wv.src = site.url;
+      wv.style.display = 'none';
+      // Fallback per i siti che impostano il titolo via JavaScript: usa il primo
+      // titolo che la pagina comunica, se non ne abbiamo già uno.
+      wv.addEventListener('page-title-updated', (e) => {
+        const s = findSite(site.id);
+        if (s && !s.title && e.title) { s.title = e.title; save(); render(); }
+      });
+      views.append(wv);
+      webviews.set(site.id, wv);
+    }
+    return wv;
+  }
+
+  function closeWebview(id) {
+    webviews.get(id)?.remove();
+    webviews.delete(id);
+  }
+
+  function activate(id) {
+    active = id;
+    if (id !== null) getWebview(findSite(id));
+    home.hidden = id !== null;
+    views.hidden = id === null;
+    for (const [wid, wv] of webviews) wv.style.display = wid === id ? 'flex' : 'none';
+    renderTabs();
+  }
+
+  // ---------- render ----------
+
+  function renderTabs() {
+    homeBtn.classList.toggle('active', active === null);
+    tabsEl.replaceChildren(...prefs.sites.map((site) => {
       const b = document.createElement('button');
-      b.textContent = label;
-      b.style.cssText = '-webkit-app-region:no-drag;margin-right:4px';
-      b.onclick = onclick;
-      bar.append(b);
+      b.textContent = siteName(site);
+      b.title = siteName(site);
+      b.classList.toggle('active', site.id === active);
+      b.onclick = () => activate(site.id);
       return b;
-    }
+    }));
+    tabsEl.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    updateArrows();
+  }
 
-    barButtons.Home = addBarButton('Home', () => setActive(null));
-    for (const [name, url] of Object.entries(SITES)) {
-      barButtons[name] = addBarButton(name, () => openSite(name));
+  function renderList() {
+    list.replaceChildren(...prefs.sites.map((site) => {
+      const row = document.createElement('div');
+      row.className = 'site';
 
-      const t = document.createElement('button');
-      t.textContent = name;
-      t.title = url;
-      t.style.cssText = 'width:160px;height:100px;font-size:18px;border:1px solid #333;border-radius:8px;background:#1c1c1c;color:#eee;cursor:pointer';
-      t.onmouseenter = () => (t.style.background = '#2a2a2a');
-      t.onmouseleave = () => (t.style.background = '#1c1c1c');
-      t.onclick = () => openSite(name);
-      tiles.append(t);
+      if (editing === site.id) {
+        const input = document.createElement('input');
+        input.value = site.url;
+        const ok = document.createElement('button');
+        ok.textContent = 'Salva';
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Annulla';
+        ok.onclick = () => updateSite(site.id, input.value);
+        cancel.onclick = () => { editing = null; showError(); renderList(); };
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') ok.click();
+          if (e.key === 'Escape') cancel.click();
+        };
+        row.append(input, ok, cancel);
+        setTimeout(() => input.focus());
+      } else {
+        const info = document.createElement('div');
+        info.className = 'info';
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = siteName(site);
+        const url = document.createElement('div');
+        url.className = 'url';
+        url.textContent = site.url;
+        info.append(title, url);
+        info.onclick = () => activate(site.id);
+
+        const edit = document.createElement('button');
+        edit.textContent = 'Modifica';
+        edit.onclick = () => { editing = site.id; showError(); renderList(); };
+        const del = document.createElement('button');
+        del.textContent = 'Rimuovi';
+        del.onclick = () => removeSite(site.id);
+        row.append(info, edit, del);
+      }
+      return row;
+    }));
+    if (!prefs.sites.length) {
+      const empty = document.createElement('div');
+      empty.style.color = '#999';
+      empty.textContent = 'Nessun sito. Aggiungine uno qui sotto.';
+      list.append(empty);
     }
-    setActive(null);
-  </script>
+  }
+
+  function render() { renderTabs(); renderList(); }
+
+  // ---------- frecce di scorrimento ----------
+
+  function updateArrows() {
+    const overflow = tabsEl.scrollWidth > tabsEl.clientWidth + 1;
+    leftBtn.hidden = rightBtn.hidden = !overflow;
+    leftBtn.disabled = tabsEl.scrollLeft <= 0;
+    rightBtn.disabled = tabsEl.scrollLeft + tabsEl.clientWidth >= tabsEl.scrollWidth - 1;
+  }
+  leftBtn.onclick = () => tabsEl.scrollBy({ left: -tabsEl.clientWidth * 0.8 });
+  rightBtn.onclick = () => tabsEl.scrollBy({ left: tabsEl.clientWidth * 0.8 });
+  tabsEl.addEventListener('scroll', updateArrows);
+  tabsEl.addEventListener('wheel', (e) => { tabsEl.scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); }, { passive: false });
+  new ResizeObserver(updateArrows).observe(tabsEl);
+
+  // ---------- modifiche all'elenco ----------
+
+  function addSite(raw) {
+    const url = normalizeUrl(raw);
+    if (!url) return showError('Indirizzo non valido.');
+    const site = { id: crypto.randomUUID(), url, title: null };
+    prefs.sites.push(site);
+    save();
+    showError();
+    render();
+    resolveTitle(site);
+    return true;
+  }
+
+  function updateSite(id, raw) {
+    const site = findSite(id);
+    const url = normalizeUrl(raw);
+    if (!url) return showError('Indirizzo non valido.');
+    editing = null;
+    showError();
+    if (url !== site.url) {
+      site.url = url;
+      site.title = null;
+      const wv = webviews.get(id);
+      if (wv) wv.src = url;
+      save();
+      resolveTitle(site);
+    }
+    render();
+  }
+
+  function removeSite(id) {
+    prefs.sites = prefs.sites.filter((s) => s.id !== id);
+    closeWebview(id);
+    if (editing === id) editing = null;
+    save();
+    if (active === id) activate(null); else render();
+  }
+
+  homeBtn.onclick = () => activate(null);
+  $('add').onsubmit = (e) => {
+    e.preventDefault();
+    if (addSite($('add-url').value)) $('add-url').value = '';
+  };
+
+  // ---------- avvio ----------
+
+  (async () => {
+    prefs = { sites: await window.overlay.loadSites() };
+    activate(null);
+    renderList();
+    for (const site of prefs.sites) if (!site.title) resolveTitle(site);
+  })();
+</script>
 </body>
+</html>
