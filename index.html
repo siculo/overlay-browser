@@ -1,0 +1,51 @@
+<body style="margin:0;display:flex;flex-direction:column;height:100vh;background:#111;font-family:system-ui,sans-serif;color:#eee">
+  <div id="bar" style="padding:6px;-webkit-app-region:drag"></div>
+  <div id="home" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+    <h1 style="margin:0;font-weight:500">Scegli un sito</h1>
+    <div id="tiles" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:600px"></div>
+  </div>
+  <webview id="view" style="flex:1;display:none"></webview>
+  <script>
+    const SITES = {
+      'SCMDB': 'https://scmdb.net/',
+      '#DPSCalculator': 'https://erkul.games/calculator',
+      'Star Citizen Tools': 'https://starcitizen.tools',
+    };
+    const bar = document.getElementById('bar');
+    const home = document.getElementById('home');
+    const tiles = document.getElementById('tiles');
+    const view = document.getElementById('view');
+
+    function openSite(url) {
+      home.style.display = 'none';
+      view.style.display = 'flex';
+      view.src = url;
+    }
+    function showHome() {
+      view.style.display = 'none';
+      home.style.display = 'flex';
+    }
+
+    function addBarButton(label, onclick) {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.style.cssText = '-webkit-app-region:no-drag;margin-right:4px';
+      b.onclick = onclick;
+      bar.append(b);
+    }
+
+    addBarButton('Home', showHome);
+    for (const [name, url] of Object.entries(SITES)) {
+      addBarButton(name, () => openSite(url));
+
+      const t = document.createElement('button');
+      t.textContent = name;
+      t.title = url;
+      t.style.cssText = 'width:160px;height:100px;font-size:18px;border:1px solid #333;border-radius:8px;background:#1c1c1c;color:#eee;cursor:pointer';
+      t.onmouseenter = () => (t.style.background = '#2a2a2a');
+      t.onmouseleave = () => (t.style.background = '#1c1c1c');
+      t.onclick = () => openSite(url);
+      tiles.append(t);
+    }
+  </script>
+</body>
