@@ -66,10 +66,11 @@ function savePrefs() {
 
 const isNum = (n) => Number.isFinite(n);
 
-// La finestra è interamente visibile se sta tutta dentro l'area di lavoro
-// (schermo meno barra delle applicazioni) di almeno un monitor.
+// La finestra è interamente visibile se sta tutta dentro lo schermo di almeno
+// un monitor. Si usa lo schermo intero e non l'area di lavoro, perché sopra un
+// gioco la finestra può legittimamente coprire anche la barra delle applicazioni.
 function isFullyVisible(b) {
-  return screen.getAllDisplays().some(({ workArea: w }) =>
+  return screen.getAllDisplays().some(({ bounds: w }) =>
     b.x >= w.x && b.y >= w.y &&
     b.x + b.width <= w.x + w.width &&
     b.y + b.height <= w.y + w.height);
@@ -164,8 +165,11 @@ const win32 = (() => {
     const user32 = koffi.load('user32.dll');
     const kernel32 = koffi.load('kernel32.dll');
     koffi.pointer('HWND', koffi.opaque());
+    koffi.struct('RECT', { left: 'long', top: 'long', right: 'long', bottom: 'long' });
     const api = {
       koffi,
+      GetWindowRect: user32.func('bool __stdcall GetWindowRect(HWND, _Out_ RECT *)'),
+      GetClassNameW: user32.func('int __stdcall GetClassNameW(HWND, _Out_ uint8_t *, int)'),
       GetForegroundWindow: user32.func('HWND __stdcall GetForegroundWindow()'),
       SetForegroundWindow: user32.func('bool __stdcall SetForegroundWindow(HWND)'),
       BringWindowToTop: user32.func('bool __stdcall BringWindowToTop(HWND)'),
@@ -232,6 +236,125 @@ function hideWindow() {
 function toggleWindow() {
   if (win.isVisible() && !win.isMinimized()) hideWindow();
   else showWindow();
+}
+
+// ---------- aggancio ai bordi con la barra delle applicazioni nascosta ----------
+//
+// Aggancio ai lati (Aero Snap) e massimizzazione usano l'area di lavoro del
+// monitor, che esclude sempre la barra delle applicazioni. Se però l'overlay è
+// stato aperto sopra una finestra che copre tutto il monitor (gioco a schermo
+// intero o senza bordi), la barra non è visibile: in quel caso la finestra
+// agganciata/massimizzata viene estesa a tutto lo schermo.
+
+function classNameOf(hwnd) {
+  const buf = Buffer.alloc(512);
+  const n = win32.GetClassNameW(hwnd, buf, 256);
+  return buf.toString('utf16le', 0, n * 2);
+}
+
+// true se la finestra da cui si è aperto l'overlay copre l'intero monitor.
+function fullscreenAppBelow(display) {
+  if (!win32 || !previousForeground || !win32.IsWindow(previousForeground)) return false;
+  // Il desktop copre tutto lo schermo ma non nasconde la barra.
+  if (['Progman', 'WorkerW', 'Shell_TrayWnd'].includes(classNameOf(previousForeground))) return false;
+  const r = {};
+  if (!win32.GetWindowRect(previousForeground, r)) return false;
+  // GetWindowRect è in pixel fisici, i display di Electron in DIP.
+  const dip = screen.screenToDipRect(null, { x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top });
+  const b = display.bounds;
+  return dip.x <= b.x + 1 && dip.y <= b.y + 1 &&
+    dip.x + dip.width >= b.x + b.width - 1 && dip.y + dip.height >= b.y + b.height - 1;
+}
+
+const near = (a, b, tol = 4) => Math.abs(a - b) <= tol;
+const sameRect = (a, b) => a && b && near(a.x, b.x, 1) && near(a.y, b.y, 1) &&
+  near(a.width, b.width, 1) && near(a.height, b.height, 1);
+
+// Riconosce le posizioni di aggancio di Windows: metà, terzi, quarti.
+function isSnapped(bounds, wa) {
+  const fracs = [1, 1 / 2, 1 / 3, 2 / 3];
+  const wOk = fracs.some((f) => near(bounds.width, wa.width * f));
+  const hOk = [1, 1 / 2].some((f) => near(bounds.height, wa.height * f));
+  const inside = bounds.x >= wa.x - 4 && bounds.y >= wa.y - 4 &&
+    bounds.x + bounds.width <= wa.x + wa.width + 4 && bounds.y + bounds.height <= wa.y + wa.height + 4;
+  const edges = [
+    near(bounds.x, wa.x), near(bounds.y, wa.y),
+    near(bounds.x + bounds.width, wa.x + wa.width), near(bounds.y + bounds.height, wa.y + wa.height),
+  ].filter(Boolean).length;
+  return wOk && hOk && inside && edges >= 2;
+}
+
+let expandedBounds = null;   // ultimo ridimensionamento fatto da noi (evita di ripeterlo)
+let preMaximizeBounds = null; // dimensioni da ripristinare dopo una "massimizzazione" a tutto schermo
+
+function expandSnapToFullScreen() {
+  if (win.isDestroyed() || !win.isVisible() || win.isMinimized() || win.isMaximized()) return;
+  const bounds = win.getBounds();
+  if (sameRect(bounds, expandedBounds)) return;
+  const display = screen.getDisplayMatching(bounds);
+  const wa = display.workArea, b = display.bounds;
+  if (sameRect(wa, b) || !isSnapped(bounds, wa) || !fullscreenAppBelow(display)) return;
+  // Proporzione lineare dall'area di lavoro allo schermo intero: metà e
+  // quarti restano tali, ma occupano anche lo spazio della barra.
+  const mapX = (x) => b.x + Math.round((x - wa.x) * b.width / wa.width);
+  const mapY = (y) => b.y + Math.round((y - wa.y) * b.height / wa.height);
+  const x = mapX(bounds.x), y = mapY(bounds.y);
+  expandedBounds = {
+    x, y,
+    width: mapX(bounds.x + bounds.width) - x,
+    height: mapY(bounds.y + bounds.height) - y,
+  };
+  win.setBounds(expandedBounds);
+}
+
+// La massimizzazione si sostituisce con un ridimensionamento a tutto schermo;
+// ripetendola (es. doppio clic sulla barra) si torna alle dimensioni precedenti.
+// Riporta un rettangolo dentro lo schermo (trascinando verso l'alto per
+// massimizzare, le dimensioni "normali" possono restare in parte fuori).
+function clampToDisplay(r, b) {
+  const width = Math.min(r.width, b.width), height = Math.min(r.height, b.height);
+  return {
+    x: Math.min(Math.max(r.x, b.x), b.x + b.width - width),
+    y: Math.min(Math.max(r.y, b.y), b.y + b.height - height),
+    width, height,
+  };
+}
+
+function onMaximize() {
+  const normal = win.getNormalBounds();
+  const display = screen.getDisplayMatching(normal);
+  const b = display.bounds;
+  if (sameRect(display.workArea, b) || !fullscreenAppBelow(display)) return;
+
+  let target;
+  if (preMaximizeBounds && sameRect(normal, b)) {
+    target = preMaximizeBounds;      // era già a tutto schermo: si ripristina
+    preMaximizeBounds = null;
+  } else {
+    preMaximizeBounds = clampToDisplay(normal, b);
+    target = { ...b };
+    expandedBounds = target;
+  }
+  // unmaximize() è asincrono: Windows ripristina le dimensioni normali dopo la
+  // chiamata e sovrascriverebbe un setBounds immediato. Si applicano quindi le
+  // dimensioni a ripristino avvenuto, ricontrollando poco dopo.
+  const apply = () => {
+    if (win.isDestroyed() || win.isMaximized()) return;
+    if (!sameRect(win.getBounds(), target)) win.setBounds(target);
+  };
+  win.once('unmaximize', () => setTimeout(apply, 0));
+  win.unmaximize();
+  setTimeout(apply, 100);
+  setTimeout(apply, 300);
+}
+
+function trackSnap() {
+  let timer = null;
+  // Si attende la fine dell'animazione di aggancio prima di correggere.
+  const schedule = () => { clearTimeout(timer); timer = setTimeout(expandSnapToFullScreen, 300); };
+  win.on('move', schedule);
+  win.on('resize', schedule);
+  win.on('maximize', onMaximize);
 }
 
 // Quando l'overlay perde il focus (clic su un'altra finestra, Alt+Tab...) si
@@ -451,6 +574,7 @@ function start() {
   win.loadFile('index.html');
   win.on('blur', hideOnBlur);
   trackBounds(win);
+  if (win32) trackSnap();
 
   if (tryRegister(prefs.shortcut)) shortcut = prefs.shortcut;
   else if (tryRegister(DEFAULT_SHORTCUT)) shortcut = DEFAULT_SHORTCUT;
