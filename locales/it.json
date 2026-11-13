@@ -1,0 +1,55 @@
+{
+  "language.name": "Italiano",
+
+  "tray.show": "Mostra",
+  "tray.hide": "Nascondi",
+  "tray.home": "Home",
+  "tray.settings": "Impostazioni",
+  "tray.quit": "Esci",
+
+  "bar.home": "Home",
+  "bar.addSite": "Aggiungi un sito",
+  "bar.settings": "Impostazioni",
+
+  "nav.siteHome": "Home del sito",
+  "nav.back": "Indietro",
+  "nav.forward": "Avanti",
+  "nav.reload": "Ricarica",
+
+  "home.title": "Siti",
+  "home.addPlaceholder": "Indirizzo del sito da aggiungere (es. https://example.com)",
+  "home.add": "Aggiungi",
+  "home.empty": "Nessun sito. Aggiungine uno qui sotto.",
+
+  "site.edit": "Modifica",
+  "site.remove": "Rimuovi",
+  "site.save": "Salva",
+  "site.cancel": "Annulla",
+  "site.invalidUrl": "Indirizzo non valido.",
+  "site.confirmRemove": "Rimuovere \"{name}\" dall'elenco dei siti?",
+
+  "addDialog.message": "Indirizzo del sito da aggiungere:",
+  "addDialog.placeholder": "es. https://example.com",
+  "addDialog.ok": "Aggiungi",
+
+  "dialog.ok": "OK",
+  "dialog.cancel": "Annulla",
+
+  "settings.title": "Impostazioni",
+  "settings.keyboard": "Tastiera",
+  "settings.toggle": "Mostra/nascondi overlay:",
+  "settings.change": "Cambia",
+  "settings.reset": "Ripristina F10",
+  "settings.behavior": "Comportamento",
+  "settings.hideOnBlur": "Nascondi l'overlay quando perde il focus",
+  "settings.hideOnBlurDesc": "Ad esempio cliccando sul gioco o su un'altra finestra.",
+  "settings.language": "Lingua",
+  "settings.languageLabel": "Lingua dell'interfaccia:",
+  "settings.languageSystem": "Lingua di sistema ({name})",
+
+  "shortcut.none": "nessuna",
+  "shortcut.press": "Premi la nuova combinazione (Esc per annullare).",
+  "shortcut.updated": "Scorciatoia aggiornata.",
+  "shortcut.needModifier": "Usa un tasto funzione (F1–F24) o una combinazione con Ctrl, Alt, Shift o Win.",
+  "shortcut.error": "Impossibile usare {accelerator}: combinazione non valida o già in uso."
+}

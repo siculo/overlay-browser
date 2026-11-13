@@ -11,9 +11,10 @@ const DEFAULT_SITES = [
 ].map((url) => ({ id: crypto.randomUUID(), url, title: null }));
 
 const DEFAULT_SHORTCUT = 'F10';
-// Options of the Settings page (booleans only for now): key -> default.
+// Options of the Settings page: key -> default.
 const DEFAULT_SETTINGS = {
-  hideOnBlur: true,   // hide the overlay when it loses focus
+  hideOnBlur: true,     // hide the overlay when it loses focus
+  language: 'system',   // 'system' or the code of one of the files in locales/
 };
 const DEFAULT_SIZE = { width: 1000, height: 700 };
 const MIN_SIZE = { width: 480, height: 320 };
@@ -60,6 +61,65 @@ function savePrefs() {
   const tmp = prefsFile() + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(prefs, null, 2));
   fs.renameSync(tmp, prefsFile());
+}
+
+// ---------- localization ----------
+//
+// Each file in locales/ is a language: the file name is its code (e.g. "it")
+// and the content maps message keys to text, with {name} placeholders.
+// Missing keys fall back to English.
+
+const FALLBACK_LANGUAGE = 'en';
+
+const locales = (() => {
+  const dir = path.join(__dirname, 'locales');
+  const out = {};
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith('.json')) continue;
+    try {
+      out[path.basename(file, '.json')] = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+    } catch (err) {
+      console.error(`Invalid locale file ${file}:`, err);
+    }
+  }
+  return out;
+})();
+
+// First system language available in the app (exact tag, e.g. "pt-BR", then
+// the base language, e.g. "pt"); English if none is available.
+function systemLanguage() {
+  for (const tag of app.getPreferredSystemLanguages()) {
+    const exact = Object.keys(locales).find((code) => code.toLowerCase() === tag.toLowerCase());
+    if (exact) return exact;
+    const base = tag.split('-')[0].toLowerCase();
+    if (locales[base]) return base;
+  }
+  return FALLBACK_LANGUAGE;
+}
+
+const isLanguageSetting = (v) => v === 'system' || Object.hasOwn(locales, v);
+
+function currentLanguage() {
+  const chosen = prefs.settings.language;
+  return chosen !== 'system' && Object.hasOwn(locales, chosen) ? chosen : systemLanguage();
+}
+
+// Messages of the current language, completed with the English ones.
+const currentMessages = () => ({ ...locales[FALLBACK_LANGUAGE], ...locales[currentLanguage()] });
+
+function t(key, params = {}) {
+  const text = currentMessages()[key] ?? key;
+  return text.replace(/\{(\w+)\}/g, (m, name) => params[name] ?? m);
+}
+
+// Everything the page needs to translate itself and build the language list.
+function i18nState() {
+  return {
+    language: currentLanguage(),
+    system: systemLanguage(),
+    languages: Object.keys(locales).sort().map((code) => ({ code, name: locales[code]['language.name'] || code })),
+    messages: currentMessages(),
+  };
 }
 
 // ---------- window position and size ----------
@@ -562,11 +622,11 @@ function updateTray() {
   if (!tray) return;
   tray.setToolTip(shortcut ? `Overlay browser (${shortcut})` : 'Overlay browser');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: win.isVisible() ? 'Hide' : 'Show', accelerator: shortcut || undefined, click: toggleWindow },
-    { label: 'Home', click: () => { showWindow(); win.webContents.send('nav:home'); } },
-    { label: 'Settings', click: () => { showWindow(); win.webContents.send('nav:settings'); } },
+    { label: t(win.isVisible() ? 'tray.hide' : 'tray.show'), accelerator: shortcut || undefined, click: toggleWindow },
+    { label: t('tray.home'), click: () => { showWindow(); win.webContents.send('nav:home'); } },
+    { label: t('tray.settings'), click: () => { showWindow(); win.webContents.send('nav:settings'); } },
     { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() },
+    { label: t('tray.quit'), click: () => app.quit() },
   ]));
 }
 
@@ -606,7 +666,7 @@ function setShortcut(accelerator) {
     return { ok: true, shortcut };
   }
   if (previous) tryRegister(previous);
-  return { ok: false, shortcut: previous, error: `Cannot use ${accelerator}: invalid combination or already in use.` };
+  return { ok: false, shortcut: previous, error: t('shortcut.error', { accelerator }) };
 }
 
 // ---------- IPC ----------
@@ -616,11 +676,21 @@ ipcMain.handle('state:load', () => ({
   activeTab: prefs.activeTab,
   shortcut,
   settings: prefs.settings,
+  i18n: i18nState(),
 }));
 ipcMain.handle('settings:set', (_e, key, value) => {
   if (!(key in DEFAULT_SETTINGS) || typeof value !== typeof DEFAULT_SETTINGS[key]) return;
+  if (key === 'language' && !isLanguageSetting(value)) return;
   prefs.settings[key] = value;
   savePrefs();
+});
+// Changes the language and returns the new messages for the page.
+ipcMain.handle('language:set', (_e, language) => {
+  if (!isLanguageSetting(language)) return i18nState();
+  prefs.settings.language = language;
+  savePrefs();
+  updateTray();
+  return i18nState();
 });
 ipcMain.handle('sites:save', (_e, sites) => {
   if (!Array.isArray(sites)) return;
@@ -654,7 +724,8 @@ if (!app.requestSingleInstanceLock()) {
 
 function start() {
   prefs = loadPrefs();
-  log(`startup (version ${app.getVersion()}, ${app.isPackaged ? 'packaged' : 'development'})`);
+  log(`startup (version ${app.getVersion()}, ${app.isPackaged ? 'packaged' : 'development'}, ` +
+    `language ${currentLanguage()}, system languages ${app.getPreferredSystemLanguages().join(',') || 'none'})`);
 
   win = new BrowserWindow({
     ...initialBounds(),

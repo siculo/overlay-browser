@@ -29,6 +29,7 @@
       "main.js",
       "preload.js",
       "index.html",
+      "locales/**/*",
       "assets/**/*",
       "package.json"
     ],

@@ -9,7 +9,7 @@
   button { font: inherit; color: #eee; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; padding: 3px 10px; cursor: pointer; white-space: nowrap; }
   button:hover { background: #363636; }
   button.active { background: #4a4a4a; font-weight: bold; }
-  input { font: inherit; color: #eee; background: #1c1c1c; border: 1px solid #3a3a3a; border-radius: 4px; padding: 5px 8px; }
+  input, select { font: inherit; color: #eee; background: #1c1c1c; border: 1px solid #3a3a3a; border-radius: 4px; padding: 5px 8px; }
 
   /* Top bar: fixed Home, then the tabs, scrollable with the arrows */
   #bar { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
@@ -75,51 +75,57 @@
 </head>
 <body>
   <div id="bar">
-    <button id="home-btn">Home</button>
+    <button id="home-btn" data-i18n="bar.home"></button>
     <div id="tabs-wrap">
       <button class="arrow" id="left" hidden>&#9664;</button>
       <div id="tabs"></div>
       <button class="arrow" id="right" hidden>&#9654;</button>
-      <button id="add-tab" title="Add a site">+</button>
+      <button id="add-tab" data-i18n-title="bar.addSite">+</button>
     </div>
-    <button id="settings-btn" title="Settings">&#9881;</button>
+    <button id="settings-btn" data-i18n-title="bar.settings">&#9881;</button>
   </div>
 
   <div id="nav" hidden>
-    <button id="nav-site" title="Site home">&#8962;</button>
-    <button id="nav-back" title="Back">&#8592;</button>
-    <button id="nav-forward" title="Forward">&#8594;</button>
-    <button id="nav-reload" title="Reload">&#8635;</button>
+    <button id="nav-site" data-i18n-title="nav.siteHome">&#8962;</button>
+    <button id="nav-back" data-i18n-title="nav.back">&#8592;</button>
+    <button id="nav-forward" data-i18n-title="nav.forward">&#8594;</button>
+    <button id="nav-reload" data-i18n-title="nav.reload">&#8635;</button>
   </div>
 
   <div id="home">
-    <h1>Sites</h1>
+    <h1 data-i18n="home.title"></h1>
     <div id="list"></div>
     <form id="add">
-      <input id="add-url" placeholder="Address of the site to add (e.g. https://example.com)">
-      <button type="submit">Add</button>
+      <input id="add-url" data-i18n-placeholder="home.addPlaceholder">
+      <button type="submit" data-i18n="home.add"></button>
     </form>
     <div class="error" id="error"></div>
   </div>
 
   <div id="settings" class="page" hidden>
-    <h1>Settings</h1>
+    <h1 data-i18n="settings.title"></h1>
 
-    <h2>Keyboard</h2>
+    <h2 data-i18n="settings.keyboard"></h2>
     <div class="setting">
-      <span>Show/hide overlay:</span>
+      <span data-i18n="settings.toggle"></span>
       <kbd id="shortcut"></kbd>
-      <button id="shortcut-change">Change</button>
-      <button id="shortcut-reset">Reset to F10</button>
+      <button id="shortcut-change" data-i18n="settings.change"></button>
+      <button id="shortcut-reset" data-i18n="settings.reset"></button>
     </div>
     <div class="hint" id="shortcut-hint"></div>
 
-    <h2>Behavior</h2>
+    <h2 data-i18n="settings.behavior"></h2>
     <label class="setting check">
       <input type="checkbox" id="opt-hide-on-blur">
-      <span>Hide the overlay when it loses focus
-        <span class="desc">For example when clicking on the game or on another window.</span></span>
+      <span><span data-i18n="settings.hideOnBlur"></span>
+        <span class="desc" data-i18n="settings.hideOnBlurDesc"></span></span>
     </label>
+
+    <h2 data-i18n="settings.language"></h2>
+    <div class="setting">
+      <label for="opt-language" data-i18n="settings.languageLabel"></label>
+      <select id="opt-language"></select>
+    </div>
   </div>
 
   <div id="views" hidden></div>
@@ -130,8 +136,8 @@
       <input id="dialog-input" hidden>
       <div class="error" id="dialog-error"></div>
       <div class="buttons">
-        <button type="button" id="dialog-cancel">Cancel</button>
-        <button type="submit" id="dialog-ok">OK</button>
+        <button type="button" id="dialog-cancel" data-i18n="dialog.cancel"></button>
+        <button type="submit" id="dialog-ok"></button>
       </div>
     </form>
   </div>
@@ -266,7 +272,7 @@
       const close = document.createElement('span');
       close.className = 'close';
       close.textContent = '×';
-      close.title = 'Remove';
+      close.title = t('site.remove');
       close.onclick = (e) => { e.stopPropagation(); confirmRemove(site.id); };
 
       tab.append(label, close);
@@ -285,9 +291,9 @@
         const input = document.createElement('input');
         input.value = site.url;
         const ok = document.createElement('button');
-        ok.textContent = 'Save';
+        ok.textContent = t('site.save');
         const cancel = document.createElement('button');
-        cancel.textContent = 'Cancel';
+        cancel.textContent = t('site.cancel');
         ok.onclick = () => updateSite(site.id, input.value);
         cancel.onclick = () => { editing = null; showError(); renderList(); };
         input.onkeydown = (e) => {
@@ -309,10 +315,10 @@
         info.onclick = () => activate(site.id);
 
         const edit = document.createElement('button');
-        edit.textContent = 'Edit';
+        edit.textContent = t('site.edit');
         edit.onclick = () => { editing = site.id; showError(); renderList(); };
         const del = document.createElement('button');
-        del.textContent = 'Remove';
+        del.textContent = t('site.remove');
         del.onclick = () => confirmRemove(site.id);
         row.append(info, edit, del);
       }
@@ -321,7 +327,7 @@
     if (!prefs.sites.length) {
       const empty = document.createElement('div');
       empty.style.color = '#999';
-      empty.textContent = 'No sites. Add one below.';
+      empty.textContent = t('home.empty');
       list.append(empty);
     }
   }
@@ -359,7 +365,7 @@
   function updateSite(id, raw) {
     const site = findSite(id);
     const url = normalizeUrl(raw);
-    if (!url) return showError('Invalid address.');
+    if (!url) return showError(t('site.invalidUrl'));
     editing = null;
     showError();
     if (url !== site.url) {
@@ -385,8 +391,8 @@
     const site = findSite(id);
     if (!site) return;
     const ok = await openDialog({
-      message: `Remove "${siteName(site)}" from the list of sites?`,
-      okLabel: 'Remove',
+      message: t('site.confirmRemove', { name: siteName(site) }),
+      okLabel: t('site.remove'),
       danger: true,
     });
     if (ok) removeSite(id);
@@ -395,11 +401,11 @@
   // Adding from the "+" in the bar: asks for the address and opens the new tab right away.
   async function promptAddTab() {
     const url = await openDialog({
-      message: 'Address of the site to add:',
+      message: t('addDialog.message'),
       input: '',
-      placeholder: 'e.g. https://example.com',
-      okLabel: 'Add',
-      validate: (v) => (normalizeUrl(v) ? null : 'Invalid address.'),
+      placeholder: t('addDialog.placeholder'),
+      okLabel: t('addDialog.ok'),
+      validate: (v) => (normalizeUrl(v) ? null : t('site.invalidUrl')),
     });
     if (url === null) return;
     const site = addSite(url);
@@ -416,7 +422,7 @@
   const dialogOk = $('dialog-ok'), dialogError = $('dialog-error');
   let closeDialog = null;
 
-  function openDialog({ message, input, placeholder = '', okLabel = 'OK', danger = false, validate }) {
+  function openDialog({ message, input, placeholder = '', okLabel = t('dialog.ok'), danger = false, validate }) {
     closeDialog?.(null);   // one dialog at a time
     const withInput = input !== undefined;
     $('dialog-msg').textContent = message;
@@ -469,7 +475,7 @@
       $('add-url').value = '';
       showError();
     } else {
-      showError('Invalid address.');
+      showError(t('site.invalidUrl'));
     }
   };
 
@@ -481,7 +487,7 @@
   let currentShortcut = null;
 
   function showShortcut(acc, msg, isError) {
-    shortcutEl.textContent = acc || 'none';
+    shortcutEl.textContent = acc || t('shortcut.none');
     shortcutHint.textContent = msg || '';
     shortcutHint.classList.toggle('err', !!isError);
   }
@@ -511,7 +517,7 @@
     capturing = true;
     window.overlay.suspendShortcut(true);
     shortcutEl.classList.add('capturing');
-    showShortcut('…', 'Press the new combination (Esc to cancel).');
+    showShortcut('…', t('shortcut.press'));
     changeBtn.disabled = true;
   }
   function endCapture() {
@@ -529,7 +535,7 @@
   async function applyShortcut(acc) {
     const res = await window.overlay.setShortcut(acc);
     currentShortcut = res.shortcut;
-    if (res.ok) showShortcut(res.shortcut, 'Shortcut updated.');
+    if (res.ok) showShortcut(res.shortcut, t('shortcut.updated'));
     else showShortcut(res.shortcut, res.error, true);
   }
   window.addEventListener('blur', cancelCapture);
@@ -552,7 +558,7 @@
     // Without modifiers only function keys are allowed, so as not to
     // "steal" from the whole system a key normally used for typing.
     if (!mods.length && !/^F\d+$/.test(key)) {
-      showShortcut('…', 'Use a function key (F1–F24) or a combination with Ctrl, Alt, Shift or Win.', true);
+      showShortcut('…', t('shortcut.needModifier'), true);
       return;
     }
     endCapture();
@@ -577,10 +583,58 @@
     }
   }
 
+  // ---------- language ----------
+  //
+  // Texts come from locales/*.json through the main process. Fixed texts are
+  // marked in the HTML (data-i18n for the content, data-i18n-title and
+  // data-i18n-placeholder for those attributes); the others use t() while
+  // rendering. Changing language re-applies everything without reloading the
+  // page, so the open tabs are kept.
+
+  const languageSelect = $('opt-language');
+  let i18n = { messages: {}, languages: [] };
+  let languageSetting = 'system';
+
+  function t(key, params = {}) {
+    const text = i18n.messages[key] ?? key;
+    return text.replace(/\{(\w+)\}/g, (m, name) => params[name] ?? m);
+  }
+
+  function renderLanguageSelect() {
+    const nameOf = (code) => i18n.languages.find((l) => l.code === code)?.name ?? code;
+    const choices = [
+      { value: 'system', label: t('settings.languageSystem', { name: nameOf(i18n.system) }) },
+      ...i18n.languages.map((l) => ({ value: l.code, label: l.name })),
+    ];
+    languageSelect.replaceChildren(...choices.map(({ value, label }) => new Option(label, value)));
+    // A saved language no longer available counts as the system one.
+    languageSelect.value = choices.some((c) => c.value === languageSetting) ? languageSetting : 'system';
+  }
+
+  function applyI18n(state) {
+    i18n = state;
+    document.documentElement.lang = i18n.language;
+    for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+    for (const el of document.querySelectorAll('[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
+    for (const el of document.querySelectorAll('[data-i18n-placeholder]')) el.placeholder = t(el.dataset.i18nPlaceholder);
+    renderLanguageSelect();
+  }
+
+  languageSelect.onchange = async () => {
+    languageSetting = languageSelect.value;
+    applyI18n(await window.overlay.setLanguage(languageSetting));
+    // Texts built while rendering, and messages still in the old language.
+    render();
+    showError();
+    if (!capturing) showShortcut(currentShortcut);
+  };
+
   // ---------- startup ----------
 
   (async () => {
     const state = await window.overlay.loadState();
+    languageSetting = state.settings.language;
+    applyI18n(state.i18n);
     prefs = { sites: state.sites };
     currentShortcut = state.shortcut;
     showShortcut(currentShortcut);

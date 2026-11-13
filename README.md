@@ -53,13 +53,17 @@ Open the **Settings** with the ⚙ button at the top right (or from the icon men
 
 Keys F1–F24 are allowed on their own, or any key together with Ctrl, Alt, Shift or Win. If the combination is already used by another program a message appears and the previous one is kept. *Reset to F10* goes back to the default key.
 
+### Language
+
+The app uses the Windows language, if it is among the available ones (English and Italian for now); otherwise it uses English. To pick another one open the **Settings**, *Language* section: you can choose *System language* or one of the app's languages. The change applies immediately.
+
 > **Careful in game:** while you play (for example Star Citizen) the combination also reaches the game, not just the overlay. Pick one that isn't bound to any command in the game, otherwise opening the overlay will also trigger that command.
 
 > **Note for games:** some games in "exclusive" fullscreen cover any window. In that case set the game to *borderless windowed* mode.
 
 ## Preferences and uninstalling
 
-Sites, key, window position and last opened site are saved in:
+Sites, key, language, window position and last opened site are saved in:
 
 ```
 %APPDATA%\overlay-browser\prefs.json
@@ -82,5 +86,7 @@ npm run dist         # build installer and portable version in dist/
 npm run dist:installer
 npm run dist:portable
 ```
+
+Interface texts live in `locales/`, one JSON file per language (the file name is the language code, e.g. `it.json`). To add a language, copy `en.json` and translate its values: the app picks it up automatically. Missing keys fall back to English.
 
 In IntelliJ, the *Electron (npm start)* and *Electron (debug main)* run configurations are available in the `.run/` folder.

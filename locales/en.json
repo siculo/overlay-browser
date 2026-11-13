@@ -1,0 +1,55 @@
+{
+  "language.name": "English",
+
+  "tray.show": "Show",
+  "tray.hide": "Hide",
+  "tray.home": "Home",
+  "tray.settings": "Settings",
+  "tray.quit": "Quit",
+
+  "bar.home": "Home",
+  "bar.addSite": "Add a site",
+  "bar.settings": "Settings",
+
+  "nav.siteHome": "Site home",
+  "nav.back": "Back",
+  "nav.forward": "Forward",
+  "nav.reload": "Reload",
+
+  "home.title": "Sites",
+  "home.addPlaceholder": "Address of the site to add (e.g. https://example.com)",
+  "home.add": "Add",
+  "home.empty": "No sites. Add one below.",
+
+  "site.edit": "Edit",
+  "site.remove": "Remove",
+  "site.save": "Save",
+  "site.cancel": "Cancel",
+  "site.invalidUrl": "Invalid address.",
+  "site.confirmRemove": "Remove \"{name}\" from the list of sites?",
+
+  "addDialog.message": "Address of the site to add:",
+  "addDialog.placeholder": "e.g. https://example.com",
+  "addDialog.ok": "Add",
+
+  "dialog.ok": "OK",
+  "dialog.cancel": "Cancel",
+
+  "settings.title": "Settings",
+  "settings.keyboard": "Keyboard",
+  "settings.toggle": "Show/hide overlay:",
+  "settings.change": "Change",
+  "settings.reset": "Reset to F10",
+  "settings.behavior": "Behavior",
+  "settings.hideOnBlur": "Hide the overlay when it loses focus",
+  "settings.hideOnBlurDesc": "For example when clicking on the game or on another window.",
+  "settings.language": "Language",
+  "settings.languageLabel": "Interface language:",
+  "settings.languageSystem": "System language ({name})",
+
+  "shortcut.none": "none",
+  "shortcut.press": "Press the new combination (Esc to cancel).",
+  "shortcut.updated": "Shortcut updated.",
+  "shortcut.needModifier": "Use a function key (F1–F24) or a combination with Ctrl, Alt, Shift or Win.",
+  "shortcut.error": "Cannot use {accelerator}: invalid combination or already in use."
+}
