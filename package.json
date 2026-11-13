@@ -6,9 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron .",
-    "dist": "electron-builder --win",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
     "dist:portable": "electron-builder --win portable",
-    "dist:installer": "electron-builder --win nsis"
+    "dist:installer": "electron-builder --win nsis",
+    "dist:linux": "electron-builder --linux"
   },
   "keywords": [],
   "author": "Fabrizio Di Giuseppe",
@@ -21,6 +23,7 @@
   "build": {
     "appId": "it.fdg.overlay-browser",
     "productName": "Overlay Browser",
+    "npmRebuild": false,
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -28,6 +31,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "platform/**/*",
       "index.html",
       "locales/**/*",
       "assets/**/*",
@@ -39,6 +43,14 @@
         "portable"
       ],
       "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": true,

@@ -6,6 +6,13 @@
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #111; color: #eee; font-family: system-ui, sans-serif; }
+  /* Translucency applied by the page (platforms whose window cannot be
+     translucent by itself, see 'state:load'). The opacity goes on body: the
+     body background would otherwise be painted on the page canvas, which
+     opacity does not affect. A background of its own on html (transparent,
+     but not "none") keeps the body background on body. */
+  html.css-opacity { background-image: linear-gradient(transparent, transparent); }
+  html.css-opacity body { opacity: var(--window-opacity); }
   button { font: inherit; color: #eee; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; padding: 3px 10px; cursor: pointer; white-space: nowrap; }
   button:hover { background: #363636; }
   button.active { background: #4a4a4a; font-weight: bold; }
@@ -633,6 +640,12 @@
 
   (async () => {
     const state = await window.overlay.loadState();
+    // Where the window cannot be translucent by itself (Linux) it is
+    // transparent, and the opacity is applied to the whole page here.
+    if (state.platform.cssOpacity) {
+      document.documentElement.style.setProperty('--window-opacity', state.platform.cssOpacity);
+      document.documentElement.classList.add('css-opacity');
+    }
     languageSetting = state.settings.language;
     applyI18n(state.i18n);
     prefs = { sites: state.sites };

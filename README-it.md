@@ -22,6 +22,14 @@ L'eseguibile non è firmato digitalmente (la firma costa ed è un progetto tra a
 
 Succede solo la prima volta. Se l'antivirus segnala il file, è quasi sicuramente un falso positivo dovuto alla mancanza di firma.
 
+### Linux
+
+Su Linux c'è **`Overlay Browser-x.y.z-x86_64.AppImage`**: rendilo eseguibile (`chmod +x`, oppure *Proprietà → Permessi*) e avvialo. Alcune distribuzioni richiedono il pacchetto `libfuse2` per eseguire le AppImage.
+
+- Serve una sessione **X11**. Sotto Wayland l'app gira tramite XWayland, ma la scorciatoia non viene vista mentre è attiva una finestra Wayland nativa.
+- La trasparenza della finestra richiede un window manager con compositing (Cinnamon, KDE, GNOME e Xfce con il compositing attivo): senza, la finestra resta opaca.
+- L'icona nell'area di notifica usa AppIndicator: su GNOME serve l'estensione *AppIndicator and KStatusNotifierItem Support*. In alcuni ambienti il clic sull'icona apre il menu invece di mostrare la finestra: usa la voce *Mostra/Nascondi*.
+
 ## Uso
 
 - All'avvio la finestra resta nascosta: l'app si mette in attesa nell'area di notifica. Premi **F10** per mostrarla e premilo di nuovo per nasconderla. Di default si nasconde da sola anche quando clicchi su un'altra finestra (ad esempio tornando al gioco); si può disattivare dalle Impostazioni.
@@ -51,11 +59,11 @@ Apri le **Impostazioni** con il pulsante ⚙ in alto a destra (o dal menu dell'i
 1. clicca **Cambia**;
 2. premi la combinazione che preferisci, ad esempio `Ctrl+Shift+O` (Esc per annullare).
 
-Sono ammessi i tasti F1–F24 da soli, oppure qualunque tasto insieme a Ctrl, Alt, Shift o Win. Se la combinazione è già usata da un altro programma compare un messaggio e resta quella precedente. *Ripristina F10* torna al tasto di default.
+Sono ammessi i tasti F1–F24 da soli, oppure qualunque tasto insieme a Ctrl, Alt, Shift o Win (Super su Linux). Se la combinazione è già usata da un altro programma compare un messaggio e resta quella precedente. *Ripristina F10* torna al tasto di default.
 
 ### Lingua
 
-L'app usa la lingua di Windows, se è tra quelle disponibili (per ora italiano e inglese); altrimenti usa l'inglese. Per sceglierne un'altra apri le **Impostazioni**, sezione *Lingua*: puoi scegliere *Lingua di sistema* oppure una delle lingue dell'app. La modifica si applica subito.
+L'app usa la lingua del sistema, se è tra quelle disponibili (per ora italiano e inglese); altrimenti usa l'inglese. Per sceglierne un'altra apri le **Impostazioni**, sezione *Lingua*: puoi scegliere *Lingua di sistema* oppure una delle lingue dell'app. La modifica si applica subito.
 
 > **Attenzione in gioco:** mentre giochi (ad esempio a Star Citizen) la combinazione arriva anche al gioco, oltre che all'overlay. Scegline una che nel gioco non è assegnata a nessun comando, altrimenti aprendo l'overlay attiverai anche quel comando.
 
@@ -66,12 +74,13 @@ L'app usa la lingua di Windows, se è tra quelle disponibili (per ora italiano e
 Siti, tasto, lingua, posizione della finestra e ultimo sito aperto sono salvati in:
 
 ```
-%APPDATA%\overlay-browser\prefs.json
+%APPDATA%\overlay-browser\prefs.json         (Windows)
+~/.config/overlay-browser/prefs.json         (Linux)
 ```
 
 Per ripartire da zero chiudi l'app ed elimina quel file.
 
-Per **disinstallare** la versione installata: *Impostazioni di Windows → App → App installate → Overlay Browser → Disinstalla*. La cartella `%APPDATA%\overlay-browser` va eliminata a mano se vuoi cancellare anche le preferenze. La versione portable si rimuove semplicemente cancellando il file `.exe`.
+Per **disinstallare** la versione installata: *Impostazioni di Windows → App → App installate → Overlay Browser → Disinstalla*. La cartella `%APPDATA%\overlay-browser` va eliminata a mano se vuoi cancellare anche le preferenze. La versione portable si rimuove semplicemente cancellando il file `.exe`, l'AppImage cancellando il file `.AppImage`.
 
 ---
 
@@ -82,10 +91,14 @@ Richiede [Node.js](https://nodejs.org/).
 ```sh
 npm install          # installa le dipendenze
 npm start            # avvia l'app in sviluppo
-npm run dist         # genera installer e versione portable in dist/
+npm run dist         # genera i pacchetti per il sistema corrente in dist/
+npm run dist:win     # Windows: installer e versione portable
 npm run dist:installer
 npm run dist:portable
+npm run dist:linux   # Linux: AppImage (va generata su Linux)
 ```
+
+Tutto ciò che dipende dal sistema operativo è in `platform/`, un modulo per sistema (`win32.js`, `linux.js`, e `generic.js` con il solo Electron, usato per gli altri sistemi come macOS). Ogni modulo dichiara in `features` quali funzionalità supporta; l'interfaccia è descritta in `platform/index.js`.
 
 I testi dell'interfaccia sono in `locales/`, un file JSON per lingua (il nome del file è il codice della lingua, ad esempio `it.json`). Per aggiungere una lingua basta copiare `en.json` e tradurne i valori: l'app la rileva da sola. Le chiavi mancanti vengono prese dall'inglese.
 
