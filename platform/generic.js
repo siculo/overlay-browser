@@ -17,4 +17,5 @@ module.exports = {
   afterShow(win) { win.focus(); },
   beforeHide() {},
   foregroundApp() { return null; },
+  ownsForeground() { return null; },
 };

@@ -35,6 +35,10 @@
 //                      Wine/Proton, the game's .exe, not Wine's); title:
 //                      window title; steamAppId: Steam AppID, when known.
 //                      Each field may be null.
+//   ownsForeground(win) true if a window of the overlay is the foreground
+//                      window now, false if another one is, null if
+//                      unknown: lets main.js ignore a blur that is only a
+//                      keyboard focus change (see hideOnBlur)
 //
 // generic.js implements the interface with Electron alone: the other
 // modules start from it and override what they do natively.

@@ -336,7 +336,10 @@ function platformCall(name) {
   }
 }
 
+let shownAt = 0;   // when the overlay was last shown (for the log of hideOnBlur)
+
 function showWindow() {
+  shownAt = Date.now();
   platformCall('beforeShow');
   if (win.isMinimized()) win.restore();
   win.show();
@@ -382,10 +385,29 @@ function toggleWindow() {
 
 // When the overlay loses focus (click on another window, Alt+Tab...) it
 // hides. In that case focus is already elsewhere, so hideWindow does not move it.
+//
+// A blur does not always mean that another window came to the foreground:
+// on Windows, a game whose input the overlay was attached to when showing
+// (see platform/win32.js) can take the keyboard focus back for an instant,
+// while the overlay stays in the foreground. Such a blur is ignored and the
+// keyboard focus is given back to the overlay. Where the platform cannot
+// tell (ownsForeground() null), every blur hides.
 let lastBlurHide = 0;
 function hideOnBlur() {
   if (!prefs.settings.hideOnBlur || !win.isVisible()) return;
+  let owns = null;
+  try {
+    owns = platform.ownsForeground(win);
+  } catch (err) {
+    log(`platform ${platform.id}: ERROR in ownsForeground: ${err?.stack || err}`);
+  }
+  if (owns) {
+    log(`focus: blur ignored, the overlay is still in the foreground (${Date.now() - shownAt} ms after show)`);
+    setImmediate(() => { if (win.isVisible() && !win.isFocused()) win.focus(); });
+    return;
+  }
   lastBlurHide = Date.now();
+  log(`focus: hidden on blur (${lastBlurHide - shownAt} ms after show)`);
   hideWindow();
 }
 

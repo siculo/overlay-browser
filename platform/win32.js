@@ -137,6 +137,13 @@ function foregroundApp() {
   };
 }
 
+// true if the foreground window belongs to the overlay's process. While
+// the foreground changes there may be no foreground window: false.
+function ownsForeground() {
+  const hwnd = win32.GetForegroundWindow();
+  return !!hwnd && processOf(hwnd) === process.pid;
+}
+
 // ---------- edge snapping with the taskbar hidden ----------
 //
 // Side snapping (Aero Snap) and maximizing use the monitor's work area, which
@@ -365,6 +372,7 @@ module.exports = win32 ? {
   afterShow,
   beforeHide,
   foregroundApp,
+  ownsForeground,
 } : {
   // Without the native API only the parts that do not need it remain.
   ...generic,
