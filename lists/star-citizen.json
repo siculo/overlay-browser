@@ -3,6 +3,9 @@
   "sites": [
     { "url": "https://scmdb.net/" },
     { "url": "https://erkul.games/calculator" },
-    { "url": "https://starcitizen.tools" }
+    { "url": "https://starcitizen.tools" },
+    { "url": "https://uexcorp.space/" },
+    { "url": "https://sc-craft.tools/" },
+    { "url": "https://status.robertsspaceindustries.com/" }
   ]
 }
