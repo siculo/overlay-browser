@@ -7,7 +7,7 @@ Electron app for Windows and Linux (X11), with macOS planned: an overlay browser
   - `win32.js`: focus and edge snapping via Win32 API (`koffi`).
   - `linux.js`: X11 only (forces `ozone-platform=x11`); focus via `_NET_ACTIVE_WINDOW` through libX11 (`koffi`); opacity via CSS on a transparent window; no edge snapping.
   - `generic.js`: Electron only; base of the other modules and fallback for systems without a module (macOS for now).
-- `index.html`: Home with editable site list, tabs (one `<webview>` per site), settings. Applies the CSS opacity when `state.platform.cssOpacity` is set.
+- `index.html`: Home with editable site list, tabs (one `<webview>` per site), settings (including window opacity, `settings.opacity`, applied by the page via CSS when `state.platform.opacity === 'css'`, natively by `main.js` otherwise, hidden when `'none'`).
 - `locales/*.json`: UI texts, one file per language (code = file name); read by `main.js` and passed to the page. Language: user setting, else first available system language, else English.
 - `preload.js`: IPC bridge between the page and the main process.
 - Build: `npm run dist` (electron-builder, packages for the current OS, unsigned) into `dist/`; `dist:win` (NSIS installer + portable), `dist:linux` (AppImage, built on Linux).

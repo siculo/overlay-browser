@@ -30,19 +30,35 @@ const DEFAULT_SHORTCUT = 'F10';
 const DEFAULT_SETTINGS = {
   hideOnBlur: true,     // hide the overlay when it loses focus
   language: 'system',   // 'system' or the code of one of the files in locales/
+  opacity: 0.95,        // window opacity, from OPACITY_RANGE.min (most transparent) to 1 (opaque)
 };
+// Below the minimum the window would be too hard to read.
+const OPACITY_RANGE = { min: 0.3, max: 1 };
 const DEFAULT_SIZE = { width: 1000, height: 700 };
 const MIN_SIZE = { width: 480, height: 320 };
-const WINDOW_OPACITY = 0.95;
+
+// Validity of a setting value beyond its type.
+function isValidSetting(key, value) {
+  if (typeof value !== typeof DEFAULT_SETTINGS[key]) return false;
+  if (key === 'language') return isLanguageSetting(value);
+  if (key === 'opacity') return Number.isFinite(value) && value >= OPACITY_RANGE.min && value <= OPACITY_RANGE.max;
+  return true;
+}
 
 // Window options for the translucency, depending on how the platform obtains it.
 function opacityOptions() {
   switch (platform.opacity) {
-    case 'native': return { opacity: WINDOW_OPACITY };
+    case 'native': return { opacity: prefs.settings.opacity };
     // The page applies the opacity itself (see 'state:load').
     case 'css': return { transparent: true, backgroundColor: '#00000000' };
     default: return {};
   }
+}
+
+// Applies a new opacity: natively here, or in the page, which has already
+// done it while the user moved the slider.
+function applyOpacity() {
+  if (platform.opacity === 'native') win.setOpacity(prefs.settings.opacity);
 }
 
 // ---------- preferences ----------
@@ -70,12 +86,16 @@ function loadPrefs() {
   };
 }
 
-// Keeps only known keys with the right type; the others get the default.
+// Keeps only known keys with a valid value; the others get the default.
+// A language no longer available is kept: it counts as the system one
+// (see currentLanguage) and comes back if its file is restored.
 function loadSettings(saved) {
   const settings = { ...DEFAULT_SETTINGS };
   if (saved && typeof saved === 'object') {
     for (const key of Object.keys(DEFAULT_SETTINGS)) {
-      if (typeof saved[key] === typeof DEFAULT_SETTINGS[key]) settings[key] = saved[key];
+      const value = saved[key];
+      const ok = key === 'language' ? typeof value === 'string' : isValidSetting(key, value);
+      if (ok) settings[key] = value;
     }
   }
   return settings;
@@ -438,14 +458,15 @@ ipcMain.handle('state:load', () => ({
   platform: {
     id: platform.id,
     features: platform.features,
-    cssOpacity: platform.opacity === 'css' ? WINDOW_OPACITY : null,
+    opacity: platform.opacity,   // 'css': the page applies settings.opacity itself
+    opacityRange: OPACITY_RANGE,
   },
 }));
 ipcMain.handle('settings:set', (_e, key, value) => {
-  if (!(key in DEFAULT_SETTINGS) || typeof value !== typeof DEFAULT_SETTINGS[key]) return;
-  if (key === 'language' && !isLanguageSetting(value)) return;
+  if (!(key in DEFAULT_SETTINGS) || !isValidSetting(key, value)) return;
   prefs.settings[key] = value;
   savePrefs();
+  if (key === 'opacity') applyOpacity();
 });
 // Changes the language and returns the new messages for the page.
 ipcMain.handle('language:set', (_e, language) => {

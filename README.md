@@ -61,6 +61,10 @@ Open the **Settings** with the ⚙ button at the top right (or from the icon men
 
 Keys F1–F24 are allowed on their own, or any key together with Ctrl, Alt, Shift or Win (Super on Linux). If the combination is already used by another program a message appears and the previous one is kept. *Reset to F10* goes back to the default key.
 
+### Transparency
+
+The window is slightly translucent, so you can glimpse the game behind it. To change how much, open the **Settings**, *Appearance* section, and move the *Window opacity* slider (from 30% to 100%, i.e. opaque). The change applies immediately.
+
 ### Language
 
 The app uses the system language, if it is among the available ones (English and Italian for now); otherwise it uses English. To pick another one open the **Settings**, *Language* section: you can choose *System language* or one of the app's languages. The change applies immediately.

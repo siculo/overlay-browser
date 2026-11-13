@@ -61,6 +61,10 @@ Apri le **Impostazioni** con il pulsante ⚙ in alto a destra (o dal menu dell'i
 
 Sono ammessi i tasti F1–F24 da soli, oppure qualunque tasto insieme a Ctrl, Alt, Shift o Win (Super su Linux). Se la combinazione è già usata da un altro programma compare un messaggio e resta quella precedente. *Ripristina F10* torna al tasto di default.
 
+### Trasparenza
+
+La finestra è leggermente trasparente, così si intravede il gioco dietro. Per regolarla apri le **Impostazioni**, sezione *Aspetto*, e sposta il cursore *Opacità della finestra* (dal 30% al 100%, cioè opaca). La modifica si applica subito.
+
 ### Lingua
 
 L'app usa la lingua del sistema, se è tra quelle disponibili (per ora italiano e inglese); altrimenti usa l'inglese. Per sceglierne un'altra apri le **Impostazioni**, sezione *Lingua*: puoi scegliere *Lingua di sistema* oppure una delle lingue dell'app. La modifica si applica subito.

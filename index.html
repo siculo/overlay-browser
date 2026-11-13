@@ -75,6 +75,8 @@
   kbd.capturing { border-color: #6af; color: #6af; }
   .hint { font-size: 13px; color: #999; margin-top: 6px; min-height: 1em; }
   .hint.err { color: #f77; }
+  input[type=range] { width: 220px; padding: 0; border: none; background: none; accent-color: #6af; }
+  #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
 
   #views { flex: 1; display: flex; }
   #views webview { flex: 1; }
@@ -127,6 +129,16 @@
       <span><span data-i18n="settings.hideOnBlur"></span>
         <span class="desc" data-i18n="settings.hideOnBlurDesc"></span></span>
     </label>
+
+    <div id="appearance" hidden>
+      <h2 data-i18n="settings.appearance"></h2>
+      <div class="setting">
+        <label for="opt-opacity" data-i18n="settings.opacity"></label>
+        <input type="range" id="opt-opacity" step="5">
+        <output id="opt-opacity-value" for="opt-opacity"></output>
+      </div>
+      <div class="hint" data-i18n="settings.opacityDesc"></div>
+    </div>
 
     <h2 data-i18n="settings.language"></h2>
     <div class="setting">
@@ -590,6 +602,38 @@
     }
   }
 
+  // ---------- opacity ----------
+  //
+  // The slider works in percent; the setting is a fraction (0.3–1). It is
+  // applied while dragging: by the main process where the window is
+  // translucent by itself, here via CSS where the platform requires it
+  // (state.platform.opacity === 'css'). Hidden where neither is possible.
+
+  const opacityGroup = $('appearance');
+  const opacityInput = $('opt-opacity'), opacityValue = $('opt-opacity-value');
+  let opacityMode = 'none';
+
+  function showOpacity(value) {
+    opacityValue.textContent = `${Math.round(value * 100)}%`;
+    if (opacityMode === 'css') document.documentElement.style.setProperty('--window-opacity', value);
+  }
+
+  function initOpacity(platform, value) {
+    opacityMode = platform.opacity;
+    opacityGroup.hidden = opacityMode === 'none';
+    if (opacityMode === 'none') return;
+    if (opacityMode === 'css') document.documentElement.classList.add('css-opacity');
+    opacityInput.min = Math.round(platform.opacityRange.min * 100);
+    opacityInput.max = Math.round(platform.opacityRange.max * 100);
+    opacityInput.value = Math.round(value * 100);
+    showOpacity(value);
+    opacityInput.oninput = () => {
+      const v = Number(opacityInput.value) / 100;
+      showOpacity(v);
+      window.overlay.setSetting('opacity', v);
+    };
+  }
+
   // ---------- language ----------
   //
   // Texts come from locales/*.json through the main process. Fixed texts are
@@ -640,12 +684,7 @@
 
   (async () => {
     const state = await window.overlay.loadState();
-    // Where the window cannot be translucent by itself (Linux) it is
-    // transparent, and the opacity is applied to the whole page here.
-    if (state.platform.cssOpacity) {
-      document.documentElement.style.setProperty('--window-opacity', state.platform.cssOpacity);
-      document.documentElement.classList.add('css-opacity');
-    }
+    initOpacity(state.platform, state.settings.opacity);
     languageSetting = state.settings.language;
     applyI18n(state.i18n);
     prefs = { sites: state.sites };
