@@ -8,6 +8,7 @@ module.exports = {
     keyboardHook: false,
     focusRestore: false,
     edgeSnap: false,
+    appDetect: false,
   },
   opacity: 'none',
   configureApp() {},
@@ -15,4 +16,5 @@ module.exports = {
   beforeShow() {},
   afterShow(win) { win.focus(); },
   beforeHide() {},
+  foregroundApp() { return null; },
 };

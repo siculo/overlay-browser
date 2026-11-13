@@ -11,4 +11,5 @@ contextBridge.exposeInMainWorld('overlay', {
   setLanguage: (language) => ipcRenderer.invoke('language:set', language),
   onHome: (callback) => ipcRenderer.on('nav:home', () => callback()),
   onSettings: (callback) => ipcRenderer.on('nav:settings', () => callback()),
+  onForegroundApp: (callback) => ipcRenderer.on('app:foreground', (_e, app) => callback(app)),
 });

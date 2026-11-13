@@ -16,6 +16,8 @@
 //                        given back to it when hiding
 //     edgeSnap           the overlay adapts edge snapping / maximizing
 //                        to the whole screen over fullscreen games
+//     appDetect          foregroundApp() can tell which application
+//                        (e.g. which game) the overlay was opened over
 //   opacity            how the window's translucency is obtained:
 //                        'native'  BrowserWindow `opacity` option
 //                        'css'     transparent window + CSS opacity on the page
@@ -26,6 +28,13 @@
 //   beforeShow(win)    called before the window is shown
 //   afterShow(win)     called after win.show(), to bring it to the foreground
 //   beforeHide(win)    called before the window is hidden
+//   foregroundApp()    application whose window had focus when the overlay
+//                      was last shown (read by beforeShow), or null:
+//                        { pid, exe, path, title, steamAppId }
+//                      exe/path: executable (for Windows games run with
+//                      Wine/Proton, the game's .exe, not Wine's); title:
+//                      window title; steamAppId: Steam AppID, when known.
+//                      Each field may be null.
 //
 // generic.js implements the interface with Electron alone: the other
 // modules start from it and override what they do natively.

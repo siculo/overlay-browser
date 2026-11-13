@@ -13,6 +13,9 @@ const generic = require('./generic');
 //   Windows requires before granting SetForegroundWindow;
 // - when hiding, give focus back to that window BEFORE hiding: Windows
 //   allows it as long as the overlay is in the foreground.
+// The same window tells which application the overlay was opened over:
+// executable from its process (QueryFullProcessImageNameW, allowed with
+// the limited query right even for elevated processes), and its title.
 
 const win32 = (() => {
   try {
@@ -25,6 +28,7 @@ const win32 = (() => {
       koffi,
       GetWindowRect: user32.func('bool __stdcall GetWindowRect(HWND, _Out_ RECT *)'),
       GetClassNameW: user32.func('int __stdcall GetClassNameW(HWND, _Out_ uint8_t *, int)'),
+      GetWindowTextW: user32.func('int __stdcall GetWindowTextW(HWND, _Out_ uint8_t *, int)'),
       GetForegroundWindow: user32.func('HWND __stdcall GetForegroundWindow()'),
       SetForegroundWindow: user32.func('bool __stdcall SetForegroundWindow(HWND)'),
       BringWindowToTop: user32.func('bool __stdcall BringWindowToTop(HWND)'),
@@ -32,6 +36,9 @@ const win32 = (() => {
       GetWindowThreadProcessId: user32.func('uint32_t __stdcall GetWindowThreadProcessId(HWND, _Out_ uint32_t *)'),
       AttachThreadInput: user32.func('bool __stdcall AttachThreadInput(uint32_t, uint32_t, bool)'),
       GetCurrentThreadId: kernel32.func('uint32_t __stdcall GetCurrentThreadId()'),
+      OpenProcess: kernel32.func('void * __stdcall OpenProcess(uint32_t, bool, uint32_t)'),
+      QueryFullProcessImageNameW: kernel32.func('bool __stdcall QueryFullProcessImageNameW(void *, uint32_t, _Out_ uint8_t *, _Inout_ uint32_t *)'),
+      CloseHandle: kernel32.func('bool __stdcall CloseHandle(void *)'),
     };
   } catch (err) {
     console.error('Win32 API not available, using simplified focus handling:', err);
@@ -41,12 +48,45 @@ const win32 = (() => {
 
 let previousForeground = null;   // window that had focus before the overlay
 
+// Windows of the shell (desktop, taskbar, notification area): they cover
+// the screen without hiding the taskbar, and are not an application the
+// overlay was opened over (e.g. when opened from the notification area icon).
+const SHELL_CLASSES = ['Progman', 'WorkerW', 'Shell_TrayWnd', 'Shell_SecondaryTrayWnd', 'NotifyIconOverflowWindow'];
+
+function classNameOf(hwnd) {
+  const buf = Buffer.alloc(512);
+  const n = win32.GetClassNameW(hwnd, buf, 256);
+  return buf.toString('utf16le', 0, n * 2);
+}
+
 const hwndOf = (w) => win32.koffi.decode(w.getNativeWindowHandle(), 'HWND');
 const sameHwnd = (a, b) => a && b && win32.koffi.address(a) === win32.koffi.address(b);
 function processOf(hwnd) {
   const pid = [0];
   win32.GetWindowThreadProcessId(hwnd, pid);
   return pid[0];
+}
+
+const PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+// Full path of a process's executable, null if not accessible
+// (e.g. processes protected by an anti-cheat).
+function imagePathOf(pid) {
+  const handle = win32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+  if (!handle) return null;
+  try {
+    const size = [32768];
+    const buf = Buffer.alloc(size[0] * 2);
+    return win32.QueryFullProcessImageNameW(handle, 0, buf, size) ? buf.toString('utf16le', 0, size[0] * 2) : null;
+  } finally {
+    win32.CloseHandle(handle);
+  }
+}
+
+function windowTextOf(hwnd) {
+  const buf = Buffer.alloc(1024);
+  const n = win32.GetWindowTextW(hwnd, buf, 512);
+  return buf.toString('utf16le', 0, n * 2);
 }
 
 function forceForeground(hwnd) {
@@ -83,6 +123,20 @@ function beforeHide(win) {
   }
 }
 
+function foregroundApp() {
+  const hwnd = previousForeground;
+  if (!hwnd || !win32.IsWindow(hwnd) || SHELL_CLASSES.includes(classNameOf(hwnd))) return null;
+  const pid = processOf(hwnd);
+  const path = imagePathOf(pid);
+  return {
+    pid,
+    exe: path ? path.slice(path.lastIndexOf('\\') + 1) : null,
+    path,
+    title: windowTextOf(hwnd) || null,
+    steamAppId: null,   // not readable from another process on Windows
+  };
+}
+
 // ---------- edge snapping with the taskbar hidden ----------
 //
 // Side snapping (Aero Snap) and maximizing use the monitor's work area, which
@@ -93,17 +147,11 @@ function beforeHide(win) {
 
 let win;   // the overlay window, set by init()
 
-function classNameOf(hwnd) {
-  const buf = Buffer.alloc(512);
-  const n = win32.GetClassNameW(hwnd, buf, 256);
-  return buf.toString('utf16le', 0, n * 2);
-}
-
 // true if the window the overlay was opened from covers the whole monitor.
 function fullscreenAppBelow(display) {
   if (!previousForeground || !win32.IsWindow(previousForeground)) return false;
   // The desktop covers the whole screen but does not hide the taskbar.
-  if (['Progman', 'WorkerW', 'Shell_TrayWnd'].includes(classNameOf(previousForeground))) return false;
+  if (SHELL_CLASSES.includes(classNameOf(previousForeground))) return false;
   const r = {};
   if (!win32.GetWindowRect(previousForeground, r)) return false;
   // GetWindowRect is in physical pixels, Electron displays in DIP.
@@ -307,7 +355,7 @@ function trackSnap() {
 module.exports = win32 ? {
   ...generic,
   id: 'win32',
-  features: { keyboardHook: true, focusRestore: true, edgeSnap: true },
+  features: { keyboardHook: true, focusRestore: true, edgeSnap: true, appDetect: true },
   opacity: 'native',
   init(w) {
     win = w;
@@ -316,6 +364,7 @@ module.exports = win32 ? {
   beforeShow,
   afterShow,
   beforeHide,
+  foregroundApp,
 } : {
   // Without the native API only the parts that do not need it remain.
   ...generic,

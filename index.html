@@ -70,6 +70,10 @@
   #add input { flex: 1; }
   .error { color: #f77; font-size: 13px; margin-top: 6px; min-height: 1em; }
   #home h2 { margin: 28px 0 12px; font-weight: 500; font-size: 18px; }
+  /* Application the overlay was opened over (e.g. the game) */
+  #fg-app { display: flex; align-items: baseline; gap: 8px; max-width: 720px; margin: -6px 0 16px; padding: 6px 10px; font-size: 13px; color: #bbb; background: #1c1c1c; border: 1px solid #333; border-left: 3px solid #6af; border-radius: 4px; }
+  #fg-app .name { color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  #fg-app .detail { color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
   .setting { display: flex; align-items: center; gap: 8px; }
   kbd { font: inherit; font-family: ui-monospace, monospace; padding: 3px 8px; border: 1px solid #555; border-radius: 4px; background: #1c1c1c; min-width: 3em; text-align: center; }
   kbd.capturing { border-color: #6af; color: #6af; }
@@ -103,6 +107,11 @@
 
   <div id="home">
     <h1 data-i18n="home.title"></h1>
+    <div id="fg-app" hidden>
+      <span id="fg-app-label"></span>
+      <span class="name" id="fg-app-name"></span>
+      <span class="detail" id="fg-app-detail"></span>
+    </div>
     <div id="list"></div>
     <form id="add">
       <input id="add-url" data-i18n-placeholder="home.addPlaceholder">
@@ -351,7 +360,30 @@
     }
   }
 
-  function render() { renderTabs(); renderList(); }
+  // ---------- application the overlay was opened over ----------
+
+  let fgApp = null;   // { exe, path, title, steamAppId } or null, from the main process
+
+  function renderForegroundApp() {
+    const box = $('fg-app');
+    box.hidden = !fgApp || !(fgApp.title || fgApp.exe);
+    if (box.hidden) return;
+    $('fg-app-label').textContent = t('home.foregroundApp');
+    // The window title is usually the game's name; otherwise the executable.
+    $('fg-app-name').textContent = fgApp.title || fgApp.exe;
+    const details = [];
+    if (fgApp.title && fgApp.exe) details.push(fgApp.exe);
+    if (fgApp.steamAppId) details.push(t('home.steamAppId', { id: fgApp.steamAppId }));
+    $('fg-app-detail').textContent = details.join(' · ');
+    box.title = [fgApp.title, fgApp.path].filter(Boolean).join('\n');
+  }
+
+  window.overlay.onForegroundApp((app) => {
+    fgApp = app;
+    renderForegroundApp();
+  });
+
+  function render() { renderTabs(); renderList(); renderForegroundApp(); }
 
   // ---------- scroll arrows ----------
 
@@ -688,6 +720,8 @@
     languageSetting = state.settings.language;
     applyI18n(state.i18n);
     prefs = { sites: state.sites };
+    fgApp = state.foregroundApp;
+    renderForegroundApp();
     currentShortcut = state.shortcut;
     showShortcut(currentShortcut);
     initOptions(state.settings);

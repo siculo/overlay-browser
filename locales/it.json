@@ -20,6 +20,8 @@
   "home.addPlaceholder": "Indirizzo del sito da aggiungere (es. https://example.com)",
   "home.add": "Aggiungi",
   "home.empty": "Nessun sito. Aggiungine uno qui sotto.",
+  "home.foregroundApp": "Aperto sopra:",
+  "home.steamAppId": "Steam {id}",
 
   "site.edit": "Modifica",
   "site.remove": "Rimuovi",

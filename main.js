@@ -273,6 +273,33 @@ function showWindow() {
   if (win.isMinimized()) win.restore();
   win.show();
   platformCall('afterShow');
+  detectForegroundApp();
+}
+
+// ---------- application the overlay was opened over ----------
+//
+// The platform module remembers the window that had focus when showing
+// (beforeShow); here it is turned into the application (e.g. the game),
+// which the page shows on the Home. Read after showing, so as not to slow it down.
+
+let foregroundApp = null;
+
+function detectForegroundApp() {
+  if (!platform.features.appDetect) return;
+  let detected = null;
+  try {
+    detected = platform.foregroundApp();
+  } catch (err) {
+    log(`platform ${platform.id}: ERROR in foregroundApp: ${err?.stack || err}`);
+  }
+  // Our own windows do not count (e.g. a dialog of the overlay).
+  if (detected?.pid === process.pid) detected = null;
+  const key = (a) => a && `${a.path}|${a.steamAppId}`;
+  if (key(detected) !== key(foregroundApp)) {
+    log(`foreground app: ${detected ? `${detected.exe ?? '?'}${detected.steamAppId ? ` (Steam ${detected.steamAppId})` : ''}` : 'none'}`);
+  }
+  foregroundApp = detected;
+  win.webContents.send('app:foreground', foregroundApp);
 }
 
 function hideWindow() {
@@ -453,6 +480,7 @@ ipcMain.handle('state:load', () => ({
   activeTab: prefs.activeTab,
   shortcut,
   settings: prefs.settings,
+  foregroundApp,
   i18n: i18nState(),
   // What the page must do itself depending on the platform.
   platform: {
