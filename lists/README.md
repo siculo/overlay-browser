@@ -1,8 +1,10 @@
 # Predefined site lists
 
 When the overlay is opened over an application that has no site list yet,
-the app looks for a predefined list here and offers to use it. The folder
-is packaged with the app (the JSON files only).
+the app looks for a predefined list here and loads it automatically, the
+first time only (`presetsApplied` in the preferences): if that list is
+removed later, it is just offered on the Home. The folder is packaged with
+the app (the JSON files only).
 
 ## `index.json`
 

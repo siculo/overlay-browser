@@ -658,10 +658,13 @@
   // ---------- predefined lists ----------
   //
   // When the application has no list yet, a predefined one (lists/ in the
-  // app, see main.js) is looked for by executable and offered on the Home.
+  // app, see main.js) is looked for by executable. The first time it is
+  // loaded automatically; if that list is removed later, it is only
+  // offered on the Home.
 
   let preset = null;                     // { exe, name, sites }: list offered for the current application
   const dismissedPresets = new Set();    // executables whose predefined list was declined (this session)
+  let presetsApplied = new Set();        // executables whose predefined list was already loaded automatically
   let presetLookup = 0;                  // ignores answers to lookups that are no longer current
 
   async function lookupPreset() {
@@ -671,24 +674,29 @@
     renderPreset();
     if (!exe || contextList().id || dismissedPresets.has(exe)) return;
     const found = await window.overlay.findPreset(exe);
-    if (lookup !== presetLookup || !found) return;
+    if (lookup !== presetLookup || !found || contextList().id) return;
+    if (!presetsApplied.has(exe)) { applyPreset({ exe, ...found }); return; }
     preset = { exe, ...found };
     renderPreset();
   }
 
-  $('preset-use').onclick = () => {
-    if (!preset) return;
+  // Creates the current application's list from a predefined one.
+  function applyPreset(p) {
     const l = materialize(contextList());
-    if (preset.name) l.name = preset.name;
-    for (const s of preset.sites) {
+    if (p.name) l.name = p.name;
+    for (const s of p.sites) {
       const url = normalizeUrl(s.url);
       if (url) l.sites.push({ id: crypto.randomUUID(), url, title: s.title });
     }
+    presetsApplied.add(p.exe);
+    window.overlay.presetApplied(p.exe);
     preset = null;
     save();
     showCurrentList();
     for (const site of l.sites) if (!site.title) resolveTitle(site);
-  };
+  }
+
+  $('preset-use').onclick = () => { if (preset) applyPreset(preset); };
   $('preset-dismiss').onclick = () => {
     if (preset) dismissedPresets.add(preset.exe);
     preset = null;
@@ -944,6 +952,7 @@
     applyI18n(state.i18n);
     lists = state.lists;
     pinnedId = state.pinnedList;
+    presetsApplied = new Set(state.presetsApplied);
     context = contextOf(state.foregroundApp);
     currentShortcut = state.shortcut;
     showShortcut(currentShortcut);

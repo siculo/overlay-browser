@@ -73,6 +73,9 @@ function loadPrefs() {
   return {
     lists: loadLists(loaded),
     pinnedList: typeof loaded.pinnedList === 'string' ? loaded.pinnedList : null,
+    // Executables whose predefined list was already loaded automatically
+    // (see index.html): it is not loaded again if the list is removed.
+    presetsApplied: Array.isArray(loaded.presetsApplied) ? loaded.presetsApplied.filter((x) => typeof x === 'string') : [],
     window: loaded.window ?? null,
     shortcut: typeof loaded.shortcut === 'string' && loaded.shortcut ? loaded.shortcut : DEFAULT_SHORTCUT,
     settings: loadSettings(loaded.settings),
@@ -543,6 +546,7 @@ function setShortcut(accelerator) {
 ipcMain.handle('state:load', () => ({
   lists: prefs.lists,
   pinnedList: prefs.pinnedList,
+  presetsApplied: prefs.presetsApplied,
   shortcut,
   settings: prefs.settings,
   foregroundApp,
@@ -579,6 +583,11 @@ ipcMain.handle('lists:pin', (_e, id) => {
   savePrefs();
 });
 ipcMain.handle('presets:find', (_e, exe) => (typeof exe === 'string' && exe ? findPreset(exe.toLowerCase()) : null));
+ipcMain.handle('presets:applied', (_e, exe) => {
+  if (typeof exe !== 'string' || !exe || prefs.presetsApplied.includes(exe)) return;
+  prefs.presetsApplied.push(exe);
+  savePrefs();
+});
 ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
 ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerator)));
 // While the user records a new combination, the current one must be

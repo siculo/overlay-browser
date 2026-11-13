@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('overlay', {
   saveLists: (lists) => ipcRenderer.invoke('lists:save', lists),
   pinList: (id) => ipcRenderer.invoke('lists:pin', id),
   findPreset: (exe) => ipcRenderer.invoke('presets:find', exe),
+  presetApplied: (exe) => ipcRenderer.invoke('presets:applied', exe),
   fetchTitle: (url) => ipcRenderer.invoke('site:title', url),
   setShortcut: (accelerator) => ipcRenderer.invoke('shortcut:set', accelerator),
   suspendShortcut: (suspended) => ipcRenderer.invoke('shortcut:suspend', suspended),
