@@ -3,7 +3,7 @@ const { uIOhook, UiohookKey } = require('uiohook-napi');
 const fs = require('fs');
 const path = require('path');
 
-// Siti proposti al primo avvio, finché l'utente non salva un proprio elenco.
+// Sites offered on first launch, until the user saves their own list.
 const DEFAULT_SITES = [
   'https://scmdb.net/',
   'https://erkul.games/calculator',
@@ -11,17 +11,17 @@ const DEFAULT_SITES = [
 ].map((url) => ({ id: crypto.randomUUID(), url, title: null }));
 
 const DEFAULT_SHORTCUT = 'F10';
-// Opzioni della pagina Impostazioni (solo booleane per ora): chiave -> default.
+// Options of the Settings page (booleans only for now): key -> default.
 const DEFAULT_SETTINGS = {
-  hideOnBlur: true,   // nasconde l'overlay quando perde il focus
+  hideOnBlur: true,   // hide the overlay when it loses focus
 };
 const DEFAULT_SIZE = { width: 1000, height: 700 };
 const MIN_SIZE = { width: 480, height: 320 };
 
-// ---------- preferenze ----------
+// ---------- preferences ----------
 
-// Cartella dati fissa: senza questa riga l'app pacchettizzata userebbe il
-// productName ("Overlay Browser") e non troverebbe le preferenze esistenti.
+// Fixed data folder: without this line the packaged app would use the
+// productName ("Overlay Browser") and would not find the existing preferences.
 app.setPath('userData', path.join(app.getPath('appData'), 'overlay-browser'));
 
 const prefsFile = () => path.join(app.getPath('userData'), 'prefs.json');
@@ -32,7 +32,7 @@ function loadPrefs() {
   try {
     loaded = JSON.parse(fs.readFileSync(prefsFile(), 'utf8')) || {};
   } catch {
-    // File assente o corrotto: si riparte dai default.
+    // Missing or corrupted file: start over from the defaults.
   }
   return {
     sites: Array.isArray(loaded.sites) ? loaded.sites : DEFAULT_SITES,
@@ -43,7 +43,7 @@ function loadPrefs() {
   };
 }
 
-// Tiene solo le chiavi note con il tipo giusto; le altre prendono il default.
+// Keeps only known keys with the right type; the others get the default.
 function loadSettings(saved) {
   const settings = { ...DEFAULT_SETTINGS };
   if (saved && typeof saved === 'object') {
@@ -56,19 +56,19 @@ function loadSettings(saved) {
 
 function savePrefs() {
   fs.mkdirSync(path.dirname(prefsFile()), { recursive: true });
-  // Scrittura su file temporaneo + rename per non lasciare il JSON a metà.
+  // Write to a temporary file + rename, so the JSON is never left half-written.
   const tmp = prefsFile() + '.tmp';
   fs.writeFileSync(tmp, JSON.stringify(prefs, null, 2));
   fs.renameSync(tmp, prefsFile());
 }
 
-// ---------- posizione e dimensione della finestra ----------
+// ---------- window position and size ----------
 
 const isNum = (n) => Number.isFinite(n);
 
-// La finestra è interamente visibile se sta tutta dentro lo schermo di almeno
-// un monitor. Si usa lo schermo intero e non l'area di lavoro, perché sopra un
-// gioco la finestra può legittimamente coprire anche la barra delle applicazioni.
+// The window is fully visible if it lies entirely within the screen of at
+// least one monitor. The whole screen is used rather than the work area,
+// because over a game the window may legitimately cover the taskbar too.
 function isFullyVisible(b) {
   return screen.getAllDisplays().some(({ bounds: w }) =>
     b.x >= w.x && b.y >= w.y &&
@@ -76,7 +76,7 @@ function isFullyVisible(b) {
     b.y + b.height <= w.y + w.height);
 }
 
-// Posizione di default: centrata sul monitor principale, ridotta se lo schermo è piccolo.
+// Default position: centered on the primary monitor, shrunk if the screen is small.
 function defaultBounds() {
   const w = screen.getPrimaryDisplay().workArea;
   const width = Math.max(MIN_SIZE.width, Math.min(DEFAULT_SIZE.width, w.width));
@@ -107,14 +107,14 @@ function trackBounds(win) {
     prefs.window = win.getBounds();
     savePrefs();
   };
-  // Durante il trascinamento gli eventi arrivano a raffica: si salva a fine movimento.
+  // While dragging, events arrive in bursts: save once the movement ends.
   const schedule = () => { clearTimeout(timer); timer = setTimeout(store, 500); };
   win.on('move', schedule);
   win.on('resize', schedule);
   win.on('close', store);
 }
 
-// ---------- titolo dei siti ----------
+// ---------- site titles ----------
 
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 function decodeEntities(s) {
@@ -127,8 +127,8 @@ function decodeEntities(s) {
   });
 }
 
-// Legge il <title> della pagina. Restituisce null se il sito non risponde
-// o non ha un titolo nell'HTML (es. app che lo impostano via JavaScript).
+// Reads the page's <title>. Returns null if the site does not respond
+// or has no title in the HTML (e.g. apps that set it via JavaScript).
 async function fetchTitle(url) {
   try {
     const res = await net.fetch(url, { signal: AbortSignal.timeout(8000) });
@@ -142,21 +142,21 @@ async function fetchTitle(url) {
   }
 }
 
-// ---------- scorciatoia globale ----------
+// ---------- global shortcut ----------
 
 let win;
-let tray;              // riferimento globale: se venisse raccolto dal GC l'icona sparirebbe
-let shortcut = null;   // scorciatoia attualmente registrata
+let tray;              // global reference: if garbage-collected the icon would disappear
+let shortcut = null;   // currently registered shortcut
 
-// ---------- focus (API Win32 via koffi) ----------
+// ---------- focus (Win32 API via koffi) ----------
 //
-// Windows impedisce a un'app in background di prendersi il focus, e Electron
-// non può ridarlo alla finestra di un'altra app. Servono le API native:
-// - alla comparsa si ricorda la finestra in primo piano (es. il gioco) e ci si
-//   "aggancia" temporaneamente al suo input (AttachThreadInput), condizione
-//   che Windows richiede per concedere SetForegroundWindow;
-// - alla scomparsa si ridà il focus a quella finestra, PRIMA di nascondersi:
-//   finché l'overlay è in primo piano Windows lo consente.
+// Windows prevents a background app from taking focus, and Electron cannot
+// give it back to another app's window. Native APIs are needed:
+// - when showing, remember the foreground window (e.g. the game) and
+//   temporarily attach to its input (AttachThreadInput), a condition
+//   Windows requires before granting SetForegroundWindow;
+// - when hiding, give focus back to that window BEFORE hiding: Windows
+//   allows it as long as the overlay is in the foreground.
 
 const win32 = (() => {
   if (process.platform !== 'win32') return null;
@@ -180,12 +180,12 @@ const win32 = (() => {
     };
     return api;
   } catch (err) {
-    console.error('API Win32 non disponibili, gestione del focus semplificata:', err);
+    console.error('Win32 API not available, using simplified focus handling:', err);
     return null;
   }
 })();
 
-let previousForeground = null;   // finestra che aveva il focus prima dell'overlay
+let previousForeground = null;   // window that had focus before the overlay
 
 const hwndOf = (w) => win32.koffi.decode(w.getNativeWindowHandle(), 'HWND');
 const sameHwnd = (a, b) => a && b && win32.koffi.address(a) === win32.koffi.address(b);
@@ -212,7 +212,7 @@ function forceForeground(hwnd) {
 function showWindow() {
   if (win32) {
     const fg = win32.GetForegroundWindow();
-    // Si ricorda solo una finestra di un'altra applicazione.
+    // Only remember a window belonging to another application.
     if (fg && processOf(fg) !== process.pid) previousForeground = fg;
   }
   if (win.isMinimized()) win.restore();
@@ -224,8 +224,8 @@ function showWindow() {
 }
 
 function hideWindow() {
-  // Si restituisce il focus solo se ce l'aveva l'overlay: se l'utente nel
-  // frattempo è passato a un'altra finestra, non va disturbato.
+  // Give focus back only if the overlay had it: if the user has meanwhile
+  // switched to another window, they must not be disturbed.
   if (win32 && win.isFocused() && previousForeground && win32.IsWindow(previousForeground) &&
       !sameHwnd(previousForeground, hwndOf(win))) {
     try { win32.SetForegroundWindow(previousForeground); } catch (err) { console.error(err); }
@@ -238,13 +238,13 @@ function toggleWindow() {
   else showWindow();
 }
 
-// ---------- aggancio ai bordi con la barra delle applicazioni nascosta ----------
+// ---------- edge snapping with the taskbar hidden ----------
 //
-// Aggancio ai lati (Aero Snap) e massimizzazione usano l'area di lavoro del
-// monitor, che esclude sempre la barra delle applicazioni. Se però l'overlay è
-// stato aperto sopra una finestra che copre tutto il monitor (gioco a schermo
-// intero o senza bordi), la barra non è visibile: in quel caso la finestra
-// agganciata/massimizzata viene estesa a tutto lo schermo.
+// Side snapping (Aero Snap) and maximizing use the monitor's work area, which
+// always excludes the taskbar. If however the overlay was opened over a window
+// covering the whole monitor (fullscreen or borderless game), the taskbar is
+// not visible: in that case the snapped/maximized window is extended to the
+// whole screen.
 
 function classNameOf(hwnd) {
   const buf = Buffer.alloc(512);
@@ -252,14 +252,14 @@ function classNameOf(hwnd) {
   return buf.toString('utf16le', 0, n * 2);
 }
 
-// true se la finestra da cui si è aperto l'overlay copre l'intero monitor.
+// true if the window the overlay was opened from covers the whole monitor.
 function fullscreenAppBelow(display) {
   if (!win32 || !previousForeground || !win32.IsWindow(previousForeground)) return false;
-  // Il desktop copre tutto lo schermo ma non nasconde la barra.
+  // The desktop covers the whole screen but does not hide the taskbar.
   if (['Progman', 'WorkerW', 'Shell_TrayWnd'].includes(classNameOf(previousForeground))) return false;
   const r = {};
   if (!win32.GetWindowRect(previousForeground, r)) return false;
-  // GetWindowRect è in pixel fisici, i display di Electron in DIP.
+  // GetWindowRect is in physical pixels, Electron displays in DIP.
   const dip = screen.screenToDipRect(null, { x: r.left, y: r.top, width: r.right - r.left, height: r.bottom - r.top });
   const b = display.bounds;
   return dip.x <= b.x + 1 && dip.y <= b.y + 1 &&
@@ -270,7 +270,7 @@ const near = (a, b, tol = 4) => Math.abs(a - b) <= tol;
 const sameRect = (a, b) => a && b && near(a.x, b.x, 1) && near(a.y, b.y, 1) &&
   near(a.width, b.width, 1) && near(a.height, b.height, 1);
 
-// Riconosce le posizioni di aggancio di Windows: metà, terzi, quarti.
+// Recognizes Windows snap positions: halves, thirds, quarters.
 function isSnapped(bounds, wa) {
   const fracs = [1, 1 / 2, 1 / 3, 2 / 3];
   const wOk = fracs.some((f) => near(bounds.width, wa.width * f));
@@ -284,16 +284,16 @@ function isSnapped(bounds, wa) {
   return wOk && hOk && inside && edges >= 2;
 }
 
-let expandedBounds = null;   // ultimo ridimensionamento fatto da noi (evita di ripeterlo)
-let restoreBounds = null;    // dimensioni da ripristinare uscendo dallo stato esteso
-let lastFreeBounds = null;   // ultime dimensioni "libere", cioè non agganciate né estese
-// Trascinando verso l'alto, Windows segnala la massimizzazione PRIMA della fine
-// del trascinamento: quell'evento 'moved' arriva subito dopo, con le dimensioni
-// intermedie, e va ignorato per non annullare lo stato appena impostato.
+let expandedBounds = null;   // last resize done by us (avoids repeating it)
+let restoreBounds = null;    // size to restore when leaving the extended state
+let lastFreeBounds = null;   // last "free" size, i.e. neither snapped nor extended
+// When dragging upwards, Windows reports the maximize BEFORE the drag ends:
+// that 'moved' event arrives right after, with the intermediate size, and
+// must be ignored so as not to undo the state just set.
 let ignoreMovedUntil = 0;
 
-// Riporta un rettangolo dentro lo schermo (trascinando verso l'alto per
-// massimizzare, le dimensioni "normali" possono restare in parte fuori).
+// Brings a rectangle back inside the screen (when dragging upwards to
+// maximize, the "normal" size may stay partly outside).
 function clampToDisplay(r, b) {
   const width = Math.min(r.width, b.width), height = Math.min(r.height, b.height);
   return {
@@ -310,7 +310,7 @@ function expandSnapToFullScreen() {
   const display = screen.getDisplayMatching(bounds);
   const wa = display.workArea, b = display.bounds;
   if (!isSnapped(bounds, wa)) {
-    // Finestra estesa che si sta trascinando: non è una dimensione "libera".
+    // Extended window being dragged: not a "free" size.
     if (expandedBounds && near(bounds.width, expandedBounds.width, 1) &&
         near(bounds.height, expandedBounds.height, 1)) return;
     expandedBounds = null;
@@ -319,12 +319,12 @@ function expandSnapToFullScreen() {
     return;
   }
   if (sameRect(wa, b) || !fullscreenAppBelow(display)) return;
-  // Proporzione lineare dall'area di lavoro allo schermo intero: metà e
-  // quarti restano tali, ma occupano anche lo spazio della barra.
+  // Linear mapping from the work area to the whole screen: halves and
+  // quarters stay so, but also take up the taskbar's space.
   const mapX = (x) => b.x + Math.round((x - wa.x) * b.width / wa.width);
   const mapY = (y) => b.y + Math.round((y - wa.y) * b.height / wa.height);
   const x = mapX(bounds.x), y = mapY(bounds.y);
-  // Da un aggancio all'altro si conservano le dimensioni di partenza.
+  // Moving from one snap to another keeps the original size.
   if (!restoreBounds) restoreBounds = lastFreeBounds;
   expandedBounds = {
     x, y,
@@ -334,8 +334,8 @@ function expandSnapToFullScreen() {
   win.setBounds(expandedBounds);
 }
 
-// La massimizzazione si sostituisce con un ridimensionamento a tutto schermo;
-// ripetendola (es. doppio clic sulla barra) si torna alle dimensioni precedenti.
+// Maximizing is replaced by a resize to the whole screen; doing it again
+// (e.g. double-click on the bar) goes back to the previous size.
 function onMaximize() {
   const normal = win.getNormalBounds();
   const display = screen.getDisplayMatching(normal);
@@ -344,18 +344,18 @@ function onMaximize() {
 
   let target;
   if (restoreBounds && sameRect(normal, b)) {
-    target = clampToDisplay(restoreBounds, b);   // era già a tutto schermo: si ripristina
+    target = clampToDisplay(restoreBounds, b);   // was already fullscreen: restore
     expandedBounds = null;
     restoreBounds = null;
   } else {
-    // Se era già esteso (es. metà schermo) si conservano le dimensioni originali.
+    // If it was already extended (e.g. half screen) keep the original size.
     if (!restoreBounds) restoreBounds = clampToDisplay(normal, b);
     target = { ...b };
     expandedBounds = target;
   }
-  // unmaximize() è asincrono: Windows ripristina le dimensioni normali dopo la
-  // chiamata e sovrascriverebbe un setBounds immediato. Si applicano quindi le
-  // dimensioni a ripristino avvenuto, ricontrollando poco dopo.
+  // unmaximize() is asynchronous: Windows restores the normal size after the
+  // call and would overwrite an immediate setBounds. So the size is applied
+  // once the restore has happened, checking again shortly after.
   const apply = () => {
     if (win.isDestroyed() || win.isMaximized()) return;
     if (!sameRect(win.getBounds(), target)) win.setBounds(target);
@@ -367,13 +367,13 @@ function onMaximize() {
   setTimeout(apply, 300);
 }
 
-// Sgancio all'inizio del trascinamento, come fa Windows con le finestre
-// massimizzate. Al primo spostamento da uno stato esteso la finestra torna
-// alle dimensioni precedenti sotto il cursore; da lì in poi è l'app a
-// posizionarla seguendo il cursore, perché il ciclo di trascinamento di Windows
-// continuerebbe a calcolare la posizione sulla finestra grande. L'aggancio ai
-// bordi resta di Windows (dipende dalla posizione del cursore).
-let unsnapDrag = null;   // { width, height, anchorX, anchorY } durante lo sgancio
+// Unsnap at the start of the drag, as Windows does with maximized windows.
+// On the first move from an extended state the window goes back to its
+// previous size under the cursor; from then on the app positions it following
+// the cursor, because Windows' drag loop would keep computing the position
+// for the large window. Edge snapping is still left to Windows (it depends on
+// the cursor position).
+let unsnapDrag = null;   // { width, height, anchorX, anchorY } while unsnapping
 
 function onWillMove(e) {
   const cursor = screen.getCursorScreenPoint();
@@ -389,13 +389,13 @@ function onWillMove(e) {
       anchorX: Math.round(fx * restore.width),
       anchorY: Math.min(cursor.y - cur.y, restore.height - 10),
     };
-    // Un eventuale nuovo aggancio a fine trascinamento ricorderà queste dimensioni.
+    // A possible new snap at the end of the drag will remember this size.
     lastFreeBounds = { ...restore };
     expandedBounds = null;
     restoreBounds = null;
   }
-  // Electron, se l'evento è annullato, restituisce a Windows la posizione
-  // corrente della finestra: quella appena impostata qui sotto.
+  // If the event is cancelled, Electron hands Windows the window's current
+  // position: the one set just below.
   e.preventDefault();
   win.setBounds({
     x: cursor.x - unsnapDrag.anchorX,
@@ -405,21 +405,21 @@ function onWillMove(e) {
   });
 }
 
-// Riserva, se lo sgancio all'inizio non è avvenuto:
-// trascinando via la finestra da uno stato esteso (tutto schermo o aggancio),
-// Windows non la rimpicciolisce perché per lui è una finestra normale: lo si fa
-// a fine trascinamento, tornando alle dimensioni precedenti all'aggancio e
-// lasciando il cursore nello stesso punto relativo della barra.
+// Fallback, if the unsnap at the start did not happen:
+// when dragging the window away from an extended state (fullscreen or snap),
+// Windows does not shrink it because to Windows it is a normal window: it is
+// done at the end of the drag, going back to the pre-snap size and keeping
+// the cursor at the same relative point of the bar.
 function onMoved() {
-  if (unsnapDrag) {        // sgancio già gestito durante il trascinamento
+  if (unsnapDrag) {        // unsnap already handled during the drag
     unsnapDrag = null;
     return;
   }
   if (!expandedBounds || Date.now() < ignoreMovedUntil) return;
   const cur = win.getBounds();
   const sameSize = near(cur.width, expandedBounds.width, 1) && near(cur.height, expandedBounds.height, 1);
-  // Dimensioni cambiate (es. trascinata in un altro aggancio): se ne occupa
-  // expandSnapToFullScreen, che conserva restoreBounds se è ancora agganciata.
+  // Size changed (e.g. dragged into another snap): handled by
+  // expandSnapToFullScreen, which keeps restoreBounds if still snapped.
   if (!sameSize) {
     expandedBounds = null;
     return;
@@ -440,14 +440,13 @@ function onMoved() {
     height: restore.height,
   };
   const final = clampToDisplay(target, screen.getDisplayNearestPoint(cursor).bounds);
-  // Dopo la fine del ciclo di trascinamento di Windows, che altrimenti
-  // potrebbe annullare il ridimensionamento.
+  // After Windows' drag loop has ended, which could otherwise undo the resize.
   setTimeout(() => { if (!win.isDestroyed()) win.setBounds(final); }, 0);
 }
 
 function trackSnap() {
   let timer = null;
-  // Si attende la fine dell'animazione di aggancio prima di correggere.
+  // Wait for the snap animation to finish before correcting.
   const schedule = () => { clearTimeout(timer); timer = setTimeout(expandSnapToFullScreen, 300); };
   win.on('move', schedule);
   win.on('resize', schedule);
@@ -456,8 +455,8 @@ function trackSnap() {
   win.on('moved', onMoved);
 }
 
-// Quando l'overlay perde il focus (clic su un'altra finestra, Alt+Tab...) si
-// nasconde. Il focus in quel caso è già altrove, quindi hideWindow non lo sposta.
+// When the overlay loses focus (click on another window, Alt+Tab...) it
+// hides. In that case focus is already elsewhere, so hideWindow does not move it.
 let lastBlurHide = 0;
 function hideOnBlur() {
   if (!prefs.settings.hideOnBlur || !win.isVisible()) return;
@@ -465,8 +464,8 @@ function hideOnBlur() {
   hideWindow();
 }
 
-// La scorciatoia è intercettata in due modi (vedi sotto): quando funzionano
-// entrambi arrivano due eventi per la stessa pressione, e va considerato solo il primo.
+// The shortcut is intercepted in two ways (see below): when both work, two
+// events arrive for the same key press, and only the first must count.
 let lastShortcutToggle = 0;
 function toggleFromShortcut() {
   const now = Date.now();
@@ -475,12 +474,12 @@ function toggleFromShortcut() {
   toggleWindow();
 }
 
-// ---------- hook di tastiera a basso livello ----------
+// ---------- low-level keyboard hook ----------
 //
-// globalShortcut usa RegisterHotKey di Windows, che non scatta quando in primo
-// piano c'è un gioco che legge la tastiera in modo esclusivo (es. Star Citizen).
-// Un hook a basso livello vede i tasti prima del gioco. L'hook osserva soltanto:
-// il tasto arriva comunque anche all'applicazione in primo piano.
+// globalShortcut uses Windows' RegisterHotKey, which does not fire when the
+// foreground app is a game reading the keyboard exclusively (e.g. Star Citizen).
+// A low-level hook sees keys before the game. The hook only observes: the key
+// still reaches the foreground application.
 
 const MODIFIER_NAMES = {
   ctrl: 'ctrl', control: 'ctrl', commandorcontrol: 'ctrl', cmdorctrl: 'ctrl',
@@ -499,7 +498,7 @@ const ACCEL_KEYS = {
   numdiv: 'NumpadDivide', numdec: 'NumpadDecimal',
 };
 
-// Converte un accelerator di Electron ("Ctrl+Shift+O") in { keycode, ctrl, alt, shift, meta }.
+// Converts an Electron accelerator ("Ctrl+Shift+O") into { keycode, ctrl, alt, shift, meta }.
 function parseAccelerator(accelerator) {
   const combo = { keycode: null, ctrl: false, alt: false, shift: false, meta: false };
   for (const part of accelerator.split('+')) {
@@ -514,25 +513,25 @@ function parseAccelerator(accelerator) {
   return combo.keycode === null ? null : combo;
 }
 
-let hookCombo = null;        // combinazione cercata dall'hook
-let hookSuspended = false;   // true mentre l'utente registra una nuova combinazione
-let hookKeyDown = false;     // evita di ripetere il toggle tenendo premuto il tasto
+let hookCombo = null;        // combination the hook looks for
+let hookSuspended = false;   // true while the user records a new combination
+let hookKeyDown = false;     // avoids repeating the toggle while the key is held down
 
-// Log diagnostico in userData/overlay.log: avvio, registrazione della
-// scorciatoia ed errori dell'hook. Non registra mai i tasti premuti.
+// Diagnostic log in userData/overlay.log: startup, shortcut registration
+// and hook errors. Never records the keys pressed.
 const logFile = () => path.join(app.getPath('userData'), 'overlay.log');
 function log(msg) {
   const line = `${new Date().toISOString()} ${msg}\n`;
   try {
     if (fs.statSync(logFile()).size > 512 * 1024) fs.writeFileSync(logFile(), '');
-  } catch { /* file non ancora creato */ }
-  try { fs.appendFileSync(logFile(), line); } catch { /* ignorato */ }
+  } catch { /* file not created yet */ }
+  try { fs.appendFileSync(logFile(), line); } catch { /* ignored */ }
 }
 
 function setHookCombo(accelerator) {
   hookCombo = accelerator ? parseAccelerator(accelerator) : null;
   hookKeyDown = false;
-  log(`hook: combinazione ${accelerator || 'nessuna'} -> ${hookCombo ? 'ok' : 'non riconosciuta'}`);
+  log(`hook: combination ${accelerator || 'none'} -> ${hookCombo ? 'ok' : 'not recognized'}`);
 }
 
 function startKeyboardHook() {
@@ -549,13 +548,13 @@ function startKeyboardHook() {
   });
   try {
     uIOhook.start();
-    log('hook: avviato');
+    log('hook: started');
   } catch (err) {
-    log(`hook: ERRORE all'avvio: ${err}`);
+    log(`hook: ERROR on start: ${err}`);
   }
 }
 
-// ---------- icona nell'area di notifica ----------
+// ---------- notification area icon ----------
 
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 
@@ -563,30 +562,30 @@ function updateTray() {
   if (!tray) return;
   tray.setToolTip(shortcut ? `Overlay browser (${shortcut})` : 'Overlay browser');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: win.isVisible() ? 'Nascondi' : 'Mostra', accelerator: shortcut || undefined, click: toggleWindow },
+    { label: win.isVisible() ? 'Hide' : 'Show', accelerator: shortcut || undefined, click: toggleWindow },
     { label: 'Home', click: () => { showWindow(); win.webContents.send('nav:home'); } },
-    { label: 'Impostazioni', click: () => { showWindow(); win.webContents.send('nav:settings'); } },
+    { label: 'Settings', click: () => { showWindow(); win.webContents.send('nav:settings'); } },
     { type: 'separator' },
-    { label: 'Esci', click: () => app.quit() },
+    { label: 'Quit', click: () => app.quit() },
   ]));
 }
 
 function createTray() {
   tray = new Tray(nativeImage.createFromPath(ICON_PATH));
   tray.on('click', () => {
-    // Cliccando l'icona con l'overlay aperto, la finestra perde prima il focus
-    // e si nasconde (vedi 'blur'): il clic non deve riaprirla subito dopo.
+    // Clicking the icon while the overlay is open, the window first loses
+    // focus and hides (see 'blur'): the click must not reopen it right after.
     if (!win.isVisible() && Date.now() - lastBlurHide < 500) return;
     toggleWindow();
   });
-  // Le voci del menu dipendono dallo stato della finestra e dalla scorciatoia.
+  // Menu items depend on the window state and on the shortcut.
   win.on('show', updateTray);
   win.on('hide', updateTray);
   updateTray();
 }
 
-// register() lancia un'eccezione se l'accelerator non è valido e restituisce
-// false se la combinazione è già usata da un'altra applicazione.
+// register() throws if the accelerator is invalid and returns false if the
+// combination is already used by another application.
 function tryRegister(accelerator) {
   try {
     return globalShortcut.register(accelerator, toggleFromShortcut);
@@ -607,7 +606,7 @@ function setShortcut(accelerator) {
     return { ok: true, shortcut };
   }
   if (previous) tryRegister(previous);
-  return { ok: false, shortcut: previous, error: `Impossibile usare ${accelerator}: combinazione non valida o già in uso.` };
+  return { ok: false, shortcut: previous, error: `Cannot use ${accelerator}: invalid combination or already in use.` };
 }
 
 // ---------- IPC ----------
@@ -634,18 +633,18 @@ ipcMain.handle('tab:setActive', (_e, id) => {
 });
 ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
 ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerator)));
-// Mentre l'utente registra una nuova combinazione, quella attuale va sospesa,
-// altrimenti premendola si nasconderebbe la finestra invece di catturarla.
+// While the user records a new combination, the current one must be
+// suspended, otherwise pressing it would hide the window instead of capturing it.
 ipcMain.handle('shortcut:suspend', (_e, suspended) => {
   hookSuspended = !!suspended;
   globalShortcut.unregisterAll();
   if (!suspended && shortcut) tryRegister(shortcut);
 });
 
-// ---------- avvio ----------
+// ---------- startup ----------
 
-// Una sola istanza: due copie si contenderebbero la scorciatoia (la seconda
-// non riuscirebbe a registrarla). Se l'app è già aperta, si mostra quella.
+// Single instance: two copies would compete for the shortcut (the second
+// could not register it). If the app is already open, show that one.
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -655,14 +654,14 @@ if (!app.requestSingleInstanceLock()) {
 
 function start() {
   prefs = loadPrefs();
-  log(`avvio (versione ${app.getVersion()}, ${app.isPackaged ? 'pacchettizzata' : 'sviluppo'})`);
+  log(`startup (version ${app.getVersion()}, ${app.isPackaged ? 'packaged' : 'development'})`);
 
   win = new BrowserWindow({
     ...initialBounds(),
     minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height,
     frame: false, show: false, opacity: 0.95,
     alwaysOnTop: true,
-    skipTaskbar: true,   // niente icona nella barra delle applicazioni: si usa quella nell'area di notifica
+    skipTaskbar: true,   // no taskbar icon: the notification area icon is used instead
     icon: ICON_PATH,
     webPreferences: {
       webviewTag: true,
@@ -677,15 +676,15 @@ function start() {
 
   if (tryRegister(prefs.shortcut)) shortcut = prefs.shortcut;
   else if (tryRegister(DEFAULT_SHORTCUT)) shortcut = DEFAULT_SHORTCUT;
-  log(`globalShortcut: ${shortcut ? `registrata ${shortcut}` : `impossibile registrare ${prefs.shortcut}`}`);
-  // L'hook usa comunque la combinazione scelta, anche se globalShortcut
-  // non è riuscito a registrarla (es. già usata da un'altra applicazione).
+  log(`globalShortcut: ${shortcut ? `registered ${shortcut}` : `cannot register ${prefs.shortcut}`}`);
+  // The hook uses the chosen combination anyway, even if globalShortcut
+  // could not register it (e.g. already used by another application).
   setHookCombo(shortcut || prefs.shortcut);
   startKeyboardHook();
   createTray();
 }
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
-  try { uIOhook.stop(); } catch { /* già fermo */ }
+  try { uIOhook.stop(); } catch { /* already stopped */ }
 });
 app.on('window-all-closed', () => app.quit());

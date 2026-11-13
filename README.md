@@ -1,84 +1,86 @@
 # Overlay Browser
 
-Una piccola finestra di browser che resta sempre in primo piano, anche sopra i giochi in modalità finestra/finestra senza bordi, e che si mostra o nasconde premendo un tasto (di default **F10**).
+**English** · [Italiano](README-it.md)
 
-Utile per tenere a portata di mano siti come wiki, calcolatori o database mentre si gioca.
+A small browser window that always stays on top, even over games running in windowed/borderless windowed mode, and that you show or hide with a single key (**F10** by default).
 
-## Installazione
+Handy for keeping sites like wikis, calculators or databases within reach while you play.
 
-Ci sono due versioni, scegline una:
+## Installation
 
-- **`Overlay Browser-Setup-x.y.z.exe`** (consigliata): la installa sul PC. Non servono permessi di amministratore e viene creato il collegamento nel menu Start.
-- **`Overlay Browser-Portable-x.y.z.exe`**: non installa nulla, basta avviarla. Parte un po' più lentamente.
+There are two versions, pick one:
 
-### Avviso "Windows ha protetto il PC"
+- **`Overlay Browser-Setup-x.y.z.exe`** (recommended): installs it on your PC. No administrator rights are needed, and a Start menu shortcut is created.
+- **`Overlay Browser-Portable-x.y.z.exe`**: installs nothing, just run it. It starts up a bit more slowly.
 
-L'eseguibile non è firmato digitalmente (la firma costa ed è un progetto tra amici), quindi al primo avvio Windows mostra un avviso blu di SmartScreen. Per proseguire:
+### "Windows protected your PC" warning
 
-1. clicca **Ulteriori informazioni**;
-2. clicca **Esegui comunque**.
+The executable is not digitally signed (signing costs money and this is a project among friends), so on first launch Windows shows a blue SmartScreen warning. To continue:
 
-Succede solo la prima volta. Se l'antivirus segnala il file, è quasi sicuramente un falso positivo dovuto alla mancanza di firma.
+1. click **More info**;
+2. click **Run anyway**.
 
-## Uso
+This only happens the first time. If your antivirus flags the file, it is almost certainly a false positive caused by the missing signature.
 
-- All'avvio la finestra resta nascosta: l'app si mette in attesa nell'area di notifica. Premi **F10** per mostrarla e premilo di nuovo per nasconderla. Di default si nasconde da sola anche quando clicchi su un'altra finestra (ad esempio tornando al gioco); si può disattivare dalle Impostazioni.
-- L'app **non compare nella barra delle applicazioni** né in Alt+Tab: la trovi nell'area di notifica in basso a destra, vicino all'orologio (icona nera con una finestrella bianca). Se non la vedi, clicca sulla freccia **^** e trascina l'icona sulla barra per tenerla sempre visibile.
-  - **Clic** sull'icona: mostra/nasconde la finestra.
-  - **Tasto destro**: menu con *Mostra/Nascondi*, *Home*, *Impostazioni* ed *Esci*.
-- Per **chiudere** l'app usa *Esci* dal menu dell'icona (oppure Alt+F4 con la finestra in primo piano).
-- La finestra si **sposta** trascinando la barra in alto (lo spazio libero accanto ai pulsanti) e si **ridimensiona** dai bordi. Posizione e dimensione vengono ricordate.
+## Usage
 
-### Siti
+- On startup the window stays hidden: the app waits in the notification area. Press **F10** to show it and press it again to hide it. By default it also hides itself when you click on another window (for example when going back to the game); this can be turned off in the Settings.
+- The app **does not appear in the taskbar** or in Alt+Tab: you'll find it in the notification area at the bottom right, next to the clock (black icon with a small white window). If you can't see it, click the **^** arrow and drag the icon onto the taskbar to keep it always visible.
+  - **Click** the icon: shows/hides the window.
+  - **Right-click**: menu with *Show/Hide*, *Home*, *Settings* and *Quit*.
+- To **close** the app use *Quit* from the icon menu (or Alt+F4 while the window is in the foreground).
+- **Move** the window by dragging the top bar (the empty space next to the buttons) and **resize** it from the edges. Position and size are remembered.
 
-- La barra in alto ha il pulsante **Home** e un pulsante per ogni sito. Se i pulsanti non ci stanno, usa le frecce ◀ ▶ o la rotella del mouse sopra la barra.
-- Ogni sito funziona come una scheda: cambiando sito e tornando indietro ritrovi la pagina esattamente dove l'avevi lasciata.
-- Alla riapertura dell'app viene mostrato l'ultimo sito che stavi guardando.
+### Sites
 
-Dalla **Home** puoi gestire l'elenco:
+- The top bar has the **Home** button and one button per site. If the buttons don't fit, use the ◀ ▶ arrows or the mouse wheel over the bar.
+- Each site works like a tab: when you switch to another site and come back, you'll find the page exactly where you left it.
+- When the app is reopened, the last site you were viewing is shown.
 
-- **Aggiungi**: scrivi l'indirizzo nel campo in fondo (basta anche `example.com`) e premi *Aggiungi*. Il nome viene preso automaticamente dal titolo del sito.
-- **Modifica**: cambia l'indirizzo di un sito (Invio per salvare, Esc per annullare).
-- **Rimuovi**: toglie il sito dall'elenco.
-- Clicca sul nome di un sito per aprirlo.
+From the **Home** page you can manage the list:
 
-### Cambiare il tasto
+- **Add**: type the address in the field at the bottom (`example.com` is enough) and press *Add*. The name is taken automatically from the site's title.
+- **Edit**: change a site's address (Enter to save, Esc to cancel).
+- **Remove**: removes the site from the list.
+- Click a site's name to open it.
 
-Apri le **Impostazioni** con il pulsante ⚙ in alto a destra (o dal menu dell'icona), sezione *Tastiera*:
+### Changing the key
 
-1. clicca **Cambia**;
-2. premi la combinazione che preferisci, ad esempio `Ctrl+Shift+O` (Esc per annullare).
+Open the **Settings** with the ⚙ button at the top right (or from the icon menu), *Keyboard* section:
 
-Sono ammessi i tasti F1–F24 da soli, oppure qualunque tasto insieme a Ctrl, Alt, Shift o Win. Se la combinazione è già usata da un altro programma compare un messaggio e resta quella precedente. *Ripristina F10* torna al tasto di default.
+1. click **Change**;
+2. press the combination you prefer, for example `Ctrl+Shift+O` (Esc to cancel).
 
-> **Attenzione in gioco:** mentre giochi (ad esempio a Star Citizen) la combinazione arriva anche al gioco, oltre che all'overlay. Scegline una che nel gioco non è assegnata a nessun comando, altrimenti aprendo l'overlay attiverai anche quel comando.
+Keys F1–F24 are allowed on their own, or any key together with Ctrl, Alt, Shift or Win. If the combination is already used by another program a message appears and the previous one is kept. *Reset to F10* goes back to the default key.
 
-> **Nota per i giochi:** alcuni giochi in schermo intero "esclusivo" coprono qualsiasi finestra. In quel caso imposta il gioco in modalità *finestra senza bordi* (borderless).
+> **Careful in game:** while you play (for example Star Citizen) the combination also reaches the game, not just the overlay. Pick one that isn't bound to any command in the game, otherwise opening the overlay will also trigger that command.
 
-## Preferenze e disinstallazione
+> **Note for games:** some games in "exclusive" fullscreen cover any window. In that case set the game to *borderless windowed* mode.
 
-Siti, tasto, posizione della finestra e ultimo sito aperto sono salvati in:
+## Preferences and uninstalling
+
+Sites, key, window position and last opened site are saved in:
 
 ```
 %APPDATA%\overlay-browser\prefs.json
 ```
 
-Per ripartire da zero chiudi l'app ed elimina quel file.
+To start from scratch, close the app and delete that file.
 
-Per **disinstallare** la versione installata: *Impostazioni di Windows → App → App installate → Overlay Browser → Disinstalla*. La cartella `%APPDATA%\overlay-browser` va eliminata a mano se vuoi cancellare anche le preferenze. La versione portable si rimuove semplicemente cancellando il file `.exe`.
+To **uninstall** the installed version: *Windows Settings → Apps → Installed apps → Overlay Browser → Uninstall*. The `%APPDATA%\overlay-browser` folder must be deleted manually if you also want to remove the preferences. The portable version is removed by simply deleting the `.exe` file.
 
 ---
 
-## Per lo sviluppo
+## Development
 
-Richiede [Node.js](https://nodejs.org/).
+Requires [Node.js](https://nodejs.org/).
 
 ```sh
-npm install          # installa le dipendenze
-npm start            # avvia l'app in sviluppo
-npm run dist         # genera installer e versione portable in dist/
+npm install          # install dependencies
+npm start            # run the app in development
+npm run dist         # build installer and portable version in dist/
 npm run dist:installer
 npm run dist:portable
 ```
 
-In IntelliJ sono disponibili le run configuration *Electron (npm start)* e *Electron (debug main)* nella cartella `.run/`.
+In IntelliJ, the *Electron (npm start)* and *Electron (debug main)* run configurations are available in the `.run/` folder.

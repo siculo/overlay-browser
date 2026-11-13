@@ -1,8 +1,8 @@
 # Overlay Browser
 
-App Electron per Windows: un browser in overlay, sempre in primo piano, che si mostra/nasconde con una scorciatoia globale (default F10) o dall'icona nell'area di notifica. Pensata per consultare siti (wiki, calcolatori) mentre si gioca a Star Citizen.
+Electron app for Windows: an overlay browser, always on top, shown/hidden with a global shortcut (F10 by default) or from the notification area icon. Meant for browsing sites (wikis, calculators) while playing Star Citizen.
 
-- `main.js`: finestra, preferenze (`%APPDATA%\overlay-browser\prefs.json`), tray, scorciatoia (globalShortcut + hook `uiohook-napi`, necessario in gioco), focus via API Win32 (`koffi`).
-- `index.html`: Home con elenco siti modificabile, tab (un `<webview>` per sito), impostazioni.
-- `preload.js`: ponte IPC tra pagina e processo principale.
-- Build: `npm run dist` (electron-builder, installer NSIS + portable, non firmati) in `dist/`.
+- `main.js`: window, preferences (`%APPDATA%\overlay-browser\prefs.json`), tray, shortcut (globalShortcut + `uiohook-napi` hook, required in game), focus via Win32 API (`koffi`).
+- `index.html`: Home with editable site list, tabs (one `<webview>` per site), settings.
+- `preload.js`: IPC bridge between the page and the main process.
+- Build: `npm run dist` (electron-builder, NSIS installer + portable, unsigned) into `dist/`.

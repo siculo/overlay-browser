@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <style>
@@ -11,16 +11,16 @@
   button.active { background: #4a4a4a; font-weight: bold; }
   input { font: inherit; color: #eee; background: #1c1c1c; border: 1px solid #3a3a3a; border-radius: 4px; padding: 5px 8px; }
 
-  /* Barra superiore: Home fisso, poi le tab scorrevoli con le frecce */
+  /* Top bar: fixed Home, then the tabs, scrollable with the arrows */
   #bar { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
   #bar button { -webkit-app-region: no-drag; }
-  /* #tabs non si allarga oltre il contenuto, così il "+" sta subito dopo l'ultima tab */
+  /* #tabs does not grow beyond its content, so the "+" sits right after the last tab */
   #tabs { flex: 0 1 auto; min-width: 0; display: flex; gap: 4px; overflow-x: hidden; scroll-behavior: smooth; }
   #tabs-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
   .arrow { padding: 3px 8px; }
   #add-tab { padding: 3px 9px; font-weight: bold; }
 
-  /* Tab: etichetta con puntini di sospensione + pulsante di chiusura */
+  /* Tab: label with ellipsis + close button */
   .tab { flex: none; display: flex; align-items: center; gap: 4px; max-width: 200px; padding: 3px 4px 3px 10px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; cursor: pointer; -webkit-app-region: no-drag; user-select: none; }
   .tab:hover { background: #363636; }
   .tab.active { background: #4a4a4a; font-weight: bold; }
@@ -28,7 +28,7 @@
   .tab .close { flex: none; width: 18px; height: 18px; line-height: 16px; text-align: center; border-radius: 3px; color: #aaa; font-weight: normal; }
   .tab .close:hover { background: #5a5a5a; color: #fff; }
 
-  /* Finestra di dialogo (conferme e inserimento indirizzo) */
+  /* Dialog (confirmations and address input) */
   #dialog { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); -webkit-app-region: no-drag; }
   #dialog .box { width: min(440px, calc(100vw - 32px)); padding: 18px; background: #1c1c1c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
   #dialog-msg { margin-bottom: 12px; line-height: 1.4; overflow-wrap: anywhere; }
@@ -37,7 +37,7 @@
   #dialog-ok.danger { background: #7a2a2a; border-color: #944; }
   #dialog-ok.danger:hover { background: #8e3333; }
 
-  /* Barra di navigazione del sito attivo, sotto le tab */
+  /* Navigation bar of the active site, below the tabs */
   #nav { display: flex; align-items: center; gap: 4px; padding: 0 6px 6px; -webkit-app-region: drag; }
   #nav button { -webkit-app-region: no-drag; min-width: 32px; }
   button:disabled { opacity: 0.4; cursor: default; }
@@ -80,45 +80,45 @@
       <button class="arrow" id="left" hidden>&#9664;</button>
       <div id="tabs"></div>
       <button class="arrow" id="right" hidden>&#9654;</button>
-      <button id="add-tab" title="Aggiungi un sito">+</button>
+      <button id="add-tab" title="Add a site">+</button>
     </div>
-    <button id="settings-btn" title="Impostazioni">&#9881;</button>
+    <button id="settings-btn" title="Settings">&#9881;</button>
   </div>
 
   <div id="nav" hidden>
-    <button id="nav-site" title="Home del sito">&#8962;</button>
-    <button id="nav-back" title="Indietro">&#8592;</button>
-    <button id="nav-forward" title="Avanti">&#8594;</button>
-    <button id="nav-reload" title="Ricarica">&#8635;</button>
+    <button id="nav-site" title="Site home">&#8962;</button>
+    <button id="nav-back" title="Back">&#8592;</button>
+    <button id="nav-forward" title="Forward">&#8594;</button>
+    <button id="nav-reload" title="Reload">&#8635;</button>
   </div>
 
   <div id="home">
-    <h1>Siti</h1>
+    <h1>Sites</h1>
     <div id="list"></div>
     <form id="add">
-      <input id="add-url" placeholder="Indirizzo del sito da aggiungere (es. https://example.com)">
-      <button type="submit">Aggiungi</button>
+      <input id="add-url" placeholder="Address of the site to add (e.g. https://example.com)">
+      <button type="submit">Add</button>
     </form>
     <div class="error" id="error"></div>
   </div>
 
   <div id="settings" class="page" hidden>
-    <h1>Impostazioni</h1>
+    <h1>Settings</h1>
 
-    <h2>Tastiera</h2>
+    <h2>Keyboard</h2>
     <div class="setting">
-      <span>Mostra/nascondi overlay:</span>
+      <span>Show/hide overlay:</span>
       <kbd id="shortcut"></kbd>
-      <button id="shortcut-change">Cambia</button>
-      <button id="shortcut-reset">Ripristina F10</button>
+      <button id="shortcut-change">Change</button>
+      <button id="shortcut-reset">Reset to F10</button>
     </div>
     <div class="hint" id="shortcut-hint"></div>
 
-    <h2>Comportamento</h2>
+    <h2>Behavior</h2>
     <label class="setting check">
       <input type="checkbox" id="opt-hide-on-blur">
-      <span>Nascondi l'overlay quando perde il focus
-        <span class="desc">Ad esempio cliccando sul gioco o su un'altra finestra.</span></span>
+      <span>Hide the overlay when it loses focus
+        <span class="desc">For example when clicking on the game or on another window.</span></span>
     </label>
   </div>
 
@@ -130,7 +130,7 @@
       <input id="dialog-input" hidden>
       <div class="error" id="dialog-error"></div>
       <div class="buttons">
-        <button type="button" id="dialog-cancel">Annulla</button>
+        <button type="button" id="dialog-cancel">Cancel</button>
         <button type="submit" id="dialog-ok">OK</button>
       </div>
     </form>
@@ -143,13 +143,13 @@
   const settingsBtn = $('settings-btn'), settingsPage = $('settings');
 
   let prefs = { sites: [] };
-  const webviews = new Map();   // id -> webview (una "tab" per sito, creata al primo accesso)
-  const SETTINGS = ':settings'; // valore di `active` per la pagina Impostazioni
-  let active = null;            // id del sito attivo, null = Home, SETTINGS = Impostazioni
+  const webviews = new Map();   // id -> webview (one "tab" per site, created on first access)
+  const SETTINGS = ':settings'; // value of `active` for the Settings page
+  let active = null;            // id of the active site, null = Home, SETTINGS = Settings
   const isSite = (id) => id !== null && id !== SETTINGS;
-  let editing = null;           // id del sito in modifica nella Home
+  let editing = null;           // id of the site being edited on the Home page
 
-  // ---------- utilità ----------
+  // ---------- utilities ----------
 
   function normalizeUrl(raw) {
     let s = raw.trim();
@@ -169,7 +169,7 @@
 
   function showError(msg) { errorEl.textContent = msg || ''; }
 
-  // Recupera il titolo dalla pagina; se non ci riesce resta il nome host.
+  // Fetches the title from the page; if that fails the host name is kept.
   async function resolveTitle(site) {
     const url = site.url;
     const title = await window.overlay.fetchTitle(url);
@@ -188,13 +188,13 @@
       wv = document.createElement('webview');
       wv.src = site.url;
       wv.style.display = 'none';
-      // Fallback per i siti che impostano il titolo via JavaScript: usa il primo
-      // titolo che la pagina comunica, se non ne abbiamo già uno.
+      // Fallback for sites that set the title via JavaScript: use the first
+      // title the page reports, if we don't have one already.
       wv.addEventListener('page-title-updated', (e) => {
         const s = findSite(site.id);
         if (s && !s.title && e.title) { s.title = e.title; save(); render(); }
       });
-      // La cronologia cambia a ogni navigazione: si aggiornano Indietro/Avanti.
+      // History changes on every navigation: update Back/Forward.
       for (const ev of ['dom-ready', 'did-navigate', 'did-navigate-in-page', 'did-stop-loading']) {
         wv.addEventListener(ev, () => { if (active === site.id) updateNav(); });
       }
@@ -210,7 +210,7 @@
   }
 
   function activate(id) {
-    // La pagina Impostazioni non viene ricordata come "ultima tab".
+    // The Settings page is not remembered as the "last tab".
     if (id !== active && id !== SETTINGS) window.overlay.setActiveTab(id);
     if (id !== SETTINGS) cancelCapture();
     active = id;
@@ -223,16 +223,16 @@
     updateNav();
   }
 
-  // ---------- navigazione ----------
+  // ---------- navigation ----------
 
   const navEl = $('nav'), navBack = $('nav-back'), navForward = $('nav-forward');
 
   function updateNav() {
     navEl.hidden = !isSite(active);
     const wv = isSite(active) ? webviews.get(active) : null;
-    // canGoBack/canGoForward lanciano un'eccezione finché il webview non è pronto.
+    // canGoBack/canGoForward throw until the webview is ready.
     let back = false, forward = false;
-    try { back = wv.canGoBack(); forward = wv.canGoForward(); } catch { /* non ancora pronto */ }
+    try { back = wv.canGoBack(); forward = wv.canGoForward(); } catch { /* not ready yet */ }
     navBack.disabled = !back;
     navForward.disabled = !forward;
   }
@@ -256,7 +256,7 @@
       tab.classList.toggle('active', site.id === active);
       tab.title = siteName(site);
       tab.onclick = () => activate(site.id);
-      // Clic centrale sulla tab: chiusura, come nei browser.
+      // Middle click on the tab: close it, as in browsers.
       tab.onauxclick = (e) => { if (e.button === 1) confirmRemove(site.id); };
 
       const label = document.createElement('span');
@@ -266,7 +266,7 @@
       const close = document.createElement('span');
       close.className = 'close';
       close.textContent = '×';
-      close.title = 'Rimuovi';
+      close.title = 'Remove';
       close.onclick = (e) => { e.stopPropagation(); confirmRemove(site.id); };
 
       tab.append(label, close);
@@ -285,9 +285,9 @@
         const input = document.createElement('input');
         input.value = site.url;
         const ok = document.createElement('button');
-        ok.textContent = 'Salva';
+        ok.textContent = 'Save';
         const cancel = document.createElement('button');
-        cancel.textContent = 'Annulla';
+        cancel.textContent = 'Cancel';
         ok.onclick = () => updateSite(site.id, input.value);
         cancel.onclick = () => { editing = null; showError(); renderList(); };
         input.onkeydown = (e) => {
@@ -309,10 +309,10 @@
         info.onclick = () => activate(site.id);
 
         const edit = document.createElement('button');
-        edit.textContent = 'Modifica';
+        edit.textContent = 'Edit';
         edit.onclick = () => { editing = site.id; showError(); renderList(); };
         const del = document.createElement('button');
-        del.textContent = 'Rimuovi';
+        del.textContent = 'Remove';
         del.onclick = () => confirmRemove(site.id);
         row.append(info, edit, del);
       }
@@ -321,14 +321,14 @@
     if (!prefs.sites.length) {
       const empty = document.createElement('div');
       empty.style.color = '#999';
-      empty.textContent = 'Nessun sito. Aggiungine uno qui sotto.';
+      empty.textContent = 'No sites. Add one below.';
       list.append(empty);
     }
   }
 
   function render() { renderTabs(); renderList(); }
 
-  // ---------- frecce di scorrimento ----------
+  // ---------- scroll arrows ----------
 
   function updateArrows() {
     const overflow = tabsEl.scrollWidth > tabsEl.clientWidth + 1;
@@ -342,9 +342,9 @@
   tabsEl.addEventListener('wheel', (e) => { tabsEl.scrollLeft += e.deltaY || e.deltaX; e.preventDefault(); }, { passive: false });
   new ResizeObserver(updateArrows).observe(tabsEl);
 
-  // ---------- modifiche all'elenco ----------
+  // ---------- list changes ----------
 
-  // Restituisce il sito aggiunto, oppure null se l'indirizzo non è valido.
+  // Returns the added site, or null if the address is invalid.
   function addSite(raw) {
     const url = normalizeUrl(raw);
     if (!url) return null;
@@ -359,7 +359,7 @@
   function updateSite(id, raw) {
     const site = findSite(id);
     const url = normalizeUrl(raw);
-    if (!url) return showError('Indirizzo non valido.');
+    if (!url) return showError('Invalid address.');
     editing = null;
     showError();
     if (url !== site.url) {
@@ -385,39 +385,39 @@
     const site = findSite(id);
     if (!site) return;
     const ok = await openDialog({
-      message: `Rimuovere "${siteName(site)}" dall'elenco dei siti?`,
-      okLabel: 'Rimuovi',
+      message: `Remove "${siteName(site)}" from the list of sites?`,
+      okLabel: 'Remove',
       danger: true,
     });
     if (ok) removeSite(id);
   }
 
-  // Aggiunta dal "+" nella barra: chiede l'indirizzo e apre subito la nuova tab.
+  // Adding from the "+" in the bar: asks for the address and opens the new tab right away.
   async function promptAddTab() {
     const url = await openDialog({
-      message: 'Indirizzo del sito da aggiungere:',
+      message: 'Address of the site to add:',
       input: '',
-      placeholder: 'es. https://example.com',
-      okLabel: 'Aggiungi',
-      validate: (v) => (normalizeUrl(v) ? null : 'Indirizzo non valido.'),
+      placeholder: 'e.g. https://example.com',
+      okLabel: 'Add',
+      validate: (v) => (normalizeUrl(v) ? null : 'Invalid address.'),
     });
     if (url === null) return;
     const site = addSite(url);
     if (site) activate(site.id);
   }
 
-  // ---------- finestra di dialogo ----------
+  // ---------- dialog ----------
   //
   // openDialog({ message, input?, placeholder?, okLabel?, danger?, validate? })
-  // Senza `input` è una conferma e restituisce true/false; con `input` (valore
-  // iniziale) restituisce il testo inserito, oppure null se si annulla.
+  // Without `input` it is a confirmation and returns true/false; with `input`
+  // (initial value) it returns the entered text, or null if cancelled.
 
   const dialog = $('dialog'), dialogForm = $('dialog-form'), dialogInput = $('dialog-input');
   const dialogOk = $('dialog-ok'), dialogError = $('dialog-error');
   let closeDialog = null;
 
   function openDialog({ message, input, placeholder = '', okLabel = 'OK', danger = false, validate }) {
-    closeDialog?.(null);   // una sola finestra alla volta
+    closeDialog?.(null);   // one dialog at a time
     const withInput = input !== undefined;
     $('dialog-msg').textContent = message;
     dialogInput.hidden = !withInput;
@@ -445,15 +445,15 @@
     });
   }
   $('dialog-cancel').onclick = () => closeDialog?.(false);
-  // Clic sullo sfondo scuro o Esc: annulla.
+  // Click on the dark backdrop or Esc: cancel.
   dialog.addEventListener('mousedown', (e) => { if (e.target === dialog) closeDialog?.(false); });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && closeDialog) { e.preventDefault(); closeDialog(false); }
   });
 
-  // Quando la finestra riceve il focus, la tastiera va al sito aperto
-  // (altrimenti resterebbe sulla pagina che contiene le tab), a meno che
-  // non sia aperta una finestra di dialogo.
+  // When the window gets focus, the keyboard goes to the open site
+  // (otherwise it would stay on the page holding the tabs), unless
+  // a dialog is open.
   window.addEventListener('focus', () => {
     if (isSite(active) && !closeDialog) webviews.get(active)?.focus();
   });
@@ -469,11 +469,11 @@
       $('add-url').value = '';
       showError();
     } else {
-      showError('Indirizzo non valido.');
+      showError('Invalid address.');
     }
   };
 
-  // ---------- scorciatoia ----------
+  // ---------- shortcut ----------
 
   const shortcutEl = $('shortcut'), shortcutHint = $('shortcut-hint');
   const changeBtn = $('shortcut-change');
@@ -481,13 +481,13 @@
   let currentShortcut = null;
 
   function showShortcut(acc, msg, isError) {
-    shortcutEl.textContent = acc || 'nessuna';
+    shortcutEl.textContent = acc || 'none';
     shortcutHint.textContent = msg || '';
     shortcutHint.classList.toggle('err', !!isError);
   }
 
-  // Converte un KeyboardEvent nel tasto di un accelerator di Electron.
-  // Si usa e.code (tasto fisico) così il risultato non dipende dal layout.
+  // Converts a KeyboardEvent into the key of an Electron accelerator.
+  // e.code (physical key) is used so the result does not depend on the layout.
   const CODE_KEYS = {
     Space: 'Space', Tab: 'Tab', Enter: 'Enter', Backspace: 'Backspace',
     Insert: 'Insert', Delete: 'Delete', Home: 'Home', End: 'End',
@@ -511,7 +511,7 @@
     capturing = true;
     window.overlay.suspendShortcut(true);
     shortcutEl.classList.add('capturing');
-    showShortcut('…', 'Premi la nuova combinazione (Esc per annullare).');
+    showShortcut('…', 'Press the new combination (Esc to cancel).');
     changeBtn.disabled = true;
   }
   function endCapture() {
@@ -519,7 +519,7 @@
     shortcutEl.classList.remove('capturing');
     changeBtn.disabled = false;
   }
-  // Annulla la cattura e riattiva la scorciatoia attuale.
+  // Cancels the capture and re-enables the current shortcut.
   function cancelCapture() {
     if (!capturing) return;
     endCapture();
@@ -529,7 +529,7 @@
   async function applyShortcut(acc) {
     const res = await window.overlay.setShortcut(acc);
     currentShortcut = res.shortcut;
-    if (res.ok) showShortcut(res.shortcut, 'Scorciatoia aggiornata.');
+    if (res.ok) showShortcut(res.shortcut, 'Shortcut updated.');
     else showShortcut(res.shortcut, res.error, true);
   }
   window.addEventListener('blur', cancelCapture);
@@ -543,16 +543,16 @@
       return;
     }
     const key = keyFromCode(e.code);
-    if (!key) return;   // tasto modificatore da solo o non supportato: si aspetta il prossimo
+    if (!key) return;   // modifier alone or unsupported key: wait for the next one
     const mods = [];
     if (e.ctrlKey) mods.push('Ctrl');
     if (e.altKey) mods.push('Alt');
     if (e.shiftKey) mods.push('Shift');
     if (e.metaKey) mods.push('Super');
-    // Senza modificatori sono ammessi solo i tasti funzione, per non
-    // "rubare" a tutto il sistema un tasto usato normalmente per scrivere.
+    // Without modifiers only function keys are allowed, so as not to
+    // "steal" from the whole system a key normally used for typing.
     if (!mods.length && !/^F\d+$/.test(key)) {
-      showShortcut('…', 'Usa un tasto funzione (F1–F24) o una combinazione con Ctrl, Alt, Shift o Win.', true);
+      showShortcut('…', 'Use a function key (F1–F24) or a combination with Ctrl, Alt, Shift or Win.', true);
       return;
     }
     endCapture();
@@ -562,11 +562,11 @@
   changeBtn.onclick = startCapture;
   $('shortcut-reset').onclick = () => { cancelCapture(); applyShortcut('F10'); };
 
-  // ---------- opzioni ----------
+  // ---------- options ----------
   //
-  // Ogni checkbox è legata a una chiave di `settings` in prefs.json e viene
-  // applicata subito. Per aggiungere un'opzione: un elemento in OPTIONS e il
-  // relativo default in main.js (DEFAULT_SETTINGS).
+  // Each checkbox is bound to a `settings` key in prefs.json and is applied
+  // immediately. To add an option: an entry in OPTIONS and its default in
+  // main.js (DEFAULT_SETTINGS).
 
   const OPTIONS = { hideOnBlur: $('opt-hide-on-blur') };
 
@@ -577,7 +577,7 @@
     }
   }
 
-  // ---------- avvio ----------
+  // ---------- startup ----------
 
   (async () => {
     const state = await window.overlay.loadState();
@@ -585,7 +585,7 @@
     currentShortcut = state.shortcut;
     showShortcut(currentShortcut);
     initOptions(state.settings);
-    // Riapre l'ultima tab scelta, se il sito esiste ancora.
+    // Reopens the last chosen tab, if the site still exists.
     activate(findSite(state.activeTab) ? state.activeTab : null);
     renderList();
     for (const site of prefs.sites) if (!site.title) resolveTitle(site);

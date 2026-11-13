@@ -1,7 +1,7 @@
 {
   "name": "overlay-browser",
   "version": "1.0.0",
-  "description": "Browser in overlay da mostrare e nascondere con una scorciatoia",
+  "description": "Overlay browser shown and hidden with a keyboard shortcut",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
