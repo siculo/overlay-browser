@@ -52,28 +52,48 @@
 
   /* Home */
   #home, .page { flex: 1; overflow-y: auto; padding: 24px; }
-  #home h1, .page h1 { margin: 0 0 16px; font-weight: 500; font-size: 22px; }
+  .page h1 { margin: 0 0 16px; font-weight: 500; font-size: 22px; }
   .page h2 { margin: 24px 0 12px; font-weight: 500; font-size: 16px; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; }
   .page h1 + h2 { margin-top: 8px; }
   .setting.check { align-items: flex-start; cursor: pointer; max-width: 720px; }
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
   .setting .desc { display: block; font-size: 13px; color: #999; margin-top: 2px; }
   #settings-btn { padding: 3px 8px; }
-  #list { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
+  /* Site lists: the current one first, then the others (collapsed) */
+  #lists { display: flex; flex-direction: column; gap: 18px; max-width: 720px; margin-top: 8px; }
+  .list-head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid #333; }
+  .list-head.toggle { cursor: pointer; }
+  .list-head.toggle:hover .name { text-decoration: underline; }
+  .list-head .twisty { width: 1em; color: #888; }
+  .list-head .name { font-size: 17px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .list:not(.current) .list-head .name { color: #ccc; }
+  .list.current { margin-bottom: 22px; }
+  #lists .lists-title { margin: 0 0 -8px; font-weight: 500; font-size: 14px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+  .list-head .detail { flex: 1; font-size: 12px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .badge { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: #23344d; color: #9cf; }
+  .badge.new { background: #2e2e2e; color: #aaa; }
+  .list-body { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .list-body .empty { color: #999; }
+  .site .info.static { cursor: default; }
+  .site .info.static:hover .title { text-decoration: none; }
   .site { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #1c1c1c; border: 1px solid #333; border-radius: 6px; }
   .site .info { flex: 1; min-width: 0; cursor: pointer; }
   .site .info:hover .title { text-decoration: underline; }
   .site .title { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .site .url { font-size: 12px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .site input { flex: 1; min-width: 0; }
-  #add { display: flex; gap: 8px; max-width: 720px; margin-top: 16px; }
-  #add input { flex: 1; }
-  .error { color: #f77; font-size: 13px; margin-top: 6px; min-height: 1em; }
+  .add { display: flex; gap: 8px; margin-top: 4px; }
+  .add input { flex: 1; }
+  .error { color: #f77; font-size: 13px; min-height: 1em; }
+  .error:empty { display: none; }
   #home h2 { margin: 28px 0 12px; font-weight: 500; font-size: 18px; }
-  /* Application the overlay was opened over (e.g. the game) */
-  #fg-app { display: flex; align-items: baseline; gap: 8px; max-width: 720px; margin: -6px 0 16px; padding: 6px 10px; font-size: 13px; color: #bbb; background: #1c1c1c; border: 1px solid #333; border-left: 3px solid #6af; border-radius: 4px; }
-  #fg-app .name { color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  #fg-app .detail { color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+  /* Boxes above the lists: list chosen by hand, predefined list offered */
+  .notice { display: flex; align-items: center; gap: 8px; max-width: 720px; margin: 0 0 8px; padding: 6px 10px; font-size: 13px; color: #bbb; background: #1c1c1c; border: 1px solid #333; border-left: 3px solid #6af; border-radius: 4px; }
+  .notice .name { color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .notice .detail { color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+  .notice button { font-size: 13px; padding: 2px 8px; }
+  .notice.offer { border-left-color: #6c6; }
+  .notice.offer .detail { color: #ddd; white-space: normal; }
   .setting { display: flex; align-items: center; gap: 8px; }
   kbd { font: inherit; font-family: ui-monospace, monospace; padding: 3px 8px; border: 1px solid #555; border-radius: 4px; background: #1c1c1c; min-width: 3em; text-align: center; }
   kbd.capturing { border-color: #6af; color: #6af; }
@@ -106,18 +126,18 @@
   </div>
 
   <div id="home">
-    <h1 data-i18n="home.title"></h1>
-    <div id="fg-app" hidden>
-      <span id="fg-app-label"></span>
-      <span class="name" id="fg-app-name"></span>
-      <span class="detail" id="fg-app-detail"></span>
+    <div class="notice" id="pinned" hidden>
+      <span id="pinned-label"></span>
+      <span class="name" id="pinned-name"></span>
+      <span class="detail"></span>
+      <button id="pinned-restore"></button>
     </div>
-    <div id="list"></div>
-    <form id="add">
-      <input id="add-url" data-i18n-placeholder="home.addPlaceholder">
-      <button type="submit" data-i18n="home.add"></button>
-    </form>
-    <div class="error" id="error"></div>
+    <div class="notice offer" id="preset" hidden>
+      <span class="detail" id="preset-msg"></span>
+      <button id="preset-use"></button>
+      <button id="preset-dismiss"></button>
+    </div>
+    <div id="lists"></div>
   </div>
 
   <div id="settings" class="page" hidden>
@@ -173,15 +193,67 @@
 <script>
   const $ = (id) => document.getElementById(id);
   const homeBtn = $('home-btn'), tabsEl = $('tabs'), leftBtn = $('left'), rightBtn = $('right');
-  const home = $('home'), list = $('list'), views = $('views'), errorEl = $('error');
+  const home = $('home'), listsEl = $('lists'), views = $('views');
   const settingsBtn = $('settings-btn'), settingsPage = $('settings');
 
-  let prefs = { sites: [] };
-  const webviews = new Map();   // id -> webview (one "tab" per site, created on first access)
+  // ---------- site lists ----------
+  //
+  // Each list is { id, name, match, sites, activeTab }. `match` tells which
+  // application it belongs to: { exe } (executable, lowercase and without
+  // ".exe"), { title } (window title, when the executable is not known) or
+  // null (no application detected: the general list, which always exists
+  // and cannot be removed). `name` is the window title when the list was
+  // created (null for the general list).
+  //
+  // The current list, whose sites are the tabs, is the one chosen by hand
+  // (pinnedId) if any, otherwise the one of the application the overlay was
+  // opened over. A list is created only when its first site is added: until
+  // then the application's list is a "new" one (id null) with no sites.
+
+  let lists = [];
+  let pinnedId = null;                           // list chosen by hand, kept until restored
+  let context = { match: null, name: null };     // application the overlay was opened over
+  const webviews = new Map();   // site id -> webview (one "tab" per site, created on first access, kept across lists)
   const SETTINGS = ':settings'; // value of `active` for the Settings page
   let active = null;            // id of the active site, null = Home, SETTINGS = Settings
   const isSite = (id) => id !== null && id !== SETTINGS;
   let editing = null;           // id of the site being edited on the Home page
+  const expanded = new Set();   // ids of the other lists opened on the Home page
+  let listError = null;         // { key, msg }: error shown under a list (invalid address)
+  const drafts = new Map();     // input key -> text being typed, kept when the Home is rendered again
+  let focusKey = null;          // input to focus after the next render
+
+  function contextOf(app) {
+    const exe = app?.exe?.toLowerCase().replace(/\.exe$/, '');
+    if (exe) return { match: { exe }, name: app.title || app.exe };
+    if (app?.title) return { match: { title: app.title }, name: app.title };
+    return { match: null, name: null };
+  }
+  const sameMatch = (a, b) => (a?.exe ?? null) === (b?.exe ?? null) && (a?.title ?? null) === (b?.title ?? null);
+
+  const listKey = (l) => l.id ?? 'new';
+  const listName = (l) => l.name || l.match?.exe || l.match?.title || t('lists.general');
+  const contextList = () => lists.find((l) => sameMatch(l.match, context.match)) ??
+    { id: null, name: context.name, match: context.match, sites: [], activeTab: null };
+  const pinnedList = () => (pinnedId && lists.find((l) => l.id === pinnedId)) || null;
+  const currentList = () => pinnedList() || contextList();
+  const listOfSite = (id) => lists.find((l) => l.sites.some((s) => s.id === id));
+  const findSite = (id) => listOfSite(id)?.sites.find((s) => s.id === id);
+  const save = () => window.overlay.saveLists(lists);
+
+  // Turns a new list into a real one (when its first site is added).
+  function materialize(l) {
+    if (!l.id) {
+      l.id = crypto.randomUUID();
+      lists.push(l);
+    }
+    return l;
+  }
+
+  function setPinned(id) {
+    pinnedId = id;
+    window.overlay.pinList(id);
+  }
 
   // ---------- utilities ----------
 
@@ -198,10 +270,8 @@
   }
 
   const siteName = (site) => site.title || new URL(site.url).hostname;
-  const findSite = (id) => prefs.sites.find((s) => s.id === id);
-  const save = () => window.overlay.saveSites(prefs.sites);
 
-  function showError(msg) { errorEl.textContent = msg || ''; }
+  function showError(msg, l) { listError = msg ? { key: listKey(l), msg } : null; }
 
   // Fetches the title from the page; if that fails the host name is kept.
   async function resolveTitle(site) {
@@ -212,6 +282,29 @@
       save();
       render();
     }
+  }
+
+  function el(tag, className, text) {
+    const e = document.createElement(tag);
+    if (className) e.className = className;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function button(text, onclick, type = 'button') {
+    const b = el('button', null, text);
+    b.type = type;
+    if (onclick) b.onclick = (e) => { e.stopPropagation(); onclick(e); };
+    return b;
+  }
+
+  // Input whose text survives the Home being rendered again (see renderHome).
+  function draftInput(key, initial) {
+    const input = el('input');
+    input.dataset.key = key;
+    input.value = drafts.has(key) ? drafts.get(key) : initial;
+    input.oninput = () => drafts.set(key, input.value);
+    return input;
   }
 
   // ---------- tab / webview ----------
@@ -244,9 +337,13 @@
   }
 
   function activate(id) {
-    // The Settings page is not remembered as the "last tab".
-    if (id !== active && id !== SETTINGS) window.overlay.setActiveTab(id);
-    if (id !== SETTINGS) cancelCapture();
+    // The Settings page is not remembered as the list's "last tab".
+    if (id !== SETTINGS) {
+      cancelCapture();
+      const cur = currentList();
+      const tab = isSite(id) ? id : null;
+      if (cur.id && cur.activeTab !== tab) { cur.activeTab = tab; save(); }
+    }
     active = id;
     if (isSite(id)) getWebview(findSite(id));
     home.hidden = id !== null;
@@ -255,6 +352,16 @@
     for (const [wid, wv] of webviews) wv.style.display = wid === id ? 'flex' : 'none';
     renderTabs();
     updateNav();
+  }
+
+  // At startup and after the current list has changed (another application,
+  // a list chosen or restored): reopens its last tab, otherwise its first
+  // one; the Home only if the list has no sites. The Settings page stays.
+  function showCurrentList() {
+    const cur = currentList();
+    const last = cur.sites.some((s) => s.id === cur.activeTab) ? cur.activeTab : null;
+    if (active !== SETTINGS) activate(last ?? cur.sites[0]?.id ?? null);
+    render();
   }
 
   // ---------- navigation ----------
@@ -284,106 +391,149 @@
   function renderTabs() {
     homeBtn.classList.toggle('active', active === null);
     settingsBtn.classList.toggle('active', active === SETTINGS);
-    tabsEl.replaceChildren(...prefs.sites.map((site) => {
-      const tab = document.createElement('div');
-      tab.className = 'tab';
+    tabsEl.replaceChildren(...currentList().sites.map((site) => {
+      const tab = el('div', 'tab');
       tab.classList.toggle('active', site.id === active);
       tab.title = siteName(site);
       tab.onclick = () => activate(site.id);
       // Middle click on the tab: close it, as in browsers.
       tab.onauxclick = (e) => { if (e.button === 1) confirmRemove(site.id); };
-
-      const label = document.createElement('span');
-      label.className = 'label';
-      label.textContent = siteName(site);
-
-      const close = document.createElement('span');
-      close.className = 'close';
-      close.textContent = '×';
+      const close = el('span', 'close', '×');
       close.title = t('site.remove');
       close.onclick = (e) => { e.stopPropagation(); confirmRemove(site.id); };
-
-      tab.append(label, close);
+      tab.append(el('span', 'label', siteName(site)), close);
       return tab;
     }));
     tabsEl.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     updateArrows();
   }
 
-  function renderList() {
-    list.replaceChildren(...prefs.sites.map((site) => {
-      const row = document.createElement('div');
-      row.className = 'site';
-
-      if (editing === site.id) {
-        const input = document.createElement('input');
-        input.value = site.url;
-        const ok = document.createElement('button');
-        ok.textContent = t('site.save');
-        const cancel = document.createElement('button');
-        cancel.textContent = t('site.cancel');
-        ok.onclick = () => updateSite(site.id, input.value);
-        cancel.onclick = () => { editing = null; showError(); renderList(); };
-        input.onkeydown = (e) => {
-          if (e.key === 'Enter') ok.click();
-          if (e.key === 'Escape') cancel.click();
-        };
-        row.append(input, ok, cancel);
-        setTimeout(() => input.focus());
-      } else {
-        const info = document.createElement('div');
-        info.className = 'info';
-        const title = document.createElement('div');
-        title.className = 'title';
-        title.textContent = siteName(site);
-        const url = document.createElement('div');
-        url.className = 'url';
-        url.textContent = site.url;
-        info.append(title, url);
-        info.onclick = () => activate(site.id);
-
-        const edit = document.createElement('button');
-        edit.textContent = t('site.edit');
-        edit.onclick = () => { editing = site.id; showError(); renderList(); };
-        const del = document.createElement('button');
-        del.textContent = t('site.remove');
-        del.onclick = () => confirmRemove(site.id);
-        row.append(info, edit, del);
-      }
-      return row;
-    }));
-    if (!prefs.sites.length) {
-      const empty = document.createElement('div');
-      empty.style.color = '#999';
-      empty.textContent = t('home.empty');
-      list.append(empty);
+  function siteRow(site, isCurrent) {
+    const row = el('div', 'site');
+    if (editing === site.id) {
+      const key = 'edit:' + site.id;
+      const input = draftInput(key, site.url);
+      const ok = button(t('site.save'), () => updateSite(site.id, input.value));
+      const cancel = button(t('site.cancel'), () => { editing = null; drafts.delete(key); showError(); renderHome(); });
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') ok.click();
+        if (e.key === 'Escape') cancel.click();
+      };
+      row.append(input, ok, cancel);
+    } else {
+      const info = el('div', 'info');
+      info.append(el('div', 'title', siteName(site)), el('div', 'url', site.url));
+      // Only the current list's sites are tabs that can be opened.
+      if (isCurrent) info.onclick = () => activate(site.id);
+      else info.classList.add('static');
+      const edit = button(t('site.edit'), () => {
+        editing = site.id;
+        drafts.delete('edit:' + site.id);
+        focusKey = 'edit:' + site.id;
+        showError();
+        renderHome();
+      });
+      row.append(info, edit, button(t('site.remove'), () => confirmRemove(site.id)));
     }
+    return row;
   }
 
-  // ---------- application the overlay was opened over ----------
+  // A list on the Home page: header, then (if open) its sites and the add form.
+  // The current list is always open; the others open by clicking the header.
+  function listSection(l, isCurrent) {
+    const section = el('section', 'list');
+    section.classList.toggle('current', isCurrent);
+    const open = isCurrent || expanded.has(l.id);
 
-  let fgApp = null;   // { exe, path, title, steamAppId } or null, from the main process
+    const head = el('div', 'list-head');
+    if (!isCurrent) {
+      head.classList.add('toggle');
+      head.append(el('span', 'twisty', open ? '▾' : '▸'));
+      head.onclick = () => {
+        if (!expanded.delete(l.id)) expanded.add(l.id);
+        renderHome();
+      };
+    }
+    head.append(el('span', 'name', listName(l)));
+    if (isCurrent) head.append(el('span', 'badge', t('lists.current')));
+    if (!l.id) head.append(el('span', 'badge new', t('lists.new')));
+    const app = l.match ? (l.match.exe ?? `"${l.match.title}"`) : t('lists.noApp');
+    const count = t(l.sites.length === 1 ? 'lists.sites.one' : 'lists.sites.other', { count: l.sites.length });
+    head.append(el('span', 'detail', `${app} · ${count}`));
+    if (l.id && !isCurrent) head.append(button(t('lists.use'), () => { setPinned(l.id); showCurrentList(); }));
+    if (l.id && l.match) head.append(button(t('lists.remove'), () => confirmRemoveList(l)));
+    section.append(head);
+    if (!open) return section;
 
-  function renderForegroundApp() {
-    const box = $('fg-app');
-    box.hidden = !fgApp || !(fgApp.title || fgApp.exe);
-    if (box.hidden) return;
-    $('fg-app-label').textContent = t('home.foregroundApp');
-    // The window title is usually the game's name; otherwise the executable.
-    $('fg-app-name').textContent = fgApp.title || fgApp.exe;
-    const details = [];
-    if (fgApp.title && fgApp.exe) details.push(fgApp.exe);
-    if (fgApp.steamAppId) details.push(t('home.steamAppId', { id: fgApp.steamAppId }));
-    $('fg-app-detail').textContent = details.join(' · ');
-    box.title = [fgApp.title, fgApp.path].filter(Boolean).join('\n');
+    const body = el('div', 'list-body');
+    body.append(...l.sites.map((site) => siteRow(site, isCurrent)));
+    if (!l.sites.length) body.append(el('div', 'empty', t(l.id ? 'home.empty' : 'lists.emptyNew')));
+
+    const key = 'add:' + listKey(l);
+    const form = el('form', 'add');
+    const input = draftInput(key, '');
+    input.placeholder = t('home.addPlaceholder');
+    form.append(input, button(t('home.add'), null, 'submit'));
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      if (!normalizeUrl(input.value)) {
+        showError(t('site.invalidUrl'), l);
+        focusKey = key;
+        return renderHome();
+      }
+      drafts.delete(key);
+      showError();
+      // A new list gets its id now, so the focus can stay on its add field.
+      materialize(l);
+      focusKey = 'add:' + l.id;
+      addSite(l, input.value);
+    };
+    body.append(form, el('div', 'error', listError?.key === listKey(l) ? listError.msg : ''));
+    section.append(body);
+    return section;
   }
 
-  window.overlay.onForegroundApp((app) => {
-    fgApp = app;
-    renderForegroundApp();
-  });
+  // List chosen by hand: shown with the button to go back to the application's one.
+  function renderPinned() {
+    const pinned = pinnedList();
+    $('pinned').hidden = !pinned;
+    if (!pinned) return;
+    $('pinned-label').textContent = t('lists.pinned');
+    $('pinned-name').textContent = listName(pinned);
+    $('pinned-restore').textContent = t('lists.restore', { name: listName(contextList()) });
+  }
 
-  function render() { renderTabs(); renderList(); renderForegroundApp(); }
+  function renderPreset() {
+    const show = !!preset && !pinnedList() && !contextList().id && preset.exe === context.match?.exe;
+    $('preset').hidden = !show;
+    if (!show) return;
+    const count = t(preset.sites.length === 1 ? 'lists.sites.one' : 'lists.sites.other', { count: preset.sites.length });
+    $('preset-msg').textContent = t('preset.found', { name: preset.name || context.name, count });
+    $('preset-use').textContent = t('preset.use');
+    $('preset-dismiss').textContent = t('preset.dismiss');
+  }
+
+  // The Home page: current list first, then the others. Rendering replaces
+  // the inputs: the text being typed (drafts) and the focus are restored.
+  function renderHome() {
+    const focused = document.activeElement?.dataset?.key;
+    const selection = focused && [document.activeElement.selectionStart, document.activeElement.selectionEnd];
+    renderPinned();
+    renderPreset();
+    const cur = currentList();
+    const others = lists.filter((l) => l !== cur);
+    listsEl.replaceChildren(listSection(cur, true));
+    if (others.length) listsEl.append(el('h2', 'lists-title', t('lists.others')), ...others.map((l) => listSection(l, false)));
+    const key = focusKey ?? focused;
+    const input = key && listsEl.querySelector(`input[data-key="${CSS.escape(key)}"]`);
+    if (input) {
+      input.focus();
+      if (!focusKey && selection) input.setSelectionRange(...selection);
+    }
+    focusKey = null;
+  }
+
+  function render() { renderTabs(); renderHome(); }
 
   // ---------- scroll arrows ----------
 
@@ -402,11 +552,11 @@
   // ---------- list changes ----------
 
   // Returns the added site, or null if the address is invalid.
-  function addSite(raw) {
+  function addSite(l, raw) {
     const url = normalizeUrl(raw);
     if (!url) return null;
     const site = { id: crypto.randomUUID(), url, title: null };
-    prefs.sites.push(site);
+    materialize(l).sites.push(site);
     save();
     render();
     resolveTitle(site);
@@ -416,8 +566,13 @@
   function updateSite(id, raw) {
     const site = findSite(id);
     const url = normalizeUrl(raw);
-    if (!url) return showError(t('site.invalidUrl'));
+    if (!url) {
+      showError(t('site.invalidUrl'), listOfSite(id));
+      focusKey = 'edit:' + id;
+      return renderHome();
+    }
     editing = null;
+    drafts.delete('edit:' + id);
     showError();
     if (url !== site.url) {
       site.url = url;
@@ -431,11 +586,14 @@
   }
 
   function removeSite(id) {
-    prefs.sites = prefs.sites.filter((s) => s.id !== id);
+    const l = listOfSite(id);
+    l.sites = l.sites.filter((s) => s.id !== id);
+    if (l.activeTab === id) l.activeTab = null;
     closeWebview(id);
     if (editing === id) editing = null;
     save();
-    if (active === id) activate(null); else render();
+    if (active === id) activate(null);
+    render();
   }
 
   async function confirmRemove(id) {
@@ -449,6 +607,24 @@
     if (ok) removeSite(id);
   }
 
+  async function confirmRemoveList(l) {
+    const ok = await openDialog({
+      message: t('lists.confirmRemove', { name: listName(l) }),
+      okLabel: t('lists.remove'),
+      danger: true,
+    });
+    if (!ok || !lists.includes(l)) return;
+    const wasCurrent = currentList() === l;
+    lists = lists.filter((x) => x !== l);
+    for (const site of l.sites) closeWebview(site.id);
+    expanded.delete(l.id);
+    if (editing && l.sites.some((s) => s.id === editing)) editing = null;
+    if (pinnedId === l.id) setPinned(null);
+    save();
+    if (wasCurrent) showCurrentList(); else render();
+    lookupPreset();
+  }
+
   // Adding from the "+" in the bar: asks for the address and opens the new tab right away.
   async function promptAddTab() {
     const url = await openDialog({
@@ -459,9 +635,65 @@
       validate: (v) => (normalizeUrl(v) ? null : t('site.invalidUrl')),
     });
     if (url === null) return;
-    const site = addSite(url);
+    const site = addSite(currentList(), url);
     if (site) activate(site.id);
   }
+
+  // ---------- application the overlay was opened over ----------
+  //
+  // At every show the main process sends the detected application: its list
+  // becomes the current one (unless a list was chosen by hand).
+
+  window.overlay.onForegroundApp((app) => {
+    const before = currentList();
+    context = contextOf(app);
+    const after = currentList();
+    if (before.id !== after.id || !sameMatch(before.match, after.match)) showCurrentList();
+    else renderHome();
+    lookupPreset();
+  });
+
+  $('pinned-restore').onclick = () => { setPinned(null); showCurrentList(); };
+
+  // ---------- predefined lists ----------
+  //
+  // When the application has no list yet, a predefined one (lists/ in the
+  // app, see main.js) is looked for by executable and offered on the Home.
+
+  let preset = null;                     // { exe, name, sites }: list offered for the current application
+  const dismissedPresets = new Set();    // executables whose predefined list was declined (this session)
+  let presetLookup = 0;                  // ignores answers to lookups that are no longer current
+
+  async function lookupPreset() {
+    const exe = context.match?.exe;
+    const lookup = ++presetLookup;
+    preset = null;
+    renderPreset();
+    if (!exe || contextList().id || dismissedPresets.has(exe)) return;
+    const found = await window.overlay.findPreset(exe);
+    if (lookup !== presetLookup || !found) return;
+    preset = { exe, ...found };
+    renderPreset();
+  }
+
+  $('preset-use').onclick = () => {
+    if (!preset) return;
+    const l = materialize(contextList());
+    if (preset.name) l.name = preset.name;
+    for (const s of preset.sites) {
+      const url = normalizeUrl(s.url);
+      if (url) l.sites.push({ id: crypto.randomUUID(), url, title: s.title });
+    }
+    preset = null;
+    save();
+    showCurrentList();
+    for (const site of l.sites) if (!site.title) resolveTitle(site);
+  };
+  $('preset-dismiss').onclick = () => {
+    if (preset) dismissedPresets.add(preset.exe);
+    preset = null;
+    renderPreset();
+  };
 
   // ---------- dialog ----------
   //
@@ -520,15 +752,6 @@
   window.overlay.onSettings(() => activate(SETTINGS));
   $('add-tab').onclick = promptAddTab;
   window.overlay.onHome(() => activate(null));
-  $('add').onsubmit = (e) => {
-    e.preventDefault();
-    if (addSite($('add-url').value)) {
-      $('add-url').value = '';
-      showError();
-    } else {
-      showError(t('site.invalidUrl'));
-    }
-  };
 
   // ---------- shortcut ----------
 
@@ -707,8 +930,8 @@
     languageSetting = languageSelect.value;
     applyI18n(await window.overlay.setLanguage(languageSetting));
     // Texts built while rendering, and messages still in the old language.
-    render();
     showError();
+    render();
     if (!capturing) showShortcut(currentShortcut);
   };
 
@@ -719,16 +942,16 @@
     initOpacity(state.platform, state.settings.opacity);
     languageSetting = state.settings.language;
     applyI18n(state.i18n);
-    prefs = { sites: state.sites };
-    fgApp = state.foregroundApp;
-    renderForegroundApp();
+    lists = state.lists;
+    pinnedId = state.pinnedList;
+    context = contextOf(state.foregroundApp);
     currentShortcut = state.shortcut;
     showShortcut(currentShortcut);
     initOptions(state.settings);
-    // Reopens the last chosen tab, if the site still exists.
-    activate(findSite(state.activeTab) ? state.activeTab : null);
-    renderList();
-    for (const site of prefs.sites) if (!site.title) resolveTitle(site);
+    // Reopens the current list's last tab, if the site still exists.
+    showCurrentList();
+    lookupPreset();
+    for (const l of lists) for (const site of l.sites) if (!site.title) resolveTitle(site);
   })();
 </script>
 </body>

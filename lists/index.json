@@ -1,0 +1,5 @@
+{
+  "lists": [
+    { "file": "star-citizen.json", "exe": ["starcitizen"] }
+  ]
+}

@@ -18,13 +18,6 @@ const uiohook = (() => {
   }
 })();
 
-// Sites offered on first launch, until the user saves their own list.
-const DEFAULT_SITES = [
-  'https://scmdb.net/',
-  'https://erkul.games/calculator',
-  'https://starcitizen.tools',
-].map((url) => ({ id: crypto.randomUUID(), url, title: null }));
-
 const DEFAULT_SHORTCUT = 'F10';
 // Options of the Settings page: key -> default.
 const DEFAULT_SETTINGS = {
@@ -78,12 +71,31 @@ function loadPrefs() {
     // Missing or corrupted file: start over from the defaults.
   }
   return {
-    sites: Array.isArray(loaded.sites) ? loaded.sites : DEFAULT_SITES,
+    lists: loadLists(loaded),
+    pinnedList: typeof loaded.pinnedList === 'string' ? loaded.pinnedList : null,
     window: loaded.window ?? null,
-    activeTab: typeof loaded.activeTab === 'string' ? loaded.activeTab : null,
     shortcut: typeof loaded.shortcut === 'string' && loaded.shortcut ? loaded.shortcut : DEFAULT_SHORTCUT,
     settings: loadSettings(loaded.settings),
   };
+}
+
+// Site lists: one per application (see index.html), plus the general list
+// (match null), used when no application is detected, which always exists.
+// Before lists existed there was a single list (`sites`, `activeTab`): its
+// sites go to the general list, except those of the predefined lists (the
+// old default sites), which are offered again for their game.
+function loadLists(loaded) {
+  let lists = Array.isArray(loaded.lists) ? loaded.lists : [];
+  if (!Array.isArray(loaded.lists) && Array.isArray(loaded.sites)) {
+    const preset = presetUrls();
+    const sites = loaded.sites.filter((s) => !preset.has(urlKey(s?.url)));
+    const activeTab = sites.some((s) => s.id === loaded.activeTab) ? loaded.activeTab : null;
+    lists = [{ id: crypto.randomUUID(), name: null, match: null, sites, activeTab }];
+  }
+  if (!lists.some((l) => l?.match === null)) {
+    lists = [{ id: crypto.randomUUID(), name: null, match: null, sites: [], activeTab: null }, ...lists];
+  }
+  return lists;
 }
 
 // Keeps only known keys with a valid value; the others get the default.
@@ -244,6 +256,59 @@ async function fetchTitle(url) {
     const title = m && decodeEntities(m[1]).replace(/\s+/g, ' ').trim();
     return title || null;
   } catch {
+    return null;
+  }
+}
+
+// ---------- predefined lists ----------
+//
+// Ready-made site lists for known games, shipped with the app in lists/:
+// index.json maps executables to list files (see lists/README.md).
+
+const PRESETS_DIR = path.join(__dirname, 'lists');
+const PRESET_FILE = /^[\w-]+\.json$/;
+
+const readPresetFile = async (file) => JSON.parse(await fs.promises.readFile(path.join(PRESETS_DIR, file), 'utf8'));
+
+// Same address written in different ways (e.g. with or without the final "/").
+function urlKey(url) {
+  try { return new URL(url).href; } catch { return null; }
+}
+
+// Addresses of all the predefined lists (for the migration of the old list).
+function presetUrls() {
+  const urls = new Set();
+  try {
+    const index = JSON.parse(fs.readFileSync(path.join(PRESETS_DIR, 'index.json'), 'utf8'));
+    for (const { file } of index.lists ?? []) {
+      if (typeof file !== 'string' || !PRESET_FILE.test(file)) continue;
+      const data = JSON.parse(fs.readFileSync(path.join(PRESETS_DIR, file), 'utf8'));
+      for (const s of data.sites ?? []) urls.add(urlKey(s?.url));
+    }
+  } catch (err) {
+    log(`presets: cannot read the predefined lists: ${err}`);
+  }
+  return urls;
+}
+
+// Predefined list for an executable (normalized, see index.html), or null:
+// { name, sites: [{ url, title }] }.
+async function findPreset(exe) {
+  let file = null;
+  try {
+    const index = await readPresetFile('index.json');
+    file = (Array.isArray(index?.lists) ? index.lists : []).find((e) =>
+      typeof e?.file === 'string' && PRESET_FILE.test(e.file) &&
+      Array.isArray(e.exe) && e.exe.some((x) => String(x).toLowerCase() === exe))?.file;
+    if (!file) return null;
+    const data = await readPresetFile(file);
+    const sites = (Array.isArray(data?.sites) ? data.sites : [])
+      .filter((s) => typeof s?.url === 'string' && /^https?:\/\//i.test(s.url))
+      .map((s) => ({ url: s.url, title: typeof s.title === 'string' && s.title.trim() ? s.title.trim() : null }));
+    if (!sites.length) return null;
+    return { name: typeof data.name === 'string' && data.name.trim() ? data.name.trim() : null, sites };
+  } catch (err) {
+    log(`presets: cannot read ${file ?? 'index.json'}: ${err}`);
     return null;
   }
 }
@@ -476,8 +541,8 @@ function setShortcut(accelerator) {
 // ---------- IPC ----------
 
 ipcMain.handle('state:load', () => ({
-  sites: prefs.sites,
-  activeTab: prefs.activeTab,
+  lists: prefs.lists,
+  pinnedList: prefs.pinnedList,
   shortcut,
   settings: prefs.settings,
   foregroundApp,
@@ -504,15 +569,16 @@ ipcMain.handle('language:set', (_e, language) => {
   updateTray();
   return i18nState();
 });
-ipcMain.handle('sites:save', (_e, sites) => {
-  if (!Array.isArray(sites)) return;
-  prefs.sites = sites;
+ipcMain.handle('lists:save', (_e, lists) => {
+  if (!Array.isArray(lists)) return;
+  prefs.lists = lists;
   savePrefs();
 });
-ipcMain.handle('tab:setActive', (_e, id) => {
-  prefs.activeTab = typeof id === 'string' ? id : null;
+ipcMain.handle('lists:pin', (_e, id) => {
+  prefs.pinnedList = typeof id === 'string' ? id : null;
   savePrefs();
 });
+ipcMain.handle('presets:find', (_e, exe) => (typeof exe === 'string' && exe ? findPreset(exe.toLowerCase()) : null));
 ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
 ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerator)));
 // While the user records a new combination, the current one must be
