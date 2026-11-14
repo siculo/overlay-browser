@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, Tray } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, Tray, webContents } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
@@ -590,6 +590,31 @@ ipcMain.handle('settings:set', (_e, key, value) => {
   prefs.settings[key] = value;
   savePrefs();
   if (key === 'opacity') applyOpacity();
+});
+// Memory used by the app, process by process (measured by the platform
+// module, see memoryUsage in platform/index.js). For each process: its type
+// (Electron's: 'Browser', 'GPU', 'Tab', 'Utility'...), the bytes, the ids of
+// the webContents it hosts (the page matches them with its webviews) and
+// whether it hosts the overlay's own page.
+ipcMain.handle('memory:get', () => {
+  const metrics = app.getAppMetrics();
+  const { kind, bytes } = platform.memoryUsage(metrics);
+  const contents = new Map();   // pid -> webContents ids
+  for (const wc of webContents.getAllWebContents()) {
+    const pid = wc.getOSProcessId();
+    if (!contents.has(pid)) contents.set(pid, []);
+    contents.get(pid).push(wc.id);
+  }
+  const uiId = win && !win.isDestroyed() ? win.webContents.id : null;
+  return {
+    kind,
+    processes: metrics.map((m) => ({
+      type: m.type,
+      bytes: bytes.get(m.pid) ?? 0,
+      contents: contents.get(m.pid) ?? [],
+      ui: (contents.get(m.pid) ?? []).includes(uiId),
+    })),
+  };
 });
 // Changes the language and returns the new messages for the page.
 ipcMain.handle('language:set', (_e, language) => {

@@ -225,6 +225,27 @@ function beforeHide(win) {
   try { activate(previousActive); } catch (err) { console.error(err); }
 }
 
+// ---------- memory ----------
+
+// PSS of a process from /proc/<pid>/smaps_rollup (Linux 4.14+), in bytes;
+// null if it cannot be read (older kernel, process that is not readable).
+function pssOf(pid) {
+  try {
+    const m = /^Pss:\s+(\d+) kB/m.exec(fs.readFileSync(`/proc/${pid}/smaps_rollup`, 'utf8'));
+    return m ? Number(m[1]) * 1024 : null;
+  } catch {
+    return null;
+  }
+}
+
+// PSS of every process; if even one cannot be read, the working set of all
+// of them (mixing the two would make the total meaningless).
+function memoryUsage(metrics) {
+  const pss = metrics.map((m) => pssOf(m.pid));
+  if (pss.some((v) => v === null)) return generic.memoryUsage(metrics);
+  return { kind: 'pss', bytes: new Map(metrics.map((m, i) => [m.pid, pss[i]])) };
+}
+
 module.exports = {
   ...generic,
   id: x11 ? 'linux-x11' : 'linux-basic',
@@ -233,5 +254,6 @@ module.exports = {
   configureApp(app) {
     app.commandLine.appendSwitch('ozone-platform', 'x11');
   },
+  memoryUsage,
   ...(x11 ? { beforeShow, afterShow, beforeHide, foregroundApp } : {}),
 };

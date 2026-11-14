@@ -357,6 +357,15 @@ function trackSnap() {
   win.on('moved', onMoved);
 }
 
+// ---------- memory ----------
+
+// Private bytes, as Electron reports them on Windows (in kilobytes); the
+// working set if they are missing.
+function memoryUsage(metrics) {
+  if (!metrics.every((m) => Number.isFinite(m.memory.privateBytes))) return generic.memoryUsage(metrics);
+  return { kind: 'private', bytes: new Map(metrics.map((m) => [m.pid, m.memory.privateBytes * 1024])) };
+}
+
 // ---------- module ----------
 
 module.exports = win32 ? {
@@ -373,10 +382,12 @@ module.exports = win32 ? {
   beforeHide,
   foregroundApp,
   ownsForeground,
+  memoryUsage,
 } : {
   // Without the native API only the parts that do not need it remain.
   ...generic,
   id: 'win32-basic',
   features: { ...generic.features, keyboardHook: true },
   opacity: 'native',
+  memoryUsage,
 };

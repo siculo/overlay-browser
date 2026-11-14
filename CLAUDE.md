@@ -3,7 +3,7 @@
 Electron app for Windows and Linux (X11), with macOS planned: an overlay browser, always on top, shown/hidden with a global shortcut (F10 by default) or from the notification area icon. Meant for browsing sites (wikis, calculators) while playing.
 
 - `main.js`: window, preferences (`userData/prefs.json`: `%APPDATA%\overlay-browser` on Windows, `~/.config/overlay-browser` on Linux), tray, shortcut (globalShortcut + `uiohook-napi` hook, required in game). Contains no OS-specific code: it goes through `platform/`.
-- `platform/`: one module per OS behind a common interface (described in `platform/index.js`). Each module declares its `features` (keyboardHook, focusRestore, edgeSnap, appDetect) and how translucency is obtained (`opacity`: native/css/none).
+- `platform/`: one module per OS behind a common interface (described in `platform/index.js`). Each module declares its `features` (keyboardHook, focusRestore, edgeSnap, appDetect) and how translucency is obtained (`opacity`: native/css/none); `memoryUsage` measures the memory of each process (private bytes on Windows, PSS from `/proc` on Linux, working set otherwise), shown on the Settings page.
   - `win32.js`: focus, edge snapping and foreground app detection (executable, window title) via Win32 API (`koffi`).
   - `linux.js`: X11 only (forces `ozone-platform=x11`); focus via `_NET_ACTIVE_WINDOW` through libX11 (`koffi`); foreground app from the window properties (`WM_CLASS`, `_NET_WM_PID`) and `/proc` (Wine/Proton `.exe`, Steam AppID); opacity via CSS on a transparent window; no edge snapping.
   - `generic.js`: Electron only; base of the other modules and fallback for systems without a module (macOS for now).

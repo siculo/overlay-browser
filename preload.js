@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('overlay', {
   suspendShortcut: (suspended) => ipcRenderer.invoke('shortcut:suspend', suspended),
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
   setLanguage: (language) => ipcRenderer.invoke('language:set', language),
+  memory: () => ipcRenderer.invoke('memory:get'),
   onHome: (callback) => ipcRenderer.on('nav:home', () => callback()),
   onSettings: (callback) => ipcRenderer.on('nav:settings', () => callback()),
   onForegroundApp: (callback) => ipcRenderer.on('app:foreground', (_e, app) => callback(app)),

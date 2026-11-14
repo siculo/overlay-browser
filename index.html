@@ -147,6 +147,11 @@
   input[type=range] { width: 220px; padding: 0; border: none; background: none; }
   #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
   #opacity-setting { margin-top: 14px; }
+  /* Memory: total, then one row per process (pages, interface, GPU...) */
+  #memory-total { font-size: 16px; }
+  #memory-table { width: 100%; margin-top: 10px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+  #memory-table td { padding: 5px 0; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #memory-table td.size { width: 7em; text-align: right; font-variant-numeric: tabular-nums; color: #bbb; }
   /* Accent color: one round swatch per predefined color, the chosen one ringed */
   #accents { display: flex; flex-wrap: wrap; gap: 8px; }
   #accents button { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid transparent; background: var(--swatch); box-shadow: inset 0 0 0 2px var(--sheet); }
@@ -229,6 +234,11 @@
       <label for="opt-language" data-i18n="settings.languageLabel"></label>
       <select id="opt-language"></select>
     </div>
+
+    <h2 data-i18n="settings.memory"></h2>
+    <div id="memory-total"></div>
+    <div class="hint" id="memory-kind"></div>
+    <table id="memory-table"></table>
   </div>
 
   <div id="views" hidden></div>
@@ -400,6 +410,7 @@
       if (cur.id && cur.activeTab !== tab) { cur.activeTab = tab; save(); }
     }
     active = id;
+    watchMemory(id === SETTINGS);
     if (isSite(id)) getWebview(findSite(id));
     home.hidden = id !== null;
     settingsPage.hidden = id !== SETTINGS;
@@ -1118,6 +1129,76 @@
     applyAccent(accentSetting);
   }
 
+  // ---------- memory ----------
+  //
+  // On the Settings page, updated every 2 seconds while it is open and the
+  // window is visible: total memory of the app and its split among the
+  // processes. Each open page usually has a process of its own (pages of the
+  // same site may share one); the pages of the other lists stay loaded too.
+  // How it is measured depends on the platform (memoryUsage in platform/).
+
+  const memoryTotal = $('memory-total'), memoryKind = $('memory-kind'), memoryTable = $('memory-table');
+  let memoryTimer = null;
+  let memory = null;   // last measurement from main.js
+
+  function formatBytes(bytes) {
+    const mb = bytes / 1048576;
+    const fmt = (v, digits) => v.toLocaleString(i18n.language, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    return mb >= 1024 ? `${fmt(mb / 1024, 2)} GB` : `${fmt(mb, 0)} MB`;
+  }
+
+  // What a process hosts: the overlay's page, open sites, or else its type;
+  // null for the minor ones (added up in a single row).
+  function memoryLabel(p, siteOfContents) {
+    if (p.ui) return t('memory.ui');
+    const sites = p.contents.map((id) => findSite(siteOfContents.get(id))).filter(Boolean);
+    if (sites.length) return sites.map((s) => `${siteName(s)} · ${listName(listOfSite(s.id))}`).join(', ');
+    if (p.type === 'Browser') return t('memory.main');
+    if (p.type === 'GPU') return t('memory.gpu');
+    return null;
+  }
+
+  function renderMemory() {
+    if (!memory) return;
+    const siteOfContents = new Map();
+    for (const [id, wv] of webviews) {
+      try { siteOfContents.set(wv.getWebContentsId(), id); } catch { /* not attached yet */ }
+    }
+    const rows = [];
+    let total = 0, other = 0;
+    for (const p of memory.processes) {
+      total += p.bytes;
+      const label = memoryLabel(p, siteOfContents);
+      if (label) rows.push({ label, bytes: p.bytes });
+      else other += p.bytes;
+    }
+    rows.sort((a, b) => b.bytes - a.bytes);
+    if (other) rows.push({ label: t('memory.other'), bytes: other });
+    memoryTotal.textContent = t('memory.total', { size: formatBytes(total) });
+    memoryKind.textContent = t('memory.kind.' + memory.kind);
+    memoryTable.replaceChildren(...rows.map(({ label, bytes }) => {
+      const tr = el('tr');
+      const name = el('td', null, label);
+      name.title = label;
+      tr.append(name, el('td', 'size', formatBytes(bytes)));
+      return tr;
+    }));
+  }
+
+  async function updateMemory() {
+    if (document.visibilityState !== 'visible') return;
+    memory = await window.overlay.memory();
+    if (active === SETTINGS) renderMemory();
+  }
+
+  function watchMemory(on) {
+    clearInterval(memoryTimer);
+    memoryTimer = null;
+    if (!on) return;
+    updateMemory();
+    memoryTimer = setInterval(updateMemory, 2000);
+  }
+
   // ---------- language ----------
   //
   // Texts come from locales/*.json through the main process. Fixed texts are
@@ -1162,6 +1243,7 @@
     // Texts built while rendering, and messages still in the old language.
     showError();
     render();
+    renderMemory();
     if (!capturing) showShortcut(currentShortcut);
   };
 

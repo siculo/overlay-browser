@@ -18,4 +18,8 @@ module.exports = {
   beforeHide() {},
   foregroundApp() { return null; },
   ownsForeground() { return null; },
+  // Electron's values are in kilobytes.
+  memoryUsage(metrics) {
+    return { kind: 'workingSet', bytes: new Map(metrics.map((m) => [m.pid, m.memory.workingSetSize * 1024])) };
+  },
 };

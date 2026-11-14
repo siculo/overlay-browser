@@ -39,6 +39,15 @@
 //                      window now, false if another one is, null if
 //                      unknown: lets main.js ignore a blur that is only a
 //                      keyboard focus change (see hideOnBlur)
+//   memoryUsage(metrics) memory used by each process of the app, from
+//                      app.getAppMetrics(): { kind, bytes } where bytes is a
+//                      Map pid -> bytes and kind tells what was measured:
+//                        'private'     memory private to each process (Windows)
+//                        'pss'         proportional set size: shared memory
+//                                      split among the processes sharing it,
+//                                      so the sum is the real total (Linux)
+//                        'workingSet'  physical memory in use, shared memory
+//                                      included: the sum overestimates
 //
 // generic.js implements the interface with Electron alone: the other
 // modules start from it and override what they do natively.
