@@ -14,3 +14,11 @@ Electron app for Windows, Linux (X11) and macOS: an overlay browser, always on t
 - `locales/*.json`: UI texts, one file per language (code = file name); read by `main.js` and passed to the page. Language: user setting, else first available system language, else English.
 - `preload.js`: IPC bridge between the page and the main process.
 - Build: `npm run dist` (electron-builder, packages for the current OS, unsigned) into `dist/`; `dist:win` (NSIS installer + portable), `dist:linux` (AppImage, built on Linux); `dist:mac` (DMG arm64 + x64, ad-hoc signed, built on macOS; icon `build/icon-mac.png`, 512 px).
+
+## Branches and releases
+
+- `release/<major.minor>` (now `release/1.0`): fixes and small polish for the version being released. Release tags (`v1.0.0-beta.2`, `v1.0.0`, `v1.0.1`…) are created here; the release workflow runs on any `v*` tag, whatever the branch.
+- `main`: development of the next version (now 1.1: e.g. bookmark import/export). New features go on `feature/<name>` branches from `main`, merged back into `main`.
+- A fix for the released version is always made on the release branch, then the release branch is merged into `main` (`git merge release/1.0`); never merge `main` into a release branch or cherry-pick features into it.
+- Before working, check which branch is checked out and whether the change is a fix (release branch) or a feature (`main`/feature branch); ask if unclear.
+- When the next version is ready for beta, create `release/<next>` from `main`.
