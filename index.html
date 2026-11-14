@@ -60,6 +60,13 @@
   .tab.active .close, .tab:hover .close { visibility: visible; }
   .tab .close:hover { background: #3a3a3a; color: #fff; }
 
+  /* Drag to reorder (tabs and site rows, see makeSortable) */
+  body.dragging, body.dragging * { cursor: grabbing !important; user-select: none; }
+  body.dragging webview { pointer-events: none; }
+  .tab.dragging { z-index: 1; }
+  .tab.dragging:not(.active) { background: #222; color: #ddd; }
+  .tab.dragging::before, .tab.dragging + .tab::before { display: none; }
+
   /* Home: fixed, always in the accent color; when active, a tab too */
   #bar > #home-btn { display: flex; align-items: center; gap: 6px; margin-right: 6px; padding: 0 12px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-text); font-weight: 500; }
   #bar > #home-btn:hover { background: var(--accent-soft-hover); color: var(--accent-text); }
@@ -109,7 +116,8 @@
   .list-body .empty { color: #999; }
   .site .info.static { cursor: default; }
   .site .info.static:hover .title { text-decoration: none; }
-  .site { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #1c1c1c; border: 1px solid #333; border-radius: 6px; }
+  .site { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #1c1c1c; border: 1px solid #333; border-radius: 6px; }
+  .site.dragging { z-index: 1; border-color: #555; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5); }
   .site .info { flex: 1; min-width: 0; cursor: pointer; }
   .site .info:hover .title { text-decoration: underline; }
   .site .title { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -429,14 +437,131 @@
     if (site) webviews.get(active)?.loadURL(site.url);
   };
 
+  // ---------- drag to reorder ----------
+  //
+  // The tabs (horizontally) and the site rows of the Home (vertically) are
+  // reordered by dragging them. The dragged element follows the pointer, the
+  // others make room (animated) when it passes their middle; `scroller`
+  // scrolls by itself when the pointer is near its edges. On release onDrop
+  // gets the new order (data-id of the elements matching `selector`). A press
+  // that moves less than a few pixels stays a click; after a drag the click
+  // is swallowed. Renders wait for the end of the drag, which renders again:
+  // they would replace the elements being dragged.
+
+  let dragging = false;
+
+  function makeSortable(item, selector, axis, scroller, onDrop) {
+    const X = axis === 'x';
+    const off = (e) => (X ? e.offsetLeft : e.offsetTop);     // layout position, without transforms
+    const size = (e) => (X ? e.offsetWidth : e.offsetHeight);
+    const coord = (e) => (X ? e.clientX : e.clientY);
+    const scroll = () => (X ? scroller.scrollLeft : scroller.scrollTop);
+    const shift = (d) => (d ? (X ? `translateX(${d}px)` : `translateY(${d}px)`) : '');
+
+    item.addEventListener('pointerdown', (down) => {
+      if (down.button !== 0 || dragging || down.target.closest('button, input, .close')) return;
+      const container = item.parentElement;
+      const items = () => [...container.children].filter((c) => c.matches(selector));
+      const start = coord(down), startOff = off(item), startScroll = scroll();
+      let pointer = start, started = false, frame = 0;
+
+      // A sibling moved by the reordering slides from where it was.
+      const slide = (sib, from) => {
+        sib.style.transition = 'none';
+        sib.style.transform = shift(from - off(sib));
+        void sib.offsetWidth;
+        sib.style.transition = 'transform 150ms ease';
+        sib.style.transform = '';
+      };
+
+      const update = () => {
+        // Scrolls when the pointer is near the edges.
+        const r = scroller.getBoundingClientRect();
+        const edge = 30, speed = 8;
+        const dir = pointer < (X ? r.left : r.top) + edge ? -1 : pointer > (X ? r.right : r.bottom) - edge ? 1 : 0;
+        if (dir) scroller.scrollBy({ [X ? 'left' : 'top']: dir * speed, behavior: 'instant' });
+        // Where the element should be, kept between the first and the last one.
+        let all = items();
+        const min = Math.min(...all.map(off));
+        const max = Math.max(...all.map((c) => off(c) + size(c))) - size(item);
+        const pos = Math.max(min, Math.min(max, startOff + pointer - start + scroll() - startScroll));
+        // The siblings are moved, not the element: taking it out of the page,
+        // even for a moment, would end the pointer capture.
+        for (;;) {
+          const i = all.indexOf(item), prev = all[i - 1], next = all[i + 1];
+          if (next && pos + size(item) > off(next) + size(next) / 2) {
+            const from = off(next);
+            item.before(next);
+            slide(next, from);
+          } else if (prev && pos < off(prev) + size(prev) / 2) {
+            const from = off(prev);
+            item.after(prev);
+            slide(prev, from);
+          } else break;
+          all = items();
+        }
+        item.style.transform = shift(pos - off(item));
+        frame = requestAnimationFrame(update);
+      };
+
+      const move = (e) => {
+        pointer = coord(e);
+        if (started || Math.abs(pointer - start) < 5) return;
+        started = dragging = true;
+        try { item.setPointerCapture(down.pointerId); } catch { /* pointer already released */ }
+        getSelection().removeAllRanges();
+        document.body.classList.add('dragging');
+        item.classList.add('dragging');
+        frame = requestAnimationFrame(update);
+      };
+
+      const end = () => {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', end);
+        window.removeEventListener('pointercancel', end);
+        window.removeEventListener('blur', end);
+        if (!started) return;
+        cancelAnimationFrame(frame);
+        dragging = false;
+        document.body.classList.remove('dragging');
+        item.classList.remove('dragging');
+        item.style.transform = '';
+        const swallow = (e) => { e.stopPropagation(); e.preventDefault(); };
+        window.addEventListener('click', swallow, true);
+        setTimeout(() => window.removeEventListener('click', swallow, true));
+        onDrop(items().map((c) => c.dataset.id));
+        render();
+      };
+
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+      window.addEventListener('blur', end);
+    });
+  }
+
+  // New order of a list's sites (their ids); saved if it changed.
+  function reorderSites(l, ids) {
+    const byId = new Map(l.sites.map((s) => [s.id, s]));
+    const sorted = ids.map((id) => byId.get(id));
+    // Sites added or removed meanwhile: the old order is kept.
+    if (sorted.length !== l.sites.length || sorted.some((s) => !s)) return;
+    if (sorted.every((s, i) => s === l.sites[i])) return;
+    l.sites.splice(0, l.sites.length, ...sorted);
+    save();
+  }
+
   // ---------- render ----------
 
   function renderTabs() {
+    if (dragging) return;   // done at the end of the drag (see makeSortable)
     homeBtn.classList.toggle('active', active === null);
     settingsBtn.classList.toggle('active', active === SETTINGS);
     tabsEl.replaceChildren(...currentList().sites.map((site) => {
       const tab = el('div', 'tab');
+      tab.dataset.id = site.id;
       tab.classList.toggle('active', site.id === active);
+      makeSortable(tab, '.tab', 'x', tabsEl, (ids) => reorderSites(currentList(), ids));
       tab.title = siteName(site);
       tab.onclick = () => activate(site.id);
       // Middle click on the tab: close it, as in browsers.
@@ -451,8 +576,9 @@
     updateArrows();
   }
 
-  function siteRow(site, isCurrent) {
+  function siteRow(l, site, isCurrent) {
     const row = el('div', 'site');
+    row.dataset.id = site.id;
     if (editing === site.id) {
       const key = 'edit:' + site.id;
       const input = draftInput(key, site.url);
@@ -478,6 +604,7 @@
         renderHome();
       });
       row.append(info, edit, button(t('site.remove'), () => confirmRemove(site.id)));
+      makeSortable(row, '.site', 'y', home, (ids) => reorderSites(l, ids));
     }
     return row;
   }
@@ -510,7 +637,7 @@
     if (!open) return section;
 
     const body = el('div', 'list-body');
-    body.append(...l.sites.map((site) => siteRow(site, isCurrent)));
+    body.append(...l.sites.map((site) => siteRow(l, site, isCurrent)));
     if (!l.sites.length) body.append(el('div', 'empty', t(l.id ? 'home.empty' : 'lists.emptyNew')));
 
     const key = 'add:' + listKey(l);
@@ -562,6 +689,7 @@
   // The Home page: current list first, then the others. Rendering replaces
   // the inputs: the text being typed (drafts) and the focus are restored.
   function renderHome() {
+    if (dragging) return;   // done at the end of the drag (see makeSortable)
     const focused = document.activeElement?.dataset?.key;
     const selection = focused && [document.activeElement.selectionStart, document.activeElement.selectionEnd];
     renderPinned();
