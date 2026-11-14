@@ -93,8 +93,15 @@
   /* Home */
   #home, .page { flex: 1; overflow-y: auto; padding: 24px; }
   .page h1 { margin: 0 0 16px; font-weight: 500; font-size: 22px; }
-  .page h2 { margin: 24px 0 12px; font-weight: 500; font-size: 16px; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; }
-  .page h1 + h2 { margin-top: 8px; }
+  .page h2 { margin: 40px 0 14px; font-weight: 500; font-size: 16px; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; }
+  .page h1 + h2, .page .page-title + h2 { margin-top: 8px; }
+  /* Settings title, with the app version and the project link on its right */
+  .page-title { display: flex; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+  .page-title h1 { margin: 0; }
+  #app-info { margin-left: auto; font-size: 13px; color: #999; }
+  #app-version { font-variant-numeric: tabular-nums; user-select: text; }
+  #app-repo { color: var(--accent-text); text-decoration: none; }
+  #app-repo:hover { text-decoration: underline; }
   .setting.check { align-items: flex-start; cursor: pointer; max-width: 720px; }
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
   .setting .desc { display: block; font-size: 13px; color: #999; margin-top: 2px; }
@@ -198,7 +205,10 @@
   </div>
 
   <div id="settings" class="page" hidden>
-    <h1 data-i18n="settings.title"></h1>
+    <div class="page-title">
+      <h1 data-i18n="settings.title"></h1>
+      <span id="app-info"><span id="app-version"></span> · <a href="#" id="app-repo">GitHub</a></span>
+    </div>
 
     <h2 data-i18n="settings.keyboard"></h2>
     <div class="setting">
@@ -246,6 +256,7 @@
     <div id="memory-total"></div>
     <div class="hint" id="memory-kind"></div>
     <table id="memory-table"></table>
+
   </div>
 
   <div id="views" hidden></div>
@@ -1329,6 +1340,8 @@
     showShortcut(currentShortcut);
     initOptions(state.settings);
     initUnload(state.unloadRange, state.settings.unloadAfter);
+    $('app-version').textContent = `Overlay Browser ${state.version}`;
+    $('app-repo').onclick = (e) => { e.preventDefault(); window.overlay.openRepo(); };
     // Reopens the current list's last tab, if the site still exists.
     showCurrentList();
     lookupPreset();

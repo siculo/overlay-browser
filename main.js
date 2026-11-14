@@ -1,4 +1,4 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, Tray, webContents } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, shell, Tray, webContents } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
@@ -589,6 +589,7 @@ ipcMain.handle('state:load', () => ({
     opacityRange: OPACITY_RANGE,
   },
   unloadRange: UNLOAD_RANGE,
+  version: app.getVersion(),   // shown on the Settings page
 }));
 ipcMain.handle('settings:set', (_e, key, value) => {
   if (!(key in DEFAULT_SETTINGS) || !isValidSetting(key, value)) return;
@@ -601,6 +602,9 @@ ipcMain.handle('settings:set', (_e, key, value) => {
 // (Electron's: 'Browser', 'GPU', 'Tab', 'Utility'...), the bytes, the ids of
 // the webContents it hosts (the page matches them with its webviews) and
 // whether it hosts the overlay's own page.
+// Project page, linked next to the version on the Settings page.
+const REPO_URL = 'https://github.com/siculo/overlay-browser';
+ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL));
 ipcMain.handle('memory:get', () => {
   const metrics = app.getAppMetrics();
   const { kind, bytes } = platform.memoryUsage(metrics);
