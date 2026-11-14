@@ -7,6 +7,7 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch: # manual run: builds only, no release
 
 permissions:
   contents: write
@@ -25,9 +26,9 @@ jobs:
             target: --mac
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -40,7 +41,7 @@ jobs:
           # macOS: ad-hoc signature from package.json, no certificate lookup
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: packages-${{ runner.os }}
           if-no-files-found: error
@@ -51,9 +52,10 @@ jobs:
 
   release:
     needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: packages
           merge-multiple: true
