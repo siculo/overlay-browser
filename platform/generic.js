@@ -11,8 +11,12 @@ module.exports = {
     appDetect: false,
   },
   opacity: 'none',
+  windowOptions: {},
+  // A bare F10 is too easy to press by mistake, and often bound in games.
+  defaultShortcut: 'Super+F10',
   configureApp() {},
   init() {},
+  trayImage(image) { return image; },
   beforeShow() {},
   afterShow(win) { win.focus(); },
   beforeHide() {},

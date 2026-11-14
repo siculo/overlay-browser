@@ -10,7 +10,8 @@
     "dist:win": "electron-builder --win",
     "dist:portable": "electron-builder --win portable",
     "dist:installer": "electron-builder --win nsis",
-    "dist:linux": "electron-builder --linux"
+    "dist:linux": "electron-builder --linux",
+    "dist:mac": "electron-builder --mac"
   },
   "keywords": [],
   "author": "Fabrizio Di Giuseppe",
@@ -53,6 +54,25 @@
       "category": "Utility",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
     },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon-mac.png",
+      "category": "public.app-category.utilities",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "LSUIElement": true
+      },
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
     "nsis": {
       "oneClick": true,
       "perMachine": false,
@@ -65,5 +85,10 @@
   "dependencies": {
     "koffi": "^3.3.7",
     "uiohook-napi": "^1.5.5"
+  },
+  "allowScripts": {
+    "electron-winstaller@5.4.0": true,
+    "uiohook-napi@1.5.5": true,
+    "koffi@3.3.8": true
   }
 }

@@ -18,7 +18,7 @@ const uiohook = (() => {
   }
 })();
 
-const DEFAULT_SHORTCUT = 'F10';
+const DEFAULT_SHORTCUT = platform.defaultShortcut;
 // Options of the Settings page: key -> default.
 const DEFAULT_SETTINGS = {
   hideOnBlur: true,     // hide the overlay when it loses focus
@@ -532,7 +532,7 @@ function updateTray() {
 }
 
 function createTray() {
-  tray = new Tray(nativeImage.createFromPath(ICON_PATH));
+  tray = new Tray(platform.trayImage(nativeImage.createFromPath(ICON_PATH)));
   tray.on('click', () => {
     // Clicking the icon while the overlay is open, the window first loses
     // focus and hides (see 'blur'): the click must not reopen it right after.
@@ -577,6 +577,7 @@ ipcMain.handle('state:load', () => ({
   pinnedList: prefs.pinnedList,
   presetsApplied: prefs.presetsApplied,
   shortcut,
+  defaultShortcut: DEFAULT_SHORTCUT,
   settings: prefs.settings,
   foregroundApp,
   i18n: i18nState(),
@@ -676,6 +677,7 @@ function start() {
     minWidth: MIN_SIZE.width, minHeight: MIN_SIZE.height,
     frame: false, show: false,
     ...opacityOptions(),
+    ...platform.windowOptions,
     alwaysOnTop: true,
     skipTaskbar: true,   // no taskbar icon: the notification area icon is used instead
     icon: ICON_PATH,

@@ -1013,6 +1013,7 @@
   const changeBtn = $('shortcut-change');
   let capturing = false;
   let currentShortcut = null;
+  let defaultShortcut = null;   // the platform's, from main.js
 
   function showShortcut(acc, msg, isError) {
     shortcutEl.textContent = acc || t('shortcut.none');
@@ -1094,7 +1095,7 @@
   }, true);
 
   changeBtn.onclick = startCapture;
-  $('shortcut-reset').onclick = () => { cancelCapture(); applyShortcut('F10'); };
+  $('shortcut-reset').onclick = () => { cancelCapture(); applyShortcut(defaultShortcut); };
 
   // ---------- options ----------
   //
@@ -1324,6 +1325,7 @@
     presetsApplied = new Set(state.presetsApplied);
     context = contextOf(state.foregroundApp);
     currentShortcut = state.shortcut;
+    defaultShortcut = state.defaultShortcut;
     showShortcut(currentShortcut);
     initOptions(state.settings);
     initUnload(state.unloadRange, state.settings.unloadAfter);

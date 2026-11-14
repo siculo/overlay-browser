@@ -2,7 +2,7 @@
 
 [English](README.md) · **Italiano**
 
-Una piccola finestra di browser che resta sempre in primo piano, anche sopra i giochi in modalità finestra/finestra senza bordi, e che si mostra o nasconde premendo un tasto (di default **F10**).
+Una piccola finestra di browser che resta sempre in primo piano, anche sopra i giochi in modalità finestra/finestra senza bordi, e che si mostra o nasconde premendo una combinazione di tasti (di default **Win+F10**, **Cmd+Shift+Spazio** su macOS).
 
 Utile per tenere a portata di mano siti come wiki, calcolatori o database mentre si gioca.
 
@@ -30,9 +30,17 @@ Su Linux c'è **`Overlay Browser-x.y.z-x86_64.AppImage`**: rendilo eseguibile (`
 - La trasparenza della finestra richiede un window manager con compositing (Cinnamon, KDE, GNOME e Xfce con il compositing attivo): senza, la finestra resta opaca.
 - L'icona nell'area di notifica usa AppIndicator: su GNOME serve l'estensione *AppIndicator and KStatusNotifierItem Support*. In alcuni ambienti il clic sull'icona apre il menu invece di mostrare la finestra: usa la voce *Mostra/Nascondi*.
 
+### macOS
+
+Su macOS c'è **`Overlay Browser-x.y.z-arm64.dmg`** (Apple Silicon) oppure **`-x64.dmg`** (Intel): aprilo e trascina l'app in *Applicazioni*. L'app non è firmata da uno sviluppatore Apple, quindi al primo avvio macOS si rifiuta di aprirla: vai in *Impostazioni di Sistema → Privacy e sicurezza* e fai clic su **Apri comunque** (oppure esegui `xattr -dr com.apple.quarantine "/Applications/Overlay Browser.app"` nel Terminale).
+
+- L'app non ha un'icona nel Dock: sta nella **barra dei menu**, in alto a destra. Il clic sull'icona apre il suo menu.
+- La finestra compare anche sopra le app e i giochi a schermo intero, senza prendere il posto dell'applicazione attiva: quando si nasconde, la tastiera torna al gioco.
+- La combinazione di default è **Cmd+Shift+Spazio**. Se scegli un tasto funzione, ricorda che di default F1–F12 regolano luminosità, volume e così via: premili insieme a **fn**, oppure attiva *Impostazioni di Sistema → Tastiera → Usa i tasti F1, F2 ecc. come tasti funzione standard*.
+
 ## Uso
 
-- All'avvio la finestra resta nascosta: l'app si mette in attesa nell'area di notifica. Premi **F10** per mostrarla e premilo di nuovo per nasconderla. Di default si nasconde da sola anche quando clicchi su un'altra finestra (ad esempio tornando al gioco); si può disattivare dalle Impostazioni.
+- All'avvio la finestra resta nascosta: l'app si mette in attesa nell'area di notifica. Premi **Win+F10** (Super+F10 su Linux, Cmd+Shift+Spazio su macOS) per mostrarla e premi di nuovo la combinazione per nasconderla. Di default si nasconde da sola anche quando clicchi su un'altra finestra (ad esempio tornando al gioco); si può disattivare dalle Impostazioni.
 - L'app **non compare nella barra delle applicazioni** né in Alt+Tab: la trovi nell'area di notifica in basso a destra, vicino all'orologio (icona nera con una finestrella bianca). Se non la vedi, clicca sulla freccia **^** e trascina l'icona sulla barra per tenerla sempre visibile.
   - **Clic** sull'icona: mostra/nasconde la finestra.
   - **Tasto destro**: menu con *Mostra/Nascondi*, *Home*, *Impostazioni* ed *Esci*.
@@ -59,7 +67,7 @@ Apri le **Impostazioni** con il pulsante ⚙ in alto a destra (o dal menu dell'i
 1. clicca **Cambia**;
 2. premi la combinazione che preferisci, ad esempio `Ctrl+Shift+O` (Esc per annullare).
 
-Sono ammessi i tasti F1–F24 da soli, oppure qualunque tasto insieme a Ctrl, Alt, Shift o Win (Super su Linux). Se la combinazione è già usata da un altro programma compare un messaggio e resta quella precedente. *Ripristina F10* torna al tasto di default.
+Sono ammessi i tasti F1–F24 da soli, oppure qualunque tasto insieme a Ctrl, Alt, Shift o Win (Super su Linux, Cmd su macOS). Se la combinazione è già usata da un altro programma compare un messaggio e resta quella precedente. *Ripristina predefinita* torna alla combinazione di default.
 
 ### Trasparenza
 
@@ -80,11 +88,12 @@ Siti, tasto, lingua, posizione della finestra e ultimo sito aperto sono salvati 
 ```
 %APPDATA%\overlay-browser\prefs.json         (Windows)
 ~/.config/overlay-browser/prefs.json         (Linux)
+~/Library/Application Support/overlay-browser/prefs.json   (macOS)
 ```
 
 Per ripartire da zero chiudi l'app ed elimina quel file.
 
-Per **disinstallare** la versione installata: *Impostazioni di Windows → App → App installate → Overlay Browser → Disinstalla*. La cartella `%APPDATA%\overlay-browser` va eliminata a mano se vuoi cancellare anche le preferenze. La versione portable si rimuove semplicemente cancellando il file `.exe`, l'AppImage cancellando il file `.AppImage`.
+Per **disinstallare** la versione installata: *Impostazioni di Windows → App → App installate → Overlay Browser → Disinstalla*. La cartella `%APPDATA%\overlay-browser` va eliminata a mano se vuoi cancellare anche le preferenze. La versione portable si rimuove semplicemente cancellando il file `.exe`, l'AppImage cancellando il file `.AppImage`, l'app per macOS trascinandola da *Applicazioni* nel Cestino.
 
 ---
 
@@ -100,9 +109,10 @@ npm run dist:win     # Windows: installer e versione portable
 npm run dist:installer
 npm run dist:portable
 npm run dist:linux   # Linux: AppImage (va generata su Linux)
+npm run dist:mac     # macOS: DMG per Apple Silicon e Intel (va generato su macOS)
 ```
 
-Tutto ciò che dipende dal sistema operativo è in `platform/`, un modulo per sistema (`win32.js`, `linux.js`, e `generic.js` con il solo Electron, usato per gli altri sistemi come macOS). Ogni modulo dichiara in `features` quali funzionalità supporta; l'interfaccia è descritta in `platform/index.js`.
+Tutto ciò che dipende dal sistema operativo è in `platform/`, un modulo per sistema (`win32.js`, `linux.js`, `darwin.js`, e `generic.js` con il solo Electron, usato per gli altri sistemi). Ogni modulo dichiara in `features` quali funzionalità supporta; l'interfaccia è descritta in `platform/index.js`.
 
 I testi dell'interfaccia sono in `locales/`, un file JSON per lingua (il nome del file è il codice della lingua, ad esempio `it.json`). Per aggiungere una lingua basta copiare `en.json` e tradurne i valori: l'app la rileva da sola. Le chiavi mancanti vengono prese dall'inglese.
 

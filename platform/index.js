@@ -22,9 +22,13 @@
 //                        'native'  BrowserWindow `opacity` option
 //                        'css'     transparent window + CSS opacity on the page
 //                        'none'    not available
+//   windowOptions      extra BrowserWindow options for the overlay window
+//   defaultShortcut    accelerator used when the user has not chosen one
 //   configureApp(app)  called at load time, before the app is ready
 //                      (command line switches and the like)
 //   init(win)          called once the window has been created
+//   trayImage(image)   image of the notification area icon, from the app's
+//                      icon (e.g. resized for the macOS menu bar)
 //   beforeShow(win)    called before the window is shown
 //   afterShow(win)     called after win.show(), to bring it to the foreground
 //   beforeHide(win)    called before the window is hidden
@@ -46,6 +50,8 @@
 //                        'pss'         proportional set size: shared memory
 //                                      split among the processes sharing it,
 //                                      so the sum is the real total (Linux)
+//                        'footprint'   physical footprint, as shown by
+//                                      Activity Monitor (macOS)
 //                        'workingSet'  physical memory in use, shared memory
 //                                      included: the sum overestimates
 //
@@ -56,7 +62,8 @@ function load() {
   switch (process.platform) {
     case 'win32': return require('./win32');
     case 'linux': return require('./linux');
-    default: return require('./generic');   // macOS has no module of its own yet
+    case 'darwin': return require('./darwin');
+    default: return require('./generic');
   }
 }
 

@@ -2,7 +2,7 @@
 
 **English** · [Italiano](README-it.md)
 
-A small browser window that always stays on top, even over games running in windowed/borderless windowed mode, and that you show or hide with a single key (**F10** by default).
+A small browser window that always stays on top, even over games running in windowed/borderless windowed mode, and that you show or hide with a key combination (**Win+F10** by default, **Cmd+Shift+Space** on macOS).
 
 Handy for keeping sites like wikis, calculators or databases within reach while you play.
 
@@ -30,9 +30,17 @@ On Linux there is **`Overlay Browser-x.y.z-x86_64.AppImage`**: make it executabl
 - The window's translucency requires a compositing window manager (Cinnamon, KDE, GNOME, and Xfce with compositing enabled): without one the window stays opaque.
 - The notification area icon uses AppIndicator: on GNOME the *AppIndicator and KStatusNotifierItem Support* extension is needed. In some environments clicking the icon opens the menu instead of showing the window: use the *Show/Hide* item.
 
+### macOS
+
+On macOS there is **`Overlay Browser-x.y.z-arm64.dmg`** (Apple Silicon) or **`-x64.dmg`** (Intel): open it and drag the app into *Applications*. The app is not signed by an Apple developer, so on first launch macOS refuses to open it: go to *System Settings → Privacy & Security* and click **Open Anyway** (or run `xattr -dr com.apple.quarantine "/Applications/Overlay Browser.app"` in the Terminal).
+
+- The app has no Dock icon: it lives in the **menu bar**, at the top right. Clicking the icon opens its menu.
+- The window also appears over fullscreen apps and games, without taking the active application's place: when it hides, the keyboard goes back to the game.
+- The default combination is **Cmd+Shift+Space**. If you choose a function key, remember that by default F1–F12 control brightness, volume and so on: press them together with **fn**, or enable *System Settings → Keyboard → Use F1, F2, etc. keys as standard function keys*.
+
 ## Usage
 
-- On startup the window stays hidden: the app waits in the notification area. Press **F10** to show it and press it again to hide it. By default it also hides itself when you click on another window (for example when going back to the game); this can be turned off in the Settings.
+- On startup the window stays hidden: the app waits in the notification area. Press **Win+F10** (Super+F10 on Linux, Cmd+Shift+Space on macOS) to show it and press it again to hide it. By default it also hides itself when you click on another window (for example when going back to the game); this can be turned off in the Settings.
 - The app **does not appear in the taskbar** or in Alt+Tab: you'll find it in the notification area at the bottom right, next to the clock (black icon with a small white window). If you can't see it, click the **^** arrow and drag the icon onto the taskbar to keep it always visible.
   - **Click** the icon: shows/hides the window.
   - **Right-click**: menu with *Show/Hide*, *Home*, *Settings* and *Quit*.
@@ -59,7 +67,7 @@ Open the **Settings** with the ⚙ button at the top right (or from the icon men
 1. click **Change**;
 2. press the combination you prefer, for example `Ctrl+Shift+O` (Esc to cancel).
 
-Keys F1–F24 are allowed on their own, or any key together with Ctrl, Alt, Shift or Win (Super on Linux). If the combination is already used by another program a message appears and the previous one is kept. *Reset to F10* goes back to the default key.
+Keys F1–F24 are allowed on their own, or any key together with Ctrl, Alt, Shift or Win (Super on Linux, Cmd on macOS). If the combination is already used by another program a message appears and the previous one is kept. *Reset to default* goes back to the default combination.
 
 ### Transparency
 
@@ -80,11 +88,12 @@ Sites, key, language, window position and last opened site are saved in:
 ```
 %APPDATA%\overlay-browser\prefs.json         (Windows)
 ~/.config/overlay-browser/prefs.json         (Linux)
+~/Library/Application Support/overlay-browser/prefs.json   (macOS)
 ```
 
 To start from scratch, close the app and delete that file.
 
-To **uninstall** the installed version: *Windows Settings → Apps → Installed apps → Overlay Browser → Uninstall*. The `%APPDATA%\overlay-browser` folder must be deleted manually if you also want to remove the preferences. The portable version is removed by simply deleting the `.exe` file, the AppImage by deleting the `.AppImage` file.
+To **uninstall** the installed version: *Windows Settings → Apps → Installed apps → Overlay Browser → Uninstall*. The `%APPDATA%\overlay-browser` folder must be deleted manually if you also want to remove the preferences. The portable version is removed by simply deleting the `.exe` file, the AppImage by deleting the `.AppImage` file, the macOS app by dragging it from *Applications* to the Trash.
 
 ---
 
@@ -100,9 +109,10 @@ npm run dist:win     # Windows: installer and portable version
 npm run dist:installer
 npm run dist:portable
 npm run dist:linux   # Linux: AppImage (must be built on Linux)
+npm run dist:mac     # macOS: DMG for Apple Silicon and Intel (must be built on macOS)
 ```
 
-Everything that depends on the operating system lives in `platform/`, one module per system (`win32.js`, `linux.js`, and `generic.js` with Electron alone, used for the other systems such as macOS). Each module declares in `features` which functions it supports; the interface is described in `platform/index.js`.
+Everything that depends on the operating system lives in `platform/`, one module per system (`win32.js`, `linux.js`, `darwin.js`, and `generic.js` with Electron alone, used for the other systems). Each module declares in `features` which functions it supports; the interface is described in `platform/index.js`.
 
 Interface texts live in `locales/`, one JSON file per language (the file name is the language code, e.g. `it.json`). To add a language, copy `en.json` and translate its values: the app picks it up automatically. Missing keys fall back to English.
 
