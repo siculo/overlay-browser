@@ -8,7 +8,9 @@ Handy for keeping sites like wikis, calculators or databases within reach while 
 
 ## Installation
 
-There are two versions, pick one:
+Download the file for your system from the [**Releases**](https://github.com/siculo/overlay-browser/releases) page (the latest one is at the top).
+
+On Windows there are two versions, pick one:
 
 - **`Overlay Browser-Setup-x.y.z.exe`** (recommended): installs it on your PC. No administrator rights are needed, and a Start menu shortcut is created.
 - **`Overlay Browser-Portable-x.y.z.exe`**: installs nothing, just run it. It starts up a bit more slowly.

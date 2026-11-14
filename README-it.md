@@ -8,7 +8,9 @@ Utile per tenere a portata di mano siti come wiki, calcolatori o database mentre
 
 ## Installazione
 
-Ci sono due versioni, scegline una:
+Scarica il file per il tuo sistema dalla pagina delle [**Release**](https://github.com/siculo/overlay-browser/releases) (la più recente è in cima).
+
+Su Windows ci sono due versioni, scegline una:
 
 - **`Overlay Browser-Setup-x.y.z.exe`** (consigliata): la installa sul PC. Non servono permessi di amministratore e viene creato il collegamento nel menu Start.
 - **`Overlay Browser-Portable-x.y.z.exe`**: non installa nulla, basta avviarla. Parte un po' più lentamente.
