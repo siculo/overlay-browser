@@ -99,6 +99,10 @@
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
   .setting .desc { display: block; font-size: 13px; color: #999; margin-top: 2px; }
   #settings-btn { padding: 3px 8px; }
+  /* Content of the Home (notices and lists) and of the Settings, at most
+     720px wide, centered in the page */
+  #home > *, #settings > * { margin-inline: auto; }
+  #settings > * { max-width: 720px; }
   /* Site lists: the current one first, then the others (collapsed) */
   #lists { display: flex; flex-direction: column; gap: 18px; max-width: 720px; margin-top: 8px; }
   .list-head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid #333; }
