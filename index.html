@@ -156,7 +156,7 @@
   #opacity-setting { margin-top: 14px; }
   /* Memory: total, then one row per process (pages, interface, GPU...) */
   #memory-total { margin-top: 18px; font-size: 16px; }
-  #opt-unload-value { min-width: 4em; font-variant-numeric: tabular-nums; }
+  #opt-unload-value, #opt-unload-current-value { min-width: 4em; font-variant-numeric: tabular-nums; }
   #memory-table { width: 100%; margin-top: 10px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
   #memory-table td { padding: 5px 0; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #memory-table td.size { width: 7em; text-align: right; font-variant-numeric: tabular-nums; color: #bbb; }
@@ -248,6 +248,11 @@
 
     <h2 data-i18n="settings.memory"></h2>
     <div class="setting">
+      <label for="opt-unload-current" data-i18n="settings.unloadCurrentAfter"></label>
+      <input type="range" id="opt-unload-current" step="5">
+      <output id="opt-unload-current-value" for="opt-unload-current"></output>
+    </div>
+    <div class="setting">
       <label for="opt-unload" data-i18n="settings.unloadAfter"></label>
       <input type="range" id="opt-unload" step="5">
       <output id="opt-unload-value" for="opt-unload"></output>
@@ -285,8 +290,9 @@
   // application it belongs to: { exe } (executable, lowercase and without
   // ".exe"), { title } (window title, when the executable is not known) or
   // null (no application detected: the general list, which always exists
-  // and cannot be removed). `name` is the window title when the list was
-  // created (null for the general list).
+  // and cannot be removed). `name` is the application's name, or the window
+  // title when the list was created (null for the general list). `activeTab`
+  // is the tab the list was left on: a site's id, HOME or SETTINGS.
   //
   // The current list, whose sites are the tabs, is the one chosen by hand
   // (pinnedId) if any, otherwise the one of the application the overlay was
@@ -298,6 +304,7 @@
   let context = { match: null, name: null };     // application the overlay was opened over
   const webviews = new Map();   // site id -> webview (one "tab" per site, created on first access, kept across lists)
   const SETTINGS = ':settings'; // value of `active` for the Settings page
+  const HOME = ':home';         // a list's `activeTab` when it was left on the Home (`active` null)
   let active = null;            // id of the active site, null = Home, SETTINGS = Settings
   const isSite = (id) => id !== null && id !== SETTINGS;
   let editing = null;           // id of the site being edited on the Home page
@@ -430,17 +437,15 @@
   function closeWebview(id) {
     webviews.get(id)?.remove();
     webviews.delete(id);
-    backgroundSince.delete(id);
+    idleSince.delete(id);
   }
 
   function activate(id) {
-    // The Settings page is not remembered as the list's "last tab".
-    if (id !== SETTINGS) {
-      cancelCapture();
-      const cur = currentList();
-      const tab = isSite(id) ? id : null;
-      if (cur.id && cur.activeTab !== tab) { cur.activeTab = tab; save(); }
-    }
+    if (id !== SETTINGS) cancelCapture();
+    // The list's last tab: a site, the Home or the Settings page.
+    const cur = currentList();
+    const tab = id ?? HOME;
+    if (cur.id && cur.activeTab !== tab) { cur.activeTab = tab; save(); }
     active = id;
     watchMemory(id === SETTINGS);
     if (isSite(id)) getWebview(findSite(id));
@@ -448,6 +453,7 @@
     settingsPage.hidden = id !== SETTINGS;
     views.hidden = !isSite(id);
     for (const [wid, wv] of webviews) wv.style.display = wid === id ? 'flex' : 'none';
+    markIdle();
     renderTabs();
     updateNav();
   }
@@ -455,60 +461,107 @@
   // At startup and after the current list has changed (another application,
   // a list chosen or restored): reopens its last tab, otherwise its first
   // one; the Home only if the list has no sites. The Settings page stays.
+  // Shows the current list on its last tab: the Home, the Settings page, or
+  // a site if its page is still open (the list is as it was left). If that
+  // page has been closed (see below) or never opened (e.g. at startup), on
+  // its first tab.
   function showCurrentList() {
     const cur = currentList();
-    const last = cur.sites.some((s) => s.id === cur.activeTab) ? cur.activeTab : null;
-    if (active !== SETTINGS) activate(last ?? cur.sites[0]?.id ?? null);
+    const last = cur.activeTab;
+    let id;
+    if (last === HOME) id = null;
+    else if (last === SETTINGS) id = SETTINGS;
+    else if (cur.sites.some((s) => s.id === last) && webviews.has(last)) id = last;
+    else id = cur.sites[0]?.id ?? null;
+    activate(id);
     render();
     sweepPages();
   }
 
-  // ---------- closing the pages of the other lists ----------
+  // ---------- closing the pages not in use ----------
   //
-  // The pages (webviews) of the sites that are not in the current list are
-  // closed after `unloadAfter` minutes (Settings), to free their memory;
-  // going back to their list before then finds them as they were. A closed
-  // page loads again from the site's address when its tab is opened.
+  // A page (webview) is in use while it is the active tab of the visible
+  // overlay. The others (other tabs, pages of the other lists, all of them
+  // while the overlay is hidden) are closed after some minutes without use
+  // (Settings): `unloadCurrentAfter` for the current list's pages,
+  // `unloadAfter` for the other lists'. Going back to them before then finds
+  // them as they were. A closed page loads again from the site's address
+  // when its tab is opened.
 
-  const backgroundSince = new Map();   // site id -> when its page left the current list
-  let unloadAfter = 5;                 // minutes
+  // site id -> { since, current }: since when its page is not in use, and
+  // whether it was in the current list then (the time starts again when
+  // the page enters or leaves the current list, whose delay is different).
+  const idleSince = new Map();
+  const unload = { unloadAfter: 5, unloadCurrentAfter: 30 };   // minutes
+  let overlayVisible = false;    // the window starts hidden (see main.js)
+
+  const inUse = (id) => overlayVisible && id === active;
+  const inCurrentList = (id) => currentList().sites.some((s) => s.id === id);
+  const unloadDelay = (idle) => (idle.current ? unload.unloadCurrentAfter : unload.unloadAfter) * 60000;
+
+  // Starts the time of the pages that have just stopped being in use or
+  // changed list, and stops the one of the page in use.
+  function markIdle() {
+    const now = Date.now();
+    for (const id of webviews.keys()) {
+      if (inUse(id)) { idleSince.delete(id); continue; }
+      const current = inCurrentList(id);
+      if (idleSince.get(id)?.current !== current) idleSince.set(id, { since: now, current });
+    }
+  }
 
   function sweepPages() {
-    const cur = new Set(currentList().sites.map((s) => s.id));
+    markIdle();
     const now = Date.now();
-    for (const id of [...webviews.keys()]) {
-      if (cur.has(id)) { backgroundSince.delete(id); continue; }
-      if (!backgroundSince.has(id)) backgroundSince.set(id, now);
-      else if (now - backgroundSince.get(id) >= unloadAfter * 60000) closeWebview(id);
+    for (const [id, idle] of [...idleSince]) {
+      if (now - idle.since >= unloadDelay(idle)) closeWebview(id);
     }
   }
   // The time also runs while the overlay is hidden (timers of a hidden
   // window may be slowed down to once a minute: the delay is approximate).
   setInterval(sweepPages, 30000);
 
-  // Minutes left before the page of a site is closed, null if it is in the current list.
+  window.overlay.onVisible((visible) => {
+    overlayVisible = visible;
+    sweepPages();
+    // The page of the active tab was closed while the overlay was hidden:
+    // the list starts again from its first tab.
+    if (visible && isSite(active) && !webviews.has(active)) showCurrentList();
+  });
+
+  // Minutes left before the page of a site is closed, null if it is in use.
   function minutesToUnload(id) {
-    const since = backgroundSince.get(id);
-    if (since === undefined) return null;
-    return Math.max(1, Math.ceil((since + unloadAfter * 60000 - Date.now()) / 60000));
+    const idle = idleSince.get(id);
+    if (!idle) return null;
+    return Math.max(1, Math.ceil((idle.since + unloadDelay(idle) - Date.now()) / 60000));
   }
 
-  const unloadInput = $('opt-unload'), unloadValue = $('opt-unload-value');
+  // Settings: one slider per delay.
+  const unloadSliders = {
+    unloadCurrentAfter: { input: $('opt-unload-current'), value: $('opt-unload-current-value') },
+    unloadAfter: { input: $('opt-unload'), value: $('opt-unload-value') },
+  };
 
-  function showUnloadAfter() { unloadValue.textContent = t('settings.minutes', { count: unloadAfter }); }
+  function showUnloadAfter() {
+    for (const [key, s] of Object.entries(unloadSliders)) {
+      s.value.textContent = t('settings.minutes', { count: unload[key] });
+    }
+  }
 
-  function initUnload(range, value) {
-    unloadAfter = value;
-    unloadInput.min = range.min;
-    unloadInput.max = range.max;
-    unloadInput.value = value;
+  function initUnload(range, settings) {
+    for (const [key, s] of Object.entries(unloadSliders)) {
+      unload[key] = settings[key];
+      s.input.min = range.min;
+      s.input.max = range.max;
+      s.input.value = settings[key];
+      s.input.oninput = () => {
+        unload[key] = Number(s.input.value);
+        showUnloadAfter();
+        window.overlay.setSetting(key, unload[key]);
+        renderMemory();
+      };
+    }
     showUnloadAfter();
-    unloadInput.oninput = () => {
-      unloadAfter = Number(unloadInput.value);
-      showUnloadAfter();
-      window.overlay.setSetting('unloadAfter', unloadAfter);
-      renderMemory();
-    };
   }
 
   // ---------- navigation ----------
@@ -1354,10 +1407,11 @@
     defaultShortcut = state.defaultShortcut;
     showShortcut(currentShortcut);
     initOptions(state.settings);
-    initUnload(state.unloadRange, state.settings.unloadAfter);
+    initUnload(state.unloadRange, state.settings);
     $('app-version').textContent = `Overlay Browser ${state.version}`;
     $('app-repo').onclick = (e) => { e.preventDefault(); window.overlay.openRepo(); };
-    // Reopens the current list's last tab, if the site still exists.
+    // No page is open yet: the current list starts from its first tab,
+    // unless it was left on the Home or the Settings page.
     showCurrentList();
     lookupPreset();
     for (const l of lists) for (const site of l.sites) if (!site.title) resolveTitle(site);

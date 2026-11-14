@@ -25,7 +25,8 @@ const DEFAULT_SETTINGS = {
   language: 'system',   // 'system' or the code of one of the files in locales/
   opacity: 0.95,        // window opacity, from OPACITY_RANGE.min (most transparent) to 1 (opaque)
   accent: 'amber',      // accent color of the interface, one of ACCENTS
-  unloadAfter: 5,       // minutes after which the pages of the other lists are closed, UNLOAD_RANGE
+  unloadAfter: 5,       // minutes after which the unused pages of the other lists are closed, UNLOAD_RANGE
+  unloadCurrentAfter: 30,   // same, for the current list's pages (all but the active tab), UNLOAD_RANGE
 };
 const UNLOAD_RANGE = { min: 5, max: 60 };
 // Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
@@ -41,7 +42,9 @@ function isValidSetting(key, value) {
   if (key === 'language') return isLanguageSetting(value);
   if (key === 'opacity') return Number.isFinite(value) && value >= OPACITY_RANGE.min && value <= OPACITY_RANGE.max;
   if (key === 'accent') return ACCENTS.includes(value);
-  if (key === 'unloadAfter') return Number.isInteger(value) && value >= UNLOAD_RANGE.min && value <= UNLOAD_RANGE.max;
+  if (key === 'unloadAfter' || key === 'unloadCurrentAfter') {
+    return Number.isInteger(value) && value >= UNLOAD_RANGE.min && value <= UNLOAD_RANGE.max;
+  }
   return true;
 }
 
@@ -358,6 +361,7 @@ function showWindow() {
   if (win.isMinimized()) win.restore();
   win.show();
   platformCall('afterShow');
+  win.webContents.send('win:visible', true);
   detectForegroundApp();
 }
 
@@ -390,6 +394,7 @@ function detectForegroundApp() {
 function hideWindow() {
   platformCall('beforeHide');
   win.hide();
+  win.webContents.send('win:visible', false);
 }
 
 function toggleWindow() {
