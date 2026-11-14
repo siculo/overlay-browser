@@ -25,7 +25,9 @@ const DEFAULT_SETTINGS = {
   language: 'system',   // 'system' or the code of one of the files in locales/
   opacity: 0.95,        // window opacity, from OPACITY_RANGE.min (most transparent) to 1 (opaque)
   accent: 'amber',      // accent color of the interface, one of ACCENTS
+  unloadAfter: 5,       // minutes after which the pages of the other lists are closed, UNLOAD_RANGE
 };
+const UNLOAD_RANGE = { min: 5, max: 60 };
 // Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
 const ACCENTS = ['amber', 'orange', 'red', 'pink', 'purple', 'blue', 'cyan', 'green'];
 // Below the minimum the window would be too hard to read.
@@ -39,6 +41,7 @@ function isValidSetting(key, value) {
   if (key === 'language') return isLanguageSetting(value);
   if (key === 'opacity') return Number.isFinite(value) && value >= OPACITY_RANGE.min && value <= OPACITY_RANGE.max;
   if (key === 'accent') return ACCENTS.includes(value);
+  if (key === 'unloadAfter') return Number.isInteger(value) && value >= UNLOAD_RANGE.min && value <= UNLOAD_RANGE.max;
   return true;
 }
 
@@ -584,6 +587,7 @@ ipcMain.handle('state:load', () => ({
     opacity: platform.opacity,   // 'css': the page applies settings.opacity itself
     opacityRange: OPACITY_RANGE,
   },
+  unloadRange: UNLOAD_RANGE,
 }));
 ipcMain.handle('settings:set', (_e, key, value) => {
   if (!(key in DEFAULT_SETTINGS) || !isValidSetting(key, value)) return;

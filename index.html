@@ -148,7 +148,8 @@
   #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
   #opacity-setting { margin-top: 14px; }
   /* Memory: total, then one row per process (pages, interface, GPU...) */
-  #memory-total { font-size: 16px; }
+  #memory-total { margin-top: 18px; font-size: 16px; }
+  #opt-unload-value { min-width: 4em; font-variant-numeric: tabular-nums; }
   #memory-table { width: 100%; margin-top: 10px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
   #memory-table td { padding: 5px 0; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #memory-table td.size { width: 7em; text-align: right; font-variant-numeric: tabular-nums; color: #bbb; }
@@ -236,6 +237,12 @@
     </div>
 
     <h2 data-i18n="settings.memory"></h2>
+    <div class="setting">
+      <label for="opt-unload" data-i18n="settings.unloadAfter"></label>
+      <input type="range" id="opt-unload" step="5">
+      <output id="opt-unload-value" for="opt-unload"></output>
+    </div>
+    <div class="hint" data-i18n="settings.unloadAfterDesc"></div>
     <div id="memory-total"></div>
     <div class="hint" id="memory-kind"></div>
     <table id="memory-table"></table>
@@ -399,6 +406,7 @@
   function closeWebview(id) {
     webviews.get(id)?.remove();
     webviews.delete(id);
+    backgroundSince.delete(id);
   }
 
   function activate(id) {
@@ -428,6 +436,55 @@
     const last = cur.sites.some((s) => s.id === cur.activeTab) ? cur.activeTab : null;
     if (active !== SETTINGS) activate(last ?? cur.sites[0]?.id ?? null);
     render();
+    sweepPages();
+  }
+
+  // ---------- closing the pages of the other lists ----------
+  //
+  // The pages (webviews) of the sites that are not in the current list are
+  // closed after `unloadAfter` minutes (Settings), to free their memory;
+  // going back to their list before then finds them as they were. A closed
+  // page loads again from the site's address when its tab is opened.
+
+  const backgroundSince = new Map();   // site id -> when its page left the current list
+  let unloadAfter = 5;                 // minutes
+
+  function sweepPages() {
+    const cur = new Set(currentList().sites.map((s) => s.id));
+    const now = Date.now();
+    for (const id of [...webviews.keys()]) {
+      if (cur.has(id)) { backgroundSince.delete(id); continue; }
+      if (!backgroundSince.has(id)) backgroundSince.set(id, now);
+      else if (now - backgroundSince.get(id) >= unloadAfter * 60000) closeWebview(id);
+    }
+  }
+  // The time also runs while the overlay is hidden (timers of a hidden
+  // window may be slowed down to once a minute: the delay is approximate).
+  setInterval(sweepPages, 30000);
+
+  // Minutes left before the page of a site is closed, null if it is in the current list.
+  function minutesToUnload(id) {
+    const since = backgroundSince.get(id);
+    if (since === undefined) return null;
+    return Math.max(1, Math.ceil((since + unloadAfter * 60000 - Date.now()) / 60000));
+  }
+
+  const unloadInput = $('opt-unload'), unloadValue = $('opt-unload-value');
+
+  function showUnloadAfter() { unloadValue.textContent = t('settings.minutes', { count: unloadAfter }); }
+
+  function initUnload(range, value) {
+    unloadAfter = value;
+    unloadInput.min = range.min;
+    unloadInput.max = range.max;
+    unloadInput.value = value;
+    showUnloadAfter();
+    unloadInput.oninput = () => {
+      unloadAfter = Number(unloadInput.value);
+      showUnloadAfter();
+      window.overlay.setSetting('unloadAfter', unloadAfter);
+      renderMemory();
+    };
   }
 
   // ---------- navigation ----------
@@ -1152,7 +1209,13 @@
   function memoryLabel(p, siteOfContents) {
     if (p.ui) return t('memory.ui');
     const sites = p.contents.map((id) => findSite(siteOfContents.get(id))).filter(Boolean);
-    if (sites.length) return sites.map((s) => `${siteName(s)} · ${listName(listOfSite(s.id))}`).join(', ');
+    if (sites.length) {
+      return sites.map((s) => {
+        const min = minutesToUnload(s.id);
+        const label = `${siteName(s)} · ${listName(listOfSite(s.id))}`;
+        return min === null ? label : `${label} ${t('memory.unloadIn', { count: min })}`;
+      }).join(', ');
+    }
     if (p.type === 'Browser') return t('memory.main');
     if (p.type === 'GPU') return t('memory.gpu');
     return null;
@@ -1244,6 +1307,7 @@
     showError();
     render();
     renderMemory();
+    showUnloadAfter();
     if (!capturing) showShortcut(currentShortcut);
   };
 
@@ -1262,6 +1326,7 @@
     currentShortcut = state.shortcut;
     showShortcut(currentShortcut);
     initOptions(state.settings);
+    initUnload(state.unloadRange, state.settings.unloadAfter);
     // Reopens the current list's last tab, if the site still exists.
     showCurrentList();
     lookupPreset();
