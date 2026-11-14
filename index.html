@@ -308,7 +308,7 @@
 
   function contextOf(app) {
     const exe = app?.exe?.toLowerCase().replace(/\.exe$/, '');
-    if (exe) return { match: { exe }, name: app.title || app.exe };
+    if (exe) return { match: { exe }, name: app.name || app.title || app.exe };
     if (app?.title) return { match: { title: app.title }, name: app.title };
     return { match: null, name: null };
   }
@@ -323,6 +323,17 @@
   const listOfSite = (id) => lists.find((l) => l.sites.some((s) => s.id === id));
   const findSite = (id) => listOfSite(id)?.sites.find((s) => s.id === id);
   const save = () => window.overlay.saveLists(lists);
+
+  // Lists created before the application's name was detected are named
+  // after the window title they were created from (e.g. IntelliJ's project):
+  // they take the application's name, once known. The names of the
+  // predefined lists are kept.
+  function renameContextList(app) {
+    const l = contextList();
+    if (!l.id || !app?.name || l.name === app.name || presetsApplied.has(l.match?.exe)) return;
+    l.name = app.name;
+    save();
+  }
 
   // Turns a new list into a real one (when its first site is added).
   function materialize(l) {
@@ -906,6 +917,7 @@
   window.overlay.onForegroundApp((app) => {
     const before = currentList();
     context = contextOf(app);
+    renameContextList(app);
     const after = currentList();
     if (before.id !== after.id || !sameMatch(before.match, after.match)) showCurrentList();
     else renderHome();
@@ -1337,6 +1349,7 @@
     pinnedId = state.pinnedList;
     presetsApplied = new Set(state.presetsApplied);
     context = contextOf(state.foregroundApp);
+    renameContextList(state.foregroundApp);
     currentShortcut = state.shortcut;
     defaultShortcut = state.defaultShortcut;
     showShortcut(currentShortcut);

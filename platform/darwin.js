@@ -86,7 +86,8 @@ function beforeShow() {
 
 function foregroundApp() {
   if (!previousApp || !isRunning(previousApp.pid)) return null;
-  return { ...previousApp, steamAppId: null };   // not readable from another process
+  // The app's name is also its title (the window title is not read).
+  return { ...previousApp, name: previousApp.title, steamAppId: null };   // AppID not readable from another process
 }
 
 // ---------- memory ----------

@@ -15,13 +15,15 @@ const generic = require('./generic');
 //   allows it as long as the overlay is in the foreground.
 // The same window tells which application the overlay was opened over:
 // executable from its process (QueryFullProcessImageNameW, allowed with
-// the limited query right even for elevated processes), and its title.
+// the limited query right even for elevated processes), the application's
+// name from the executable's version information, and the window title.
 
 const win32 = (() => {
   try {
     const koffi = require('koffi');
     const user32 = koffi.load('user32.dll');
     const kernel32 = koffi.load('kernel32.dll');
+    const version = koffi.load('version.dll');
     koffi.pointer('HWND', koffi.opaque());
     koffi.struct('RECT', { left: 'long', top: 'long', right: 'long', bottom: 'long' });
     return {
@@ -39,6 +41,9 @@ const win32 = (() => {
       OpenProcess: kernel32.func('void * __stdcall OpenProcess(uint32_t, bool, uint32_t)'),
       QueryFullProcessImageNameW: kernel32.func('bool __stdcall QueryFullProcessImageNameW(void *, uint32_t, _Out_ uint8_t *, _Inout_ uint32_t *)'),
       CloseHandle: kernel32.func('bool __stdcall CloseHandle(void *)'),
+      GetFileVersionInfoSizeW: version.func('uint32_t __stdcall GetFileVersionInfoSizeW(str16, _Out_ uint32_t *)'),
+      GetFileVersionInfoW: version.func('bool __stdcall GetFileVersionInfoW(str16, uint32_t, uint32_t, _Out_ uint8_t *)'),
+      VerQueryValueW: version.func('bool __stdcall VerQueryValueW(const uint8_t *, str16, _Out_ void **, _Out_ uint32_t *)'),
     };
   } catch (err) {
     console.error('Win32 API not available, using simplified focus handling:', err);
@@ -81,6 +86,59 @@ function imagePathOf(pid) {
   } finally {
     win32.CloseHandle(handle);
   }
+}
+
+// Strings of an executable's version information ({ ProductName, ... }), in
+// the file's first language, else in US English; {} if it has none.
+function versionStringsOf(path, keys) {
+  const size = win32.GetFileVersionInfoSizeW(path, [0]);
+  if (!size) return {};
+  const block = Buffer.alloc(size);
+  if (!win32.GetFileVersionInfoW(path, 0, size, block)) return {};
+  const query = (sub) => {
+    const ptr = [null], len = [0];
+    return win32.VerQueryValueW(block, sub, ptr, len) && len[0] ? { ptr: ptr[0], len: len[0] } : null;
+  };
+  // Languages: pairs of 16-bit words (language, code page) -> '040904b0'.
+  const langs = [];
+  const translation = query('\\VarFileInfo\\Translation');
+  if (translation) {
+    const words = win32.koffi.decode(translation.ptr, 'uint16_t', translation.len / 2);
+    for (let i = 0; i + 1 < words.length; i += 2) {
+      langs.push(words[i].toString(16).padStart(4, '0') + words[i + 1].toString(16).padStart(4, '0'));
+    }
+  }
+  langs.push('040904b0', '040904e4');
+  const strings = {};
+  for (const key of keys) {
+    for (const lang of langs) {
+      const value = query(`\\StringFileInfo\\${lang}\\${key}`);
+      const text = value && win32.koffi.decode(value.ptr, 'char16_t', value.len).replace(/\0[\s\S]*$/, '').trim();
+      if (text) { strings[key] = text; break; }
+    }
+  }
+  return strings;
+}
+
+// Name of the application of an executable (e.g. "IntelliJ IDEA" for
+// idea64.exe, whose window title is the project's), null if unknown. The
+// product name, except for the programs of Windows (product "Microsoft®
+// Windows® Operating System", localized), named by their description
+// ("Notepad"). Cached: the version information does not change while running.
+const appNames = new Map();
+function appNameOf(path) {
+  if (!appNames.has(path)) {
+    let name = null;
+    try {
+      const { ProductName: product, FileDescription: description } =
+        versionStringsOf(path, ['ProductName', 'FileDescription']);
+      name = (product && !/Windows®/.test(product) ? product : description) || null;
+    } catch (err) {
+      console.error('version information not readable:', err);
+    }
+    appNames.set(path, name);
+  }
+  return appNames.get(path);
 }
 
 function windowTextOf(hwnd) {
@@ -132,6 +190,7 @@ function foregroundApp() {
     pid,
     exe: path ? path.slice(path.lastIndexOf('\\') + 1) : null,
     path,
+    name: path ? appNameOf(path) : null,
     title: windowTextOf(hwnd) || null,
     steamAppId: null,   // not readable from another process on Windows
   };

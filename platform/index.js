@@ -34,10 +34,13 @@
 //   beforeHide(win)    called before the window is hidden
 //   foregroundApp()    application whose window had focus when the overlay
 //                      was last shown (read by beforeShow), or null:
-//                        { pid, exe, path, title, steamAppId }
+//                        { pid, exe, path, name, title, steamAppId }
 //                      exe/path: executable (for Windows games run with
-//                      Wine/Proton, the game's .exe, not Wine's); title:
-//                      window title; steamAppId: Steam AppID, when known.
+//                      Wine/Proton, the game's .exe, not Wine's); name:
+//                      application name (e.g. "IntelliJ IDEA"), used to name
+//                      its site list; title: window title (which for many
+//                      apps is the document's or project's name);
+//                      steamAppId: Steam AppID, when known.
 //                      Each field may be null.
 //   ownsForeground(win) true if a window of the overlay is the foreground
 //                      window now, false if another one is, null if
