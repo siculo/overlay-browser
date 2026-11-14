@@ -24,7 +24,10 @@ const DEFAULT_SETTINGS = {
   hideOnBlur: true,     // hide the overlay when it loses focus
   language: 'system',   // 'system' or the code of one of the files in locales/
   opacity: 0.95,        // window opacity, from OPACITY_RANGE.min (most transparent) to 1 (opaque)
+  accent: 'amber',      // accent color of the interface, one of ACCENTS
 };
+// Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
+const ACCENTS = ['amber', 'orange', 'red', 'pink', 'purple', 'blue', 'cyan', 'green'];
 // Below the minimum the window would be too hard to read.
 const OPACITY_RANGE = { min: 0.3, max: 1 };
 const DEFAULT_SIZE = { width: 1000, height: 700 };
@@ -35,6 +38,7 @@ function isValidSetting(key, value) {
   if (typeof value !== typeof DEFAULT_SETTINGS[key]) return false;
   if (key === 'language') return isLanguageSetting(value);
   if (key === 'opacity') return Number.isFinite(value) && value >= OPACITY_RANGE.min && value <= OPACITY_RANGE.max;
+  if (key === 'accent') return ACCENTS.includes(value);
   return true;
 }
 

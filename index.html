@@ -5,7 +5,15 @@
 <style>
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
-  body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: #111; color: #eee; font-family: system-ui, sans-serif; }
+  /* --strip: top bar behind the tabs; --sheet: everything below it (navigation
+     bar and page), same color as the active tab, which looks attached to it.
+     --accent: accent color chosen in the settings (set by the script, see
+     ACCENT_COLORS; amber until then); --accent-text: lighter, for text on the
+     dark background; --on-accent: text on an accent background. */
+  :root { --strip: #0b0b0b; --sheet: #181818; --accent: #f0a030; --accent-text: #f5b750; --on-accent: #111;
+          --accent-soft: color-mix(in srgb, var(--accent) 15%, transparent);
+          --accent-soft-hover: color-mix(in srgb, var(--accent) 25%, transparent); }
+  body { margin: 0; display: flex; flex-direction: column; height: 100vh; background: var(--sheet); color: #eee; font-family: system-ui, sans-serif; }
   /* Translucency applied by the page (platforms whose window cannot be
      translucent by itself, see 'state:load'). The opacity goes on body: the
      body background would otherwise be painted on the page canvas, which
@@ -17,23 +25,48 @@
   button:hover { background: #363636; }
   button.active { background: #4a4a4a; font-weight: bold; }
   input, select { font: inherit; color: #eee; background: #1c1c1c; border: 1px solid #3a3a3a; border-radius: 4px; padding: 5px 8px; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  input[type=checkbox], input[type=range] { accent-color: var(--accent); }
+  /* Confirmation buttons (OK of the dialogs, add, save) */
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 500; }
+  button.primary:hover { background: var(--accent-text); border-color: var(--accent-text); }
 
   /* Top bar: fixed Home, then the tabs, scrollable with the arrows */
-  #bar { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
+  /* The tabs (and the active Home/Settings) touch the bottom edge of the bar,
+     the other buttons are centered on the tabs' height. */
+  #bar { display: flex; align-items: flex-end; gap: 4px; padding: 6px 6px 0; background: var(--strip); -webkit-app-region: drag; }
   #bar button { -webkit-app-region: no-drag; }
+  /* Flat buttons in the bar: background only on hover */
+  #bar > button, #tabs-wrap > button { height: 26px; margin-bottom: 3px; background: none; border: none; color: #bbb; }
+  #bar > button:hover:not(:disabled), #tabs-wrap > button:hover:not(:disabled) { background: #222; color: #fff; }
+  #bar > button:disabled:hover, #tabs-wrap > button:disabled:hover { background: none; }
   /* #tabs does not grow beyond its content, so the "+" sits right after the last tab */
-  #tabs { flex: 0 1 auto; min-width: 0; display: flex; gap: 4px; overflow-x: hidden; scroll-behavior: smooth; }
-  #tabs-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; }
+  #tabs { flex: 0 1 auto; min-width: 0; display: flex; align-items: flex-end; overflow-x: hidden; scroll-behavior: smooth; }
+  #tabs-wrap { flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: 4px; }
   .arrow { padding: 3px 8px; }
-  #add-tab { padding: 3px 9px; font-weight: bold; }
+  #add-tab { padding: 3px 9px; font-weight: bold; font-size: 16px; }
 
-  /* Tab: label with ellipsis + close button */
-  .tab { flex: none; display: flex; align-items: center; gap: 4px; max-width: 200px; padding: 3px 4px 3px 10px; background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 4px; cursor: pointer; -webkit-app-region: no-drag; user-select: none; }
-  .tab:hover { background: #363636; }
-  .tab.active { background: #4a4a4a; font-weight: bold; }
+  /* Tab: label with ellipsis + close button, shaped like a tab whose active
+     one is attached to the sheet below. Thin separators between inactive
+     tabs, hidden next to the active and the hovered one. */
+  .tab { position: relative; flex: none; display: flex; align-items: center; gap: 6px; height: 32px; max-width: 200px; padding: 0 6px 0 12px; color: #999; border-radius: 8px 8px 0 0; cursor: pointer; -webkit-app-region: no-drag; user-select: none; }
+  .tab:not(:first-child)::before { content: ''; position: absolute; left: 0; top: 9px; bottom: 9px; width: 1px; background: #333; }
+  .tab.active::before, .tab:hover::before, .tab.active + .tab::before, .tab:hover + .tab::before { display: none; }
+  .tab:hover { background: #161616; color: #ddd; }
+  .tab.active { background: var(--sheet); color: #fff; box-shadow: inset 0 2px 0 var(--accent); }
   .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tab .close { flex: none; width: 18px; height: 18px; line-height: 16px; text-align: center; border-radius: 3px; color: #aaa; font-weight: normal; }
-  .tab .close:hover { background: #5a5a5a; color: #fff; }
+  /* The ×: always on the active tab, on the others only on hover */
+  .tab .close { flex: none; width: 18px; height: 18px; line-height: 17px; text-align: center; border-radius: 4px; color: #aaa; visibility: hidden; }
+  .tab.active .close, .tab:hover .close { visibility: visible; }
+  .tab .close:hover { background: #3a3a3a; color: #fff; }
+
+  /* Home: fixed, always in the accent color; when active, a tab too */
+  #bar > #home-btn { display: flex; align-items: center; gap: 6px; margin-right: 6px; padding: 0 12px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-text); font-weight: 500; }
+  #bar > #home-btn:hover { background: var(--accent-soft-hover); color: var(--accent-text); }
+  #home-btn .icon { font-size: 16px; line-height: 1; }
+  /* Settings, when open: a small tab as well */
+  #bar > #home-btn.active, #bar > #settings-btn.active { height: 32px; margin-bottom: 0; border-radius: 8px 8px 0 0; background: var(--sheet); box-shadow: inset 0 2px 0 var(--accent); font-weight: 500; }
+  #bar > #settings-btn.active { color: #fff; }
 
   /* Dialog (confirmations and address input) */
   #dialog { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); -webkit-app-region: no-drag; }
@@ -41,11 +74,11 @@
   #dialog-msg { margin-bottom: 12px; line-height: 1.4; overflow-wrap: anywhere; }
   #dialog-input { width: 100%; }
   #dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-  #dialog-ok.danger { background: #7a2a2a; border-color: #944; }
-  #dialog-ok.danger:hover { background: #8e3333; }
+  #dialog-ok.danger { background: #7a2a2a; border-color: #944; color: #eee; }
+  #dialog-ok.danger:hover { background: #8e3333; border-color: #944; }
 
   /* Navigation bar of the active site, below the tabs */
-  #nav { display: flex; align-items: center; gap: 4px; padding: 0 6px 6px; -webkit-app-region: drag; }
+  #nav { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
   #nav button { -webkit-app-region: no-drag; min-width: 32px; }
   button:disabled { opacity: 0.4; cursor: default; }
   button:disabled:hover { background: #2a2a2a; }
@@ -70,7 +103,7 @@
   .list.current { margin-bottom: 22px; }
   #lists .lists-title { margin: 0 0 -8px; font-weight: 500; font-size: 14px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
   .list-head .detail { flex: 1; font-size: 12px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-  .badge { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: #23344d; color: #9cf; }
+  .badge { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-text); }
   .badge.new { background: #2e2e2e; color: #aaa; }
   .list-body { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
   .list-body .empty { color: #999; }
@@ -88,7 +121,7 @@
   .error:empty { display: none; }
   #home h2 { margin: 28px 0 12px; font-weight: 500; font-size: 18px; }
   /* Boxes above the lists: list chosen by hand, predefined list offered */
-  .notice { display: flex; align-items: center; gap: 8px; max-width: 720px; margin: 0 0 8px; padding: 6px 10px; font-size: 13px; color: #bbb; background: #1c1c1c; border: 1px solid #333; border-left: 3px solid #6af; border-radius: 4px; }
+  .notice { display: flex; align-items: center; gap: 8px; max-width: 720px; margin: 0 0 8px; padding: 6px 10px; font-size: 13px; color: #bbb; background: #1c1c1c; border: 1px solid #333; border-left: 3px solid var(--accent); border-radius: 4px; }
   .notice .name { color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .notice .detail { color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
   .notice button { font-size: 13px; padding: 2px 8px; }
@@ -96,11 +129,17 @@
   .notice.offer .detail { color: #ddd; white-space: normal; }
   .setting { display: flex; align-items: center; gap: 8px; }
   kbd { font: inherit; font-family: ui-monospace, monospace; padding: 3px 8px; border: 1px solid #555; border-radius: 4px; background: #1c1c1c; min-width: 3em; text-align: center; }
-  kbd.capturing { border-color: #6af; color: #6af; }
+  kbd.capturing { border-color: var(--accent); color: var(--accent-text); }
   .hint { font-size: 13px; color: #999; margin-top: 6px; min-height: 1em; }
   .hint.err { color: #f77; }
-  input[type=range] { width: 220px; padding: 0; border: none; background: none; accent-color: #6af; }
+  input[type=range] { width: 220px; padding: 0; border: none; background: none; }
   #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
+  #opacity-setting { margin-top: 14px; }
+  /* Accent color: one round swatch per predefined color, the chosen one ringed */
+  #accents { display: flex; flex-wrap: wrap; gap: 8px; }
+  #accents button { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid transparent; background: var(--swatch); box-shadow: inset 0 0 0 2px var(--sheet); }
+  #accents button:hover { background: var(--swatch); border-color: #666; }
+  #accents button[aria-checked=true] { border-color: #eee; }
 
   #views { flex: 1; display: flex; }
   #views webview { flex: 1; }
@@ -108,7 +147,7 @@
 </head>
 <body>
   <div id="bar">
-    <button id="home-btn" data-i18n="bar.home"></button>
+    <button id="home-btn"><span class="icon">&#8962;</span><span data-i18n="bar.home"></span></button>
     <div id="tabs-wrap">
       <button class="arrow" id="left" hidden>&#9664;</button>
       <div id="tabs"></div>
@@ -159,8 +198,12 @@
         <span class="desc" data-i18n="settings.hideOnBlurDesc"></span></span>
     </label>
 
-    <div id="appearance" hidden>
-      <h2 data-i18n="settings.appearance"></h2>
+    <h2 data-i18n="settings.appearance"></h2>
+    <div class="setting">
+      <span id="accent-label" data-i18n="settings.accent"></span>
+      <div id="accents" role="radiogroup" aria-labelledby="accent-label"></div>
+    </div>
+    <div id="opacity-setting" hidden>
       <div class="setting">
         <label for="opt-opacity" data-i18n="settings.opacity"></label>
         <input type="range" id="opt-opacity" step="5">
@@ -185,7 +228,7 @@
       <div class="error" id="dialog-error"></div>
       <div class="buttons">
         <button type="button" id="dialog-cancel" data-i18n="dialog.cancel"></button>
-        <button type="submit" id="dialog-ok"></button>
+        <button type="submit" id="dialog-ok" class="primary"></button>
       </div>
     </form>
   </div>
@@ -414,6 +457,7 @@
       const key = 'edit:' + site.id;
       const input = draftInput(key, site.url);
       const ok = button(t('site.save'), () => updateSite(site.id, input.value));
+      ok.classList.add('primary');
       const cancel = button(t('site.cancel'), () => { editing = null; drafts.delete(key); showError(); renderHome(); });
       input.onkeydown = (e) => {
         if (e.key === 'Enter') ok.click();
@@ -473,7 +517,9 @@
     const form = el('form', 'add');
     const input = draftInput(key, '');
     input.placeholder = t('home.addPlaceholder');
-    form.append(input, button(t('home.add'), null, 'submit'));
+    const add = button(t('home.add'), null, 'submit');
+    add.classList.add('primary');
+    form.append(input, add);
     form.onsubmit = (e) => {
       e.preventDefault();
       if (!normalizeUrl(input.value)) {
@@ -872,7 +918,7 @@
   // translucent by itself, here via CSS where the platform requires it
   // (state.platform.opacity === 'css'). Hidden where neither is possible.
 
-  const opacityGroup = $('appearance');
+  const opacityGroup = $('opacity-setting');
   const opacityInput = $('opt-opacity'), opacityValue = $('opt-opacity-value');
   let opacityMode = 'none';
 
@@ -895,6 +941,49 @@
       showOpacity(v);
       window.overlay.setSetting('opacity', v);
     };
+  }
+
+  // ---------- accent color ----------
+  //
+  // Predefined palette: the setting holds the name (validated by main.js
+  // against the same list), the page turns it into the CSS variables.
+  // accent: base color (lines, backgrounds of the confirmation buttons);
+  // text: lighter, readable as text on the dark background.
+
+  const ACCENT_COLORS = {
+    amber:  { accent: '#f0a030', text: '#f5b750' },
+    orange: { accent: '#f07a3a', text: '#f79b66' },
+    red:    { accent: '#e5484d', text: '#f2787b' },
+    pink:   { accent: '#e5559a', text: '#f07fb3' },
+    purple: { accent: '#9b6cf0', text: '#b796f6' },
+    blue:   { accent: '#4a90f5', text: '#7db0ff' },
+    cyan:   { accent: '#22b8c8', text: '#5fd3df' },
+    green:  { accent: '#4cb85a', text: '#7acc84' },
+  };
+  const accentsEl = $('accents');
+  let accentSetting = 'amber';
+
+  function applyAccent(name) {
+    accentSetting = ACCENT_COLORS[name] ? name : 'amber';
+    const { accent, text } = ACCENT_COLORS[accentSetting];
+    document.documentElement.style.setProperty('--accent', accent);
+    document.documentElement.style.setProperty('--accent-text', text);
+    for (const b of accentsEl.children) b.setAttribute('aria-checked', b.dataset.accent === accentSetting);
+  }
+
+  // Swatches, rebuilt when the language changes (their names are the tooltips).
+  function renderAccents() {
+    accentsEl.replaceChildren(...Object.entries(ACCENT_COLORS).map(([name, { accent }]) => {
+      const b = el('button');
+      b.type = 'button';
+      b.dataset.accent = name;
+      b.setAttribute('role', 'radio');
+      b.title = t('accent.' + name);
+      b.style.setProperty('--swatch', accent);
+      b.onclick = () => { applyAccent(name); window.overlay.setSetting('accent', name); };
+      return b;
+    }));
+    applyAccent(accentSetting);
   }
 
   // ---------- language ----------
@@ -932,6 +1021,7 @@
     for (const el of document.querySelectorAll('[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
     for (const el of document.querySelectorAll('[data-i18n-placeholder]')) el.placeholder = t(el.dataset.i18nPlaceholder);
     renderLanguageSelect();
+    renderAccents();
   }
 
   languageSelect.onchange = async () => {
@@ -948,6 +1038,7 @@
   (async () => {
     const state = await window.overlay.loadState();
     initOpacity(state.platform, state.settings.opacity);
+    accentSetting = state.settings.accent;
     languageSetting = state.settings.language;
     applyI18n(state.i18n);
     lists = state.lists;
