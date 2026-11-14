@@ -67,6 +67,13 @@ function applyOpacity() {
 // productName ("Overlay Browser") and would not find the existing preferences.
 app.setPath('userData', path.join(app.getPath('appData'), 'overlay-browser'));
 
+// Same user agent as Chrome: without the app and Electron versions that
+// Electron adds, some sites (Google sign-in above all) refuse the login as an
+// "embedded browser".
+app.userAgentFallback = app.userAgentFallback.split(' ')
+  .filter((token) => !token.startsWith('Electron/') && !token.endsWith(`/${app.getVersion()}`))
+  .join(' ');
+
 const prefsFile = () => path.join(app.getPath('userData'), 'prefs.json');
 let prefs;
 
@@ -402,6 +409,9 @@ function toggleWindow() {
 let lastBlurHide = 0;
 function hideOnBlur() {
   if (!prefs.settings.hideOnBlur || !win.isVisible()) return;
+  // A site popup (e.g. a login) has the focus: the overlay must stay open,
+  // hiding it would hide the popup too, and must not take the focus back.
+  if (win.getChildWindows().some((w) => w.isVisible())) return;
   let owns = null;
   try {
     owns = platform.ownsForeground(win);
@@ -569,6 +579,25 @@ function setShortcut(accelerator) {
   if (previous) tryRegister(previous);
   return { ok: false, shortcut: previous, error: t('shortcut.error', { accelerator }) };
 }
+
+// ---------- site popups ----------
+//
+// Windows opened by the sites (window.open, links with target=_blank) are
+// allowed, so that logins through another site work (e.g. "Continue with
+// Google": the popup reports the result to the page that opened it). They
+// open as child windows of the overlay, on top of it, without menu bar.
+app.on('web-contents-created', (_e, contents) => {
+  if (contents.getType() !== 'webview') return;
+  contents.setWindowOpenHandler(() => ({
+    action: 'allow',
+    overrideBrowserWindowOptions: { parent: win, icon: ICON_PATH, autoHideMenuBar: true },
+  }));
+  contents.on('did-create-window', (popup) => {
+    popup.removeMenu();
+    popup.setAlwaysOnTop(true, 'screen-saver');
+    log(`popup opened from ${contents.getURL()}`);
+  });
+});
 
 // ---------- IPC ----------
 

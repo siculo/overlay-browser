@@ -396,6 +396,8 @@
     let wv = webviews.get(site.id);
     if (!wv) {
       wv = document.createElement('webview');
+      // Windows opened by the site (logins, target=_blank): see 'site popups' in main.js.
+      wv.setAttribute('allowpopups', '');
       wv.src = site.url;
       wv.style.display = 'none';
       // Fallback for sites that set the title via JavaScript: use the first
