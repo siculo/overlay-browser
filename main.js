@@ -661,7 +661,7 @@ ipcMain.handle('state:load', () => ({
     features: platform.features,
     opacity: platform.opacity,   // 'css': the page applies settings.opacity itself
     opacityRange: OPACITY_RANGE,
-    privacySettings: !!platform.privacySettings,   // the page can offer bookmarks:privacy
+    browserBookmarks: platform.bookmarkStores().length > 0,   // else bookmarks are imported from a file only
   },
   unloadRange: UNLOAD_RANGE,
   version: app.getVersion(),   // shown on the Settings page
@@ -756,10 +756,6 @@ ipcMain.handle('bookmarks:read', (_e, id) => {
     log(`bookmarks: cannot read ${source.browser} (${source.file}): ${err?.stack || err}`);
     return { error: true, denied: bookmarks.isDenied(err) };
   }
-});
-// The system settings page that gives the app access to the browsers' data.
-ipcMain.handle('bookmarks:privacy', () => {
-  if (platform.privacySettings) shell.openExternal(platform.privacySettings);
 });
 
 // While a file dialog is open the overlay has no focus, but must not hide

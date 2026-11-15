@@ -23,7 +23,6 @@ module.exports = {
   foregroundApp() { return null; },
   ownsForeground() { return null; },
   bookmarkStores() { return []; },
-  privacySettings: null,
   // Electron's values are in kilobytes.
   memoryUsage(metrics) {
     return { kind: 'workingSet', bytes: new Map(metrics.map((m) => [m.pid, m.memory.workingSetSize * 1024])) };

@@ -121,28 +121,6 @@ function memoryUsage(metrics) {
   return { kind: 'footprint', bytes: new Map(metrics.map((m, i) => [m.pid, footprint[i]])) };
 }
 
-// ---------- browsers ----------
-
-// Data folders of the browsers, for the bookmark import. Safari's bookmarks
-// need the Full Disk Access permission: they are imported from an HTML file
-// exported by Safari.
-function bookmarkStores() {
-  const path = require('path');
-  const support = path.join(require('os').homedir(), 'Library/Application Support');
-  const stores = [];
-  const add = (browser, engine, dir) => stores.push({ browser, engine, dir: path.join(support, dir) });
-  add('Chrome', 'chromium', 'Google/Chrome');
-  add('Edge', 'chromium', 'Microsoft Edge');
-  add('Brave', 'chromium', 'BraveSoftware/Brave-Browser');
-  add('Vivaldi', 'chromium', 'Vivaldi');
-  add('Chromium', 'chromium', 'Chromium');
-  add('Opera', 'chromium', 'com.operasoftware.Opera');
-  add('Comet', 'chromium', 'Comet');
-  add('Firefox', 'firefox', 'Firefox');
-  add('LibreWolf', 'firefox', 'librewolf');
-  return stores;
-}
-
 // ---------- module ----------
 
 module.exports = {
@@ -173,8 +151,8 @@ module.exports = {
   // The panel becomes the key window when shown, without activating the app.
   afterShow() {},
   memoryUsage,
-  bookmarkStores,
-  // Other apps' data (the browsers' too) needs Full Disk Access.
-  privacySettings: 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles',
+  // No bookmarkStores: macOS does not let an app read other apps' data
+  // (the browsers' too) without Full Disk Access. Bookmarks are imported
+  // from an HTML file exported by the browser.
   ...(objc ? { beforeShow, foregroundApp } : {}),
 };
