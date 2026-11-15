@@ -19,6 +19,7 @@
   "home.addPlaceholder": "Indirizzo del sito da aggiungere (es. https://example.com)",
   "home.add": "Aggiungi",
   "home.importBookmarks": "Importa bookmark…",
+  "home.exportBookmarks": "Esporta bookmark…",
   "home.empty": "Nessun sito. Aggiungine uno qui sotto.",
 
   "lists.general": "Generale",
@@ -73,6 +74,14 @@
   "bookmarks.root.mobile": "Preferiti su mobile",
   "bookmarks.fileFilter": "Bookmark esportati (HTML)",
   "bookmarks.allFiles": "Tutti i file",
+
+  "exportDialog.message": "Scegli i siti da salvare in un file di bookmark, importabile nei browser. Ogni lista diventa una cartella.",
+  "bookmarks.all": "Tutti i bookmark",
+  "exportDialog.none": "Esporta",
+  "exportDialog.one": "Esporta 1 sito",
+  "exportDialog.other": "Esporta {count} siti",
+  "exportDialog.empty": "Nessun sito da esportare.",
+  "exportDialog.error": "Impossibile salvare il file.",
 
   "dialog.ok": "OK",
   "dialog.cancel": "Annulla",

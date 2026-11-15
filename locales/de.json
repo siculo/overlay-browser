@@ -19,6 +19,7 @@
   "home.addPlaceholder": "Adresse der hinzuzufügenden Website (z. B. https://example.com)",
   "home.add": "Hinzufügen",
   "home.importBookmarks": "Lesezeichen importieren…",
+  "home.exportBookmarks": "Lesezeichen exportieren…",
   "home.empty": "Keine Websites. Füge unten eine hinzu.",
 
   "lists.general": "Allgemein",
@@ -73,6 +74,14 @@
   "bookmarks.root.mobile": "Mobile Lesezeichen",
   "bookmarks.fileFilter": "Exportierte Lesezeichen (HTML)",
   "bookmarks.allFiles": "Alle Dateien",
+
+  "exportDialog.message": "Wähle die Websites, die in einer Lesezeichendatei gespeichert werden sollen, die Browser importieren können. Jede Liste wird zu einem Ordner.",
+  "bookmarks.all": "Alle Lesezeichen",
+  "exportDialog.none": "Exportieren",
+  "exportDialog.one": "1 Website exportieren",
+  "exportDialog.other": "{count} Websites exportieren",
+  "exportDialog.empty": "Keine Websites zum Exportieren.",
+  "exportDialog.error": "Die Datei kann nicht gespeichert werden.",
 
   "dialog.ok": "OK",
   "dialog.cancel": "Abbrechen",

@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('overlay', {
   bookmarkSources: () => ipcRenderer.invoke('bookmarks:sources'),
   readBookmarks: (id) => ipcRenderer.invoke('bookmarks:read', id),
   openBookmarkFile: () => ipcRenderer.invoke('bookmarks:file'),
+  exportBookmarks: (folders) => ipcRenderer.invoke('bookmarks:export', folders),
   setShortcut: (accelerator) => ipcRenderer.invoke('shortcut:set', accelerator),
   suspendShortcut: (suspended) => ipcRenderer.invoke('shortcut:suspend', suspended),
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),

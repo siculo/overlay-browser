@@ -19,6 +19,7 @@
   "home.addPlaceholder": "Адрес сайта для добавления (например, https://example.com)",
   "home.add": "Добавить",
   "home.importBookmarks": "Импорт закладок…",
+  "home.exportBookmarks": "Экспорт закладок…",
   "home.empty": "Сайтов нет. Добавьте сайт ниже.",
 
   "lists.general": "Общий",
@@ -73,6 +74,14 @@
   "bookmarks.root.mobile": "Мобильные закладки",
   "bookmarks.fileFilter": "Экспортированные закладки (HTML)",
   "bookmarks.allFiles": "Все файлы",
+
+  "exportDialog.message": "Выберите сайты для сохранения в файл закладок, который можно импортировать в браузер. Каждый список становится папкой.",
+  "bookmarks.all": "Все закладки",
+  "exportDialog.none": "Экспорт",
+  "exportDialog.one": "Экспортировать 1 сайт",
+  "exportDialog.other": "Экспортировать сайты: {count}",
+  "exportDialog.empty": "Нет сайтов для экспорта.",
+  "exportDialog.error": "Не удалось сохранить файл.",
 
   "dialog.ok": "ОК",
   "dialog.cancel": "Отмена",

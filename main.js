@@ -753,25 +753,28 @@ ipcMain.handle('bookmarks:read', (_e, id) => {
   }
 });
 
-// While the file dialog is open the overlay has no focus, but must not
-// hide (see hideOnBlur); when it closes the overlay takes the focus back.
+// While a file dialog is open the overlay has no focus, but must not hide
+// (see hideOnBlur); when it closes the overlay takes the focus back.
 let fileDialogOpen = false;
 
-ipcMain.handle('bookmarks:file', async () => {
+async function withFileDialog(show) {
   fileDialogOpen = true;
-  let result;
   try {
-    result = await dialog.showOpenDialog(win, {
-      properties: ['openFile'],
-      filters: [
-        { name: t('bookmarks.fileFilter'), extensions: ['html', 'htm'] },
-        { name: t('bookmarks.allFiles'), extensions: ['*'] },
-      ],
-    });
+    return await show();
   } finally {
     fileDialogOpen = false;
     if (win.isVisible()) win.focus();
   }
+}
+
+ipcMain.handle('bookmarks:file', async () => {
+  const result = await withFileDialog(() => dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: [
+      { name: t('bookmarks.fileFilter'), extensions: ['html', 'htm'] },
+      { name: t('bookmarks.allFiles'), extensions: ['*'] },
+    ],
+  }));
   if (result.canceled || !result.filePaths[0]) return null;
   const file = result.filePaths[0];
   try {
@@ -779,6 +782,29 @@ ipcMain.handle('bookmarks:file', async () => {
   } catch (err) {
     log(`bookmarks: cannot read ${file}: ${err?.stack || err}`);
     return { name: path.basename(file), error: true };
+  }
+});
+
+// Export: the folders chosen by the page ([{ title, sites: [{ title, url }] }])
+// saved as an HTML bookmark file where the user chooses. Returns null if
+// the save dialog is cancelled.
+ipcMain.handle('bookmarks:export', async (_e, folders) => {
+  const html = bookmarks.toHtml(folders);
+  if (!html) return { error: true };
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const result = await withFileDialog(() => dialog.showSaveDialog(win, {
+    defaultPath: path.join(app.getPath('documents'), `overlay-browser-bookmarks-${date}.html`),
+    filters: [{ name: t('bookmarks.fileFilter'), extensions: ['html'] }],
+  }));
+  if (result.canceled || !result.filePath) return null;
+  try {
+    fs.writeFileSync(result.filePath, html);
+    log(`bookmarks: exported to ${result.filePath}`);
+    return { ok: true };
+  } catch (err) {
+    log(`bookmarks: cannot write ${result.filePath}: ${err?.stack || err}`);
+    return { error: true };
   }
 });
 ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerator)));

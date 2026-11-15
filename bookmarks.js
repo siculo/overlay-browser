@@ -1,6 +1,6 @@
 // Bookmarks of the installed browsers and of HTML bookmark files, for the
-// import into a site list. Only reads: nothing is ever written to the
-// browsers' data.
+// import into a site list, and the export of the lists as an HTML bookmark
+// file. Nothing is ever written to the browsers' data.
 //
 // Where the browsers keep their data comes from the platform module
 // (bookmarkStores, see platform/index.js); here it is turned into sources,
@@ -224,4 +224,36 @@ function readHtmlFile(file) {
   return parseHtml(fs.readFileSync(file, 'utf8'));
 }
 
-module.exports = { listSources, readSource, readHtmlFile, parseHtml };
+// The export: one folder per site list, [{ title, sites: [{ title, url }] }]
+// (from the page: anything else is skipped), in the same format. Returns
+// null if there is nothing to export.
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+function toHtml(folders) {
+  if (!Array.isArray(folders)) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const lines = [];
+  for (const f of folders) {
+    const sites = (Array.isArray(f?.sites) ? f.sites : []).filter((s) => isWebUrl(s?.url));
+    if (!sites.length) continue;
+    lines.push(`    <DT><H3 ADD_DATE="${now}" LAST_MODIFIED="${now}">${escapeHtml(f.title ?? '')}</H3>`, '    <DL><p>');
+    for (const s of sites) lines.push(`        <DT><A HREF="${escapeHtml(s.url)}" ADD_DATE="${now}">${escapeHtml(s.title || s.url)}</A>`);
+    lines.push('    </DL><p>');
+  }
+  if (!lines.length) return null;
+  return [
+    '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+    '<!-- This is an automatically generated file.',
+    '     It will be read and overwritten.',
+    '     DO NOT EDIT! -->',
+    '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+    '<TITLE>Bookmarks</TITLE>',
+    '<H1>Bookmarks</H1>',
+    '<DL><p>',
+    ...lines,
+    '</DL><p>',
+    '',
+  ].join('\n');
+}
+
+module.exports = { listSources, readSource, readHtmlFile, parseHtml, toHtml };

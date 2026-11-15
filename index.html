@@ -85,7 +85,7 @@
   #dialog-ok.danger { background: #7a2a2a; border-color: #944; color: #eee; }
   #dialog-ok.danger:hover { background: #8e3333; border-color: #944; }
   /* Adding sites: tabs Address / Bookmarks; the Bookmarks one is wider */
-  #add-dialog.wide .box { width: min(640px, calc(100vw - 32px)); }
+  #add-dialog.wide .box, #export-dialog .box { width: min(640px, calc(100vw - 32px)); }
   .dialog-tabs { display: flex; gap: 4px; margin: -6px 0 14px; border-bottom: 1px solid #333; }
   .dialog-tabs button { background: none; border: none; border-radius: 4px 4px 0 0; padding: 5px 12px; color: #999; }
   .dialog-tabs button:hover { background: #262626; color: #ddd; }
@@ -94,7 +94,7 @@
   .bm-source { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   #bm-source { flex: 1; min-width: 0; }
   /* Bookmark tree: one row per folder or bookmark, indented by depth */
-  #bm-tree { margin-top: 8px; height: min(360px, calc(100vh - 270px)); min-height: 90px; overflow-y: auto; padding: 4px 0; background: #161616; border: 1px solid #333; border-radius: 4px; }
+  .bm-tree { margin-top: 8px; height: min(360px, calc(100vh - 300px)); min-height: 90px; overflow-y: auto; padding: 4px 0; background: #161616; border: 1px solid #333; border-radius: 4px; }
   .bm-row { display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px calc(8px + var(--depth) * 18px); cursor: pointer; user-select: none; }
   .bm-row:hover { background: #222; }
   .bm-row .twisty { flex: none; width: 1em; color: #888; text-align: center; }
@@ -110,10 +110,18 @@
   /* List the bookmarks are added to, left of the buttons */
   #add-target { flex: 1; min-width: 0; align-self: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #999; }
   .bm-status.err { color: #f77; }
-  /* Home: import into the current list, below its add form */
-  .import-row { display: flex; justify-content: flex-end; margin-top: -2px; }
-  .import-row button { font-size: 13px; padding: 2px 8px; background: none; border-color: transparent; color: var(--accent-text); }
-  .import-row button:hover { background: var(--accent-soft); }
+  /* Home: import into the current list, below its add form; export of all
+     the lists, above them */
+  .import-row, .home-actions { display: flex; justify-content: flex-end; }
+  .import-row { margin-top: -2px; }
+  .home-actions { max-width: 720px; margin-bottom: -4px; }
+  .import-row button, .home-actions button { font-size: 13px; padding: 2px 8px; background: none; border-color: transparent; color: var(--accent-text); }
+  .import-row button:hover, .home-actions button:hover:not(:disabled) { background: var(--accent-soft); }
+  .home-actions button:disabled:hover { background: none; }
+  /* "All bookmarks" checkbox above the tree (import and export) */
+  .bm-all { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 0 9px; cursor: pointer; user-select: none; }
+  .bm-all input { margin: 0; cursor: inherit; }
+  #ex-search { width: 100%; }
 
   /* Navigation bar of the active site, below the tabs */
   #nav { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
@@ -232,6 +240,7 @@
       <button id="preset-use"></button>
       <button id="preset-dismiss"></button>
     </div>
+    <div class="home-actions"><button id="export-btn" data-i18n="home.exportBookmarks"></button></div>
     <div id="lists"></div>
   </div>
 
@@ -309,6 +318,20 @@
     </form>
   </div>
 
+  <div id="export-dialog" class="modal" hidden>
+    <form class="box" id="export-form">
+      <div class="dialog-msg" data-i18n="exportDialog.message"></div>
+      <input id="ex-search" type="search" data-i18n-placeholder="bookmarks.search">
+      <label class="bm-all"><input type="checkbox" id="ex-all"><span data-i18n="bookmarks.all"></span></label>
+      <div id="ex-tree" class="bm-tree"></div>
+      <div class="error" id="export-error"></div>
+      <div class="buttons">
+        <button type="button" id="export-cancel" data-i18n="dialog.cancel"></button>
+        <button type="submit" id="export-ok" class="primary"></button>
+      </div>
+    </form>
+  </div>
+
   <div id="add-dialog" class="modal" hidden>
     <form class="box" id="add-form">
       <div class="dialog-tabs" role="tablist">
@@ -326,7 +349,8 @@
           <button type="button" id="bm-file" data-i18n="bookmarks.file"></button>
         </div>
         <input id="bm-search" type="search" data-i18n-placeholder="bookmarks.search">
-        <div id="bm-tree"></div>
+        <label class="bm-all"><input type="checkbox" id="bm-all"><span data-i18n="bookmarks.all"></span></label>
+        <div id="bm-tree" class="bm-tree"></div>
       </div>
       <div class="error" id="add-error"></div>
       <div class="buttons">
@@ -910,6 +934,7 @@
     const selection = focused && [document.activeElement.selectionStart, document.activeElement.selectionEnd];
     renderPinned();
     renderPreset();
+    $('export-btn').disabled = !hasSites();
     const cur = currentList();
     const others = lists.filter((l) => l !== cur);
     listsEl.replaceChildren(listSection(cur, true));
@@ -1193,22 +1218,184 @@
     if (e.key === 'Escape' && closeDialog) { e.preventDefault(); closeDialog(false); }
   });
 
+  // ---------- bookmark tree with checkboxes ----------
+  //
+  // Used by the import (bookmarks of a browser or of a file) and by the
+  // export (the site lists). The tree is made of folders { title, children }
+  // and bookmarks { title, url }. A bookmark is selected by its `idOf`
+  // (the import selects by address, so the same address in several folders
+  // counts once); `selectable` tells whether it can be chosen, `tagOf` a
+  // note for its row. A folder's checkbox selects all the selectable
+  // bookmarks it contains, the optional `allBox` all of them: those shown,
+  // while searching. Folders open and close by clicking them; while
+  // searching the folders with results are all open. `status` replaces the
+  // tree with a message (loading, error...).
+
+  const bookmarksIn = (n) => (n.children ? n.children.flatMap(bookmarksIn) : [n]);
+
+  function treePicker({ container, search, allBox, idOf, selectable = () => true, tagOf = () => null, empty, onChange }) {
+    const p = { tree: null, status: null, error: false, selected: new Set(), open: new Set() };
+    const folderTitle = (n) => n.title || '…';
+    const bookmarkTitle = (n) => n.title || hostOf(n.url) || n.url;
+    const idsIn = (nodes) => [...new Set(nodes.flatMap(bookmarksIn).filter(selectable).map(idOf))];
+
+    // Bookmarks whose title or address contains the text, folders with such
+    // bookmarks (all of a folder's bookmarks if its name contains the text).
+    function filter(nodes, q) {
+      if (!q) return nodes;
+      const out = [];
+      for (const n of nodes) {
+        if (n.children) {
+          if (folderTitle(n).toLowerCase().includes(q)) out.push(n);
+          else {
+            const children = filter(n.children, q);
+            if (children.length) out.push({ ...n, children });
+          }
+        } else if (n.title.toLowerCase().includes(q) || n.url.toLowerCase().includes(q)) out.push(n);
+      }
+      return out;
+    }
+
+    // Checkbox for a group of bookmarks: checked if all are selected,
+    // indeterminate if some; clicking selects them all, or none if all were.
+    function groupBox(box, ids) {
+      const chosen = ids.filter((id) => p.selected.has(id)).length;
+      box.disabled = !ids.length;
+      box.checked = ids.length > 0 && chosen === ids.length;
+      box.indeterminate = chosen > 0 && chosen < ids.length;
+      box.onclick = (e) => {
+        e.stopPropagation();
+        const all = chosen === ids.length;
+        for (const id of ids) { if (all) p.selected.delete(id); else p.selected.add(id); }
+        render();
+      };
+    }
+
+    function checkbox() {
+      const box = el('input');
+      box.type = 'checkbox';
+      box.tabIndex = -1;
+      return box;
+    }
+
+    function folderRow(n, depth, q) {
+      const row = el('div', 'bm-row folder');
+      row.style.setProperty('--depth', depth);
+      const open = !!q || p.open.has(n.key);
+      const box = checkbox();
+      groupBox(box, idsIn([n]));
+      row.append(el('span', 'twisty', open ? '▾' : '▸'), box, el('span', 'title', folderTitle(n)),
+        el('span', 'count', String(bookmarksIn(n).length)));
+      row.onclick = () => {
+        if (q) return;
+        if (!p.open.delete(n.key)) p.open.add(n.key);
+        render();
+      };
+      return { row, open };
+    }
+
+    function bookmarkRow(n, depth) {
+      const row = el('div', 'bm-row');
+      row.style.setProperty('--depth', depth);
+      const ok = selectable(n);
+      const box = checkbox();
+      box.disabled = !ok;
+      box.checked = ok && p.selected.has(idOf(n));
+      row.classList.toggle('disabled', !ok);
+      row.title = n.url;
+      row.append(el('span', 'twisty'), box, el('span', 'title', bookmarkTitle(n)), el('span', 'url', n.url));
+      const tag = tagOf(n);
+      if (tag) row.append(el('span', 'tag', tag));
+      const toggle = (e) => {
+        e.stopPropagation();
+        if (!ok) return;
+        if (!p.selected.delete(idOf(n))) p.selected.add(idOf(n));
+        render();
+      };
+      row.onclick = toggle;
+      box.onclick = toggle;
+      return row;
+    }
+
+    function render() {
+      const scroll = container.scrollTop;
+      const message = (text, err) => container.replaceChildren(el('div', 'bm-status' + (err ? ' err' : ''), text));
+      const q = search.value.trim().toLowerCase();
+      const nodes = p.tree && !p.status ? filter(p.tree, q) : [];
+      if (allBox) groupBox(allBox, idsIn(nodes));
+      if (p.status !== null) message(p.status, p.error);
+      else if (!p.tree) message('');
+      else if (!p.tree.length) message(empty());
+      else {
+        const rows = [];
+        const walk = (list, depth) => {
+          for (const n of list) {
+            if (!n.children) { rows.push(bookmarkRow(n, depth)); continue; }
+            const { row, open } = folderRow(n, depth, q);
+            rows.push(row);
+            if (open) walk(n.children, depth + 1);
+          }
+        };
+        walk(nodes, 0);
+        if (rows.length) container.replaceChildren(...rows);
+        else message(t('bookmarks.noMatch'));
+      }
+      container.scrollTop = scroll;
+      onChange?.();
+    }
+
+    // A new tree: `open` 'top' (top folders open) or 'all'; `selectAll`
+    // selects all its bookmarks.
+    p.setTree = (tree, { open = 'top', selectAll = false } = {}) => {
+      let next = 0;
+      const walk = (nodes, depth) => {
+        for (const n of nodes) {
+          if (!n.children) continue;
+          n.key = String(next++);
+          if (open === 'all' || depth === 0) p.open.add(n.key);
+          walk(n.children, depth + 1);
+        }
+      };
+      p.open.clear();
+      p.selected.clear();
+      p.tree = tree;
+      p.status = null;
+      if (tree) {
+        walk(tree, 0);
+        if (selectAll) for (const id of idsIn(tree)) p.selected.add(id);
+      }
+      container.scrollTop = 0;
+      render();
+    };
+    p.setStatus = (text, error = false) => {
+      p.tree = null;
+      p.selected.clear();
+      p.status = text;
+      p.error = error;
+      render();
+    };
+    p.render = render;
+
+    search.addEventListener('input', () => { container.scrollTop = 0; render(); });
+    // Enter in the search field does not confirm the dialog.
+    search.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+    return p;
+  }
+
   // ---------- adding sites: address or bookmarks ----------
   //
   // The "+" in the bar opens it on the Address tab, "Import bookmarks..." on
   // the Home on the Bookmarks one. Bookmarks come from a browser found on the
   // system (one source per browser profile) or from an HTML file exported by
-  // a browser; they are read by the main process (see bookmarks.js) as a
-  // tree of folders and bookmarks, shown with a checkbox on each row: a
-  // folder's selects all the bookmarks it contains (those shown, while
-  // searching). The addresses already in the current list cannot be chosen.
-  // The same address in several folders counts once: the selection is by
-  // address. Returns { url } or { bookmarks: [{ url, title }] }, null if
-  // cancelled. One dialog at a time: it shares closeDialog with openDialog.
+  // a browser; they are read by the main process (see bookmarks.js) and
+  // chosen in a tree (treePicker), by address: those already in the current
+  // list cannot be chosen. Returns { url } or { bookmarks: [{ url, title }] },
+  // null if cancelled. One dialog at a time: it shares closeDialog with
+  // openDialog.
 
   const addDialog = $('add-dialog'), addForm = $('add-form'), addInput = $('add-input');
   const addOk = $('add-ok'), addError = $('add-error');
-  const bmSourceSelect = $('bm-source'), bmSearch = $('bm-search'), bmTree = $('bm-tree');
+  const bmSourceSelect = $('bm-source');
   const FILE_SOURCE = ':file';
   let addTab = 'url';
   let lastSource = null;   // id of the browser source used last (this session)
@@ -1216,24 +1403,30 @@
     sources: null,        // [{ id, browser, profile }], null until listed
     file: null,           // { name, tree, error } of the HTML file chosen
     source: null,         // id of the source shown, or FILE_SOURCE
-    tree: null,           // tree of the source shown (see prepareTree)
-    status: null,         // 'loading', 'error' or null
+    loading: false,
     titles: new Map(),    // address -> title of its first bookmark
-    selected: new Set(),  // addresses chosen
     existing: new Set(),  // addresses already in the current list
-    open: new Set(),      // keys of the open folders
     request: 0,           // ignores readings that are no longer current
   };
 
-  // Gives each node a key (for the open folders) and each bookmark its
+  const importPicker = treePicker({
+    container: $('bm-tree'),
+    search: $('bm-search'),
+    allBox: $('bm-all'),
+    idOf: (n) => n.norm,
+    selectable: (n) => !!n.norm && !bm.existing.has(n.norm),
+    tagOf: (n) => (n.norm && bm.existing.has(n.norm) ? t('bookmarks.inList') : null),
+    empty: () => t('bookmarks.empty'),
+    onChange: () => updateAddOk(),
+  });
+
+  // Names the browsers' own top folders and gives each bookmark its
   // normalized address, the one the lists keep.
-  function prepareTree(tree) {
-    let next = 0;
+  function prepareImport(tree) {
     bm.titles.clear();
-    bm.open.clear();
     const walk = (nodes) => {
       for (const n of nodes) {
-        n.key = String(next++);
+        if (n.root) n.title = t('bookmarks.root.' + n.root);
         if (n.children) walk(n.children);
         else {
           n.norm = normalizeUrl(n.url);
@@ -1242,109 +1435,7 @@
       }
     };
     walk(tree);
-    for (const n of tree) if (n.children) bm.open.add(n.key);   // the top folders start open
     return tree;
-  }
-
-  const folderTitle = (n) => (n.root ? t('bookmarks.root.' + n.root) : n.title) || '…';
-  const bookmarkTitle = (n) => n.title || hostOf(n.url) || n.url;
-  const selectable = (n) => !!n.norm && !bm.existing.has(n.norm);
-  const bookmarksIn = (n) => (n.children ? n.children.flatMap(bookmarksIn) : [n]);
-
-  // The tree filtered by the search: bookmarks whose title or address
-  // contains the text, folders with such bookmarks (all of a folder's
-  // bookmarks if its name contains the text).
-  function filterTree(nodes, q) {
-    if (!q) return nodes;
-    const out = [];
-    for (const n of nodes) {
-      if (n.children) {
-        if (folderTitle(n).toLowerCase().includes(q)) out.push(n);
-        else {
-          const children = filterTree(n.children, q);
-          if (children.length) out.push({ ...n, children });
-        }
-      } else if (n.title.toLowerCase().includes(q) || n.url.toLowerCase().includes(q)) out.push(n);
-    }
-    return out;
-  }
-
-  function folderRow(n, depth, q) {
-    const row = el('div', 'bm-row folder');
-    row.style.setProperty('--depth', depth);
-    const open = !!q || bm.open.has(n.key);
-    const inside = bookmarksIn(n);
-    const urls = [...new Set(inside.filter(selectable).map((b) => b.norm))];
-    const chosen = urls.filter((u) => bm.selected.has(u)).length;
-    const box = el('input');
-    box.type = 'checkbox';
-    box.tabIndex = -1;
-    box.disabled = !urls.length;
-    box.checked = urls.length > 0 && chosen === urls.length;
-    box.indeterminate = chosen > 0 && chosen < urls.length;
-    box.onclick = (e) => {
-      e.stopPropagation();
-      const all = chosen === urls.length;
-      for (const u of urls) { if (all) bm.selected.delete(u); else bm.selected.add(u); }
-      renderBookmarks();
-    };
-    row.append(el('span', 'twisty', open ? '▾' : '▸'), box, el('span', 'title', folderTitle(n)), el('span', 'count', String(inside.length)));
-    row.onclick = () => {
-      if (q) return;   // while searching, the folders stay open
-      if (!bm.open.delete(n.key)) bm.open.add(n.key);
-      renderBookmarks();
-    };
-    return { row, open };
-  }
-
-  function bookmarkRow(n, depth) {
-    const row = el('div', 'bm-row');
-    row.style.setProperty('--depth', depth);
-    const ok = selectable(n);
-    const box = el('input');
-    box.type = 'checkbox';
-    box.tabIndex = -1;
-    box.disabled = !ok;
-    box.checked = ok && bm.selected.has(n.norm);
-    row.classList.toggle('disabled', !ok);
-    row.title = n.url;
-    row.append(el('span', 'twisty'), box, el('span', 'title', bookmarkTitle(n)), el('span', 'url', n.url));
-    if (n.norm && !ok) row.append(el('span', 'tag', t('bookmarks.inList')));
-    const toggle = (e) => {
-      e.stopPropagation();
-      if (!ok) return;
-      if (!bm.selected.delete(n.norm)) bm.selected.add(n.norm);
-      renderBookmarks();
-    };
-    row.onclick = toggle;
-    box.onclick = toggle;
-    return row;
-  }
-
-  function renderBookmarks() {
-    const scroll = bmTree.scrollTop;
-    const status = (text, err) => bmTree.replaceChildren(el('div', 'bm-status' + (err ? ' err' : ''), text));
-    if (bm.status === 'loading') status(t('bookmarks.loading'));
-    else if (bm.status === 'error') status(t('bookmarks.error'), true);
-    else if (!bm.tree) status(bm.sources?.length === 0 && !bm.file ? t('bookmarks.noSources') : '');
-    else if (!bm.tree.length) status(t('bookmarks.empty'));
-    else {
-      const q = bmSearch.value.trim().toLowerCase();
-      const rows = [];
-      const walk = (list, depth) => {
-        for (const n of list) {
-          if (!n.children) { rows.push(bookmarkRow(n, depth)); continue; }
-          const { row, open } = folderRow(n, depth, q);
-          rows.push(row);
-          if (open) walk(n.children, depth + 1);
-        }
-      };
-      walk(filterTree(bm.tree, q), 0);
-      if (rows.length) bmTree.replaceChildren(...rows);
-      else status(t('bookmarks.noMatch'));
-    }
-    bmTree.scrollTop = scroll;
-    updateAddOk();
   }
 
   function updateAddOk() {
@@ -1355,19 +1446,16 @@
       addOk.disabled = false;
       return;
     }
-    const n = bm.selected.size;
+    const n = importPicker.selected.size;
     target.textContent = t('bookmarks.target', { list: listName(currentList()) });
     target.title = target.textContent;
     addOk.textContent = n === 0 ? t('bookmarks.addNone') : t(n === 1 ? 'bookmarks.add.one' : 'bookmarks.add.other', { count: n });
     addOk.disabled = n === 0;
   }
 
-  function showTree(tree, status = null) {
-    bm.selected.clear();
-    bm.tree = tree ? prepareTree(tree) : null;
-    bm.status = status;
-    bmTree.scrollTop = 0;
-    renderBookmarks();
+  function showImport(res) {
+    if (res.error) importPicker.setStatus(t('bookmarks.error'), true);
+    else importPicker.setTree(prepareImport(res.tree));
   }
 
   function renderSourceSelect() {
@@ -1387,34 +1475,30 @@
     bm.source = id;
     renderSourceSelect();
     const request = ++bm.request;
-    if (id === FILE_SOURCE) return showTree(bm.file.error ? null : bm.file.tree, bm.file.error ? 'error' : null);
+    if (id === FILE_SOURCE) return showImport(bm.file);
     lastSource = id;
-    showTree(null, 'loading');
+    importPicker.setStatus(t('bookmarks.loading'));
     const res = await window.overlay.readBookmarks(id);
-    if (request !== bm.request) return;
-    showTree(res.error ? null : res.tree, res.error ? 'error' : null);
+    if (request === bm.request) showImport(res);
   }
 
   // The sources are listed again at every opening (browsers installed or
   // profiles added meanwhile); the one used last is shown first.
   async function loadSources() {
     const request = ++bm.request;
-    bm.status = 'loading';
-    renderBookmarks();
+    bm.loading = true;
+    importPicker.setStatus(t('bookmarks.loading'));
     const sources = await window.overlay.bookmarkSources();
     if (request !== bm.request) return;
+    bm.loading = false;
     bm.sources = sources;
     const first = sources.find((s) => s.id === lastSource) ?? sources[0];
     if (first) return showSource(first.id);
-    bm.status = null;
     renderSourceSelect();
-    renderBookmarks();
+    importPicker.setStatus(t('bookmarks.noSources'));
   }
 
   bmSourceSelect.onchange = () => showSource(bmSourceSelect.value);
-  bmSearch.oninput = () => { bmTree.scrollTop = 0; renderBookmarks(); };
-  // Enter in the search field does not add the selection.
-  bmSearch.onkeydown = (e) => { if (e.key === 'Enter') e.preventDefault(); };
   $('bm-file').onclick = async () => {
     const res = await window.overlay.openBookmarkFile();
     if (!res || addDialog.hidden) return;
@@ -1430,10 +1514,9 @@
     $('add-bm').hidden = tab !== 'bm';
     addDialog.classList.toggle('wide', tab === 'bm');
     addError.textContent = '';
-    if (tab === 'bm' && !bm.sources && bm.status !== 'loading') loadSources();
-    else if (tab === 'bm') renderBookmarks();
+    if (tab === 'bm' && !bm.sources && !bm.loading) loadSources();
     updateAddOk();
-    setTimeout(() => (tab === 'url' ? addInput : bmSearch).focus());
+    setTimeout(() => (tab === 'url' ? addInput : $('bm-search')).focus());
   }
   $('add-tab-url').onclick = () => showAddTab('url');
   $('add-tab-bm').onclick = () => showAddTab('bm');
@@ -1441,11 +1524,11 @@
   function openAddDialog(tab) {
     closeDialog?.(null);   // one dialog at a time
     addInput.value = '';
-    bmSearch.value = '';
-    Object.assign(bm, { sources: null, file: null, source: null, tree: null, status: null });
+    $('bm-search').value = '';
+    Object.assign(bm, { sources: null, file: null, source: null, loading: false });
     bm.request++;
-    bm.selected.clear();
     bm.existing = new Set(currentList().sites.map((s) => s.url));
+    importPicker.setTree(null);
     renderSourceSelect();
     addDialog.hidden = false;
     showAddTab(tab);
@@ -1456,7 +1539,7 @@
         addDialog.hidden = true;
         addForm.onsubmit = null;
         bm.request++;
-        bm.tree = null;
+        importPicker.setTree(null);
         resolve(result || null);
       };
       addForm.onsubmit = (e) => {
@@ -1466,13 +1549,86 @@
           closeDialog({ url: addInput.value });
           return;
         }
-        if (!bm.selected.size) return;
-        closeDialog({ bookmarks: [...bm.selected].map((url) => ({ url, title: bm.titles.get(url) })) });
+        const chosen = importPicker.selected;
+        if (!chosen.size) return;
+        closeDialog({ bookmarks: [...chosen].map((url) => ({ url, title: bm.titles.get(url) })) });
       };
     });
   }
   $('add-cancel').onclick = () => closeDialog?.(null);
   addDialog.addEventListener('mousedown', (e) => { if (e.target === addDialog) closeDialog?.(null); });
+
+  // ---------- export ----------
+  //
+  // "Export bookmarks..." on the Home: the sites of all the lists, one folder
+  // per list (current one first, as on the Home), all selected at first.
+  // The chosen ones are saved by the main process as an HTML bookmark file
+  // (see bookmarks.js), with the same folders, which browsers can import.
+
+  const exportDialog = $('export-dialog'), exportForm = $('export-form');
+  const exportOk = $('export-ok'), exportError = $('export-error');
+
+  const exportPicker = treePicker({
+    container: $('ex-tree'),
+    search: $('ex-search'),
+    allBox: $('ex-all'),
+    idOf: (n) => n.id,
+    empty: () => t('exportDialog.empty'),
+    onChange: () => updateExportOk(),
+  });
+
+  const hasSites = () => lists.some((l) => l.sites.length);
+
+  function updateExportOk() {
+    const n = exportPicker.selected.size;
+    exportOk.textContent = n === 0 ? t('exportDialog.none') : t(n === 1 ? 'exportDialog.one' : 'exportDialog.other', { count: n });
+    exportOk.disabled = n === 0;
+  }
+
+  function exportTree() {
+    const cur = currentList();
+    return [cur, ...lists.filter((l) => l !== cur)]
+      .filter((l) => l.sites.length)
+      .map((l) => ({ title: listName(l), children: l.sites.map((s) => ({ id: s.id, title: siteName(s), url: s.url })) }));
+  }
+
+  function openExportDialog() {
+    closeDialog?.(null);   // one dialog at a time
+    $('ex-search').value = '';
+    exportError.textContent = '';
+    exportPicker.setTree(exportTree(), { open: 'all', selectAll: true });
+    exportDialog.hidden = false;
+    setTimeout(() => $('ex-search').focus());
+
+    return new Promise((resolve) => {
+      closeDialog = (result) => {
+        closeDialog = null;
+        exportDialog.hidden = true;
+        exportForm.onsubmit = null;
+        exportPicker.setTree(null);
+        resolve(!!result);
+      };
+      exportForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const chosen = exportPicker.selected;
+        const folders = exportPicker.tree
+          .map((f) => ({ title: f.title, sites: f.children.filter((s) => chosen.has(s.id)).map(({ title, url }) => ({ title, url })) }))
+          .filter((f) => f.sites.length);
+        if (!folders.length) return;
+        exportError.textContent = '';
+        exportOk.disabled = true;
+        const res = await window.overlay.exportBookmarks(folders);
+        if (exportDialog.hidden) return;   // closed meanwhile
+        updateExportOk();
+        if (!res) return;                  // the save dialog was cancelled
+        if (res.error) { exportError.textContent = t('exportDialog.error'); return; }
+        closeDialog(true);
+      };
+    });
+  }
+  $('export-btn').onclick = openExportDialog;
+  $('export-cancel').onclick = () => closeDialog?.(null);
+  exportDialog.addEventListener('mousedown', (e) => { if (e.target === exportDialog) closeDialog?.(null); });
 
   // When the window gets focus, the keyboard goes to the open site
   // (otherwise it would stay on the page holding the tabs), unless
