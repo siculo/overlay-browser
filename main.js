@@ -1,7 +1,8 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, shell, Tray, webContents } = require('electron');
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, screen, shell, Tray, webContents } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
+const bookmarks = require('./bookmarks');
 
 platform.configureApp(app);
 
@@ -437,7 +438,7 @@ function onOverlayBlur(blurred) {
 
 // `blurred`: the window that lost the focus, the one to give it back to.
 function hideOnBlur(blurred) {
-  if (!prefs.settings.hideOnBlur || !win.isVisible() || overlayFocused()) return;
+  if (!prefs.settings.hideOnBlur || !win.isVisible() || overlayFocused() || fileDialogOpen) return;
   let owns = null;
   try {
     owns = platform.ownsForeground(win);
@@ -722,6 +723,64 @@ ipcMain.handle('presets:applied', (_e, exe) => {
   savePrefs();
 });
 ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
+
+// ---------- bookmark import ----------
+//
+// The page lists the browsers' bookmark sources (see bookmarks.js) and
+// reads one of them, or an HTML file chosen with the system's file dialog.
+// The page only gets the ids of the sources: it cannot make the main
+// process read other files.
+
+let bookmarkSources = [];
+
+ipcMain.handle('bookmarks:sources', () => {
+  try {
+    bookmarkSources = bookmarks.listSources(platform.bookmarkStores());
+  } catch (err) {
+    log(`bookmarks: cannot list the sources: ${err?.stack || err}`);
+    bookmarkSources = [];
+  }
+  return bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile }));
+});
+ipcMain.handle('bookmarks:read', (_e, id) => {
+  const source = bookmarkSources.find((s) => s.id === id);
+  if (!source) return { error: true };
+  try {
+    return { tree: bookmarks.readSource(source) };
+  } catch (err) {
+    log(`bookmarks: cannot read ${source.browser} (${source.file}): ${err?.stack || err}`);
+    return { error: true };
+  }
+});
+
+// While the file dialog is open the overlay has no focus, but must not
+// hide (see hideOnBlur); when it closes the overlay takes the focus back.
+let fileDialogOpen = false;
+
+ipcMain.handle('bookmarks:file', async () => {
+  fileDialogOpen = true;
+  let result;
+  try {
+    result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [
+        { name: t('bookmarks.fileFilter'), extensions: ['html', 'htm'] },
+        { name: t('bookmarks.allFiles'), extensions: ['*'] },
+      ],
+    });
+  } finally {
+    fileDialogOpen = false;
+    if (win.isVisible()) win.focus();
+  }
+  if (result.canceled || !result.filePaths[0]) return null;
+  const file = result.filePaths[0];
+  try {
+    return { name: path.basename(file), tree: bookmarks.readHtmlFile(file) };
+  } catch (err) {
+    log(`bookmarks: cannot read ${file}: ${err?.stack || err}`);
+    return { name: path.basename(file), error: true };
+  }
+});
 ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerator)));
 // While the user records a new combination, the current one must be
 // suspended, otherwise pressing it would hide the window instead of capturing it.

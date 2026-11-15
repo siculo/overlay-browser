@@ -75,14 +75,45 @@
   #bar > #home-btn.active, #bar > #settings-btn.active { height: 32px; margin-bottom: 0; border-radius: 8px 8px 0 0; background: var(--sheet); box-shadow: inset 0 2px 0 var(--accent); font-weight: 500; }
   #bar > #settings-btn.active { color: #fff; }
 
-  /* Dialog (confirmations and address input) */
-  #dialog { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); -webkit-app-region: no-drag; }
-  #dialog .box { width: min(440px, calc(100vw - 32px)); padding: 18px; background: #1c1c1c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
-  #dialog-msg { margin-bottom: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+  /* Dialogs: confirmations and address input (#dialog), adding sites from
+     an address or from bookmarks (#add-dialog) */
+  .modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); -webkit-app-region: no-drag; }
+  .modal .box { width: min(440px, calc(100vw - 32px)); padding: 18px; background: #1c1c1c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+  #dialog-msg, .dialog-msg { display: block; margin-bottom: 12px; line-height: 1.4; overflow-wrap: anywhere; }
   #dialog-input { width: 100%; }
-  #dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .modal .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
   #dialog-ok.danger { background: #7a2a2a; border-color: #944; color: #eee; }
   #dialog-ok.danger:hover { background: #8e3333; border-color: #944; }
+  /* Adding sites: tabs Address / Bookmarks; the Bookmarks one is wider */
+  #add-dialog.wide .box { width: min(640px, calc(100vw - 32px)); }
+  .dialog-tabs { display: flex; gap: 4px; margin: -6px 0 14px; border-bottom: 1px solid #333; }
+  .dialog-tabs button { background: none; border: none; border-radius: 4px 4px 0 0; padding: 5px 12px; color: #999; }
+  .dialog-tabs button:hover { background: #262626; color: #ddd; }
+  .dialog-tabs button[aria-selected=true] { color: #fff; box-shadow: inset 0 -2px 0 var(--accent); }
+  #add-input, #bm-search { width: 100%; }
+  .bm-source { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  #bm-source { flex: 1; min-width: 0; }
+  /* Bookmark tree: one row per folder or bookmark, indented by depth */
+  #bm-tree { margin-top: 8px; height: min(360px, calc(100vh - 270px)); min-height: 90px; overflow-y: auto; padding: 4px 0; background: #161616; border: 1px solid #333; border-radius: 4px; }
+  .bm-row { display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px calc(8px + var(--depth) * 18px); cursor: pointer; user-select: none; }
+  .bm-row:hover { background: #222; }
+  .bm-row .twisty { flex: none; width: 1em; color: #888; text-align: center; }
+  .bm-row input { flex: none; margin: 0; cursor: inherit; }
+  .bm-row .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .bm-row.folder .title { font-weight: 500; }
+  .bm-row .url, .bm-row .count { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #888; }
+  .bm-row .count { color: #777; }
+  .bm-row.disabled { cursor: default; color: #777; }
+  .bm-row.disabled:hover { background: none; }
+  .bm-row .tag { flex: none; font-size: 11px; color: #999; }
+  .bm-status { padding: 12px; color: #999; }
+  /* List the bookmarks are added to, left of the buttons */
+  #add-target { flex: 1; min-width: 0; align-self: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #999; }
+  .bm-status.err { color: #f77; }
+  /* Home: import into the current list, below its add form */
+  .import-row { display: flex; justify-content: flex-end; margin-top: -2px; }
+  .import-row button { font-size: 13px; padding: 2px 8px; background: none; border-color: transparent; color: var(--accent-text); }
+  .import-row button:hover { background: var(--accent-soft); }
 
   /* Navigation bar of the active site, below the tabs */
   #nav { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
@@ -266,7 +297,7 @@
 
   <div id="views" hidden></div>
 
-  <div id="dialog" hidden>
+  <div id="dialog" class="modal" hidden>
     <form class="box" id="dialog-form">
       <div id="dialog-msg"></div>
       <input id="dialog-input" hidden>
@@ -274,6 +305,34 @@
       <div class="buttons">
         <button type="button" id="dialog-cancel" data-i18n="dialog.cancel"></button>
         <button type="submit" id="dialog-ok" class="primary"></button>
+      </div>
+    </form>
+  </div>
+
+  <div id="add-dialog" class="modal" hidden>
+    <form class="box" id="add-form">
+      <div class="dialog-tabs" role="tablist">
+        <button type="button" role="tab" id="add-tab-url" data-i18n="addDialog.tabUrl"></button>
+        <button type="button" role="tab" id="add-tab-bm" data-i18n="addDialog.tabBookmarks"></button>
+      </div>
+      <div id="add-url" role="tabpanel">
+        <label class="dialog-msg" for="add-input" data-i18n="addDialog.message"></label>
+        <input id="add-input" data-i18n-placeholder="addDialog.placeholder">
+      </div>
+      <div id="add-bm" role="tabpanel" hidden>
+        <div class="bm-source">
+          <label for="bm-source" data-i18n="bookmarks.from"></label>
+          <select id="bm-source"></select>
+          <button type="button" id="bm-file" data-i18n="bookmarks.file"></button>
+        </div>
+        <input id="bm-search" type="search" data-i18n-placeholder="bookmarks.search">
+        <div id="bm-tree"></div>
+      </div>
+      <div class="error" id="add-error"></div>
+      <div class="buttons">
+        <span id="add-target"></span>
+        <button type="button" id="add-cancel" data-i18n="dialog.cancel"></button>
+        <button type="submit" id="add-ok" class="primary"></button>
       </div>
     </form>
   </div>
@@ -811,7 +870,14 @@
       focusKey = 'add:' + l.id;
       addSite(l, input.value);
     };
-    body.append(form, el('div', 'error', listError?.key === listKey(l) ? listError.msg : ''));
+    body.append(form);
+    // Bookmarks are imported into the current list only.
+    if (isCurrent) {
+      const row = el('div', 'import-row');
+      row.append(button(t('home.importBookmarks'), importBookmarks));
+      body.append(row);
+    }
+    body.append(el('div', 'error', listError?.key === listKey(l) ? listError.msg : ''));
     section.append(body);
     return section;
   }
@@ -887,6 +953,25 @@
     return site;
   }
 
+  // Adds several sites ({ url, title }) at the end of a list, skipping the
+  // addresses it already has. Returns the added sites.
+  function addSites(l, entries) {
+    const have = new Set(l.sites.map((s) => s.url));
+    const added = [];
+    for (const e of entries) {
+      const url = normalizeUrl(e.url);
+      if (!url || have.has(url)) continue;
+      have.add(url);
+      added.push({ id: crypto.randomUUID(), url, title: e.title || null });
+    }
+    if (!added.length) return added;
+    materialize(l).sites.push(...added);
+    save();
+    render();
+    for (const site of added) if (!site.title) resolveTitle(site);
+    return added;
+  }
+
   function updateSite(id, raw) {
     const site = findSite(id);
     const url = normalizeUrl(raw);
@@ -949,18 +1034,25 @@
     lookupPreset();
   }
 
-  // Adding from the "+" in the bar: asks for the address and opens the new tab right away.
+  // Adding from the "+" in the bar: asks for an address or bookmarks (see
+  // openAddDialog) and opens the (first) new tab right away.
   async function promptAddTab() {
-    const url = await openDialog({
-      message: t('addDialog.message'),
-      input: '',
-      placeholder: t('addDialog.placeholder'),
-      okLabel: t('addDialog.ok'),
-      validate: (v) => (normalizeUrl(v) ? null : t('site.invalidUrl')),
-    });
-    if (url === null) return;
-    const site = addSite(currentList(), url);
-    if (site) activate(site.id);
+    const res = await openAddDialog('url');
+    if (!res) return;
+    if (res.url) {
+      const site = addSite(currentList(), res.url);
+      if (site) activate(site.id);
+    } else {
+      const added = addSites(currentList(), res.bookmarks);
+      if (added.length) activate(added[0].id);
+    }
+  }
+
+  // "Import bookmarks..." on the Home: the sites are added to the current
+  // list, and the Home stays open.
+  async function importBookmarks() {
+    const res = await openAddDialog('bm');
+    if (res?.bookmarks) addSites(currentList(), res.bookmarks);
   }
 
   // A page asked to open an address in a new tab (see 'site popups' in
@@ -1100,6 +1192,287 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && closeDialog) { e.preventDefault(); closeDialog(false); }
   });
+
+  // ---------- adding sites: address or bookmarks ----------
+  //
+  // The "+" in the bar opens it on the Address tab, "Import bookmarks..." on
+  // the Home on the Bookmarks one. Bookmarks come from a browser found on the
+  // system (one source per browser profile) or from an HTML file exported by
+  // a browser; they are read by the main process (see bookmarks.js) as a
+  // tree of folders and bookmarks, shown with a checkbox on each row: a
+  // folder's selects all the bookmarks it contains (those shown, while
+  // searching). The addresses already in the current list cannot be chosen.
+  // The same address in several folders counts once: the selection is by
+  // address. Returns { url } or { bookmarks: [{ url, title }] }, null if
+  // cancelled. One dialog at a time: it shares closeDialog with openDialog.
+
+  const addDialog = $('add-dialog'), addForm = $('add-form'), addInput = $('add-input');
+  const addOk = $('add-ok'), addError = $('add-error');
+  const bmSourceSelect = $('bm-source'), bmSearch = $('bm-search'), bmTree = $('bm-tree');
+  const FILE_SOURCE = ':file';
+  let addTab = 'url';
+  let lastSource = null;   // id of the browser source used last (this session)
+  const bm = {
+    sources: null,        // [{ id, browser, profile }], null until listed
+    file: null,           // { name, tree, error } of the HTML file chosen
+    source: null,         // id of the source shown, or FILE_SOURCE
+    tree: null,           // tree of the source shown (see prepareTree)
+    status: null,         // 'loading', 'error' or null
+    titles: new Map(),    // address -> title of its first bookmark
+    selected: new Set(),  // addresses chosen
+    existing: new Set(),  // addresses already in the current list
+    open: new Set(),      // keys of the open folders
+    request: 0,           // ignores readings that are no longer current
+  };
+
+  // Gives each node a key (for the open folders) and each bookmark its
+  // normalized address, the one the lists keep.
+  function prepareTree(tree) {
+    let next = 0;
+    bm.titles.clear();
+    bm.open.clear();
+    const walk = (nodes) => {
+      for (const n of nodes) {
+        n.key = String(next++);
+        if (n.children) walk(n.children);
+        else {
+          n.norm = normalizeUrl(n.url);
+          if (n.norm && !bm.titles.has(n.norm)) bm.titles.set(n.norm, n.title);
+        }
+      }
+    };
+    walk(tree);
+    for (const n of tree) if (n.children) bm.open.add(n.key);   // the top folders start open
+    return tree;
+  }
+
+  const folderTitle = (n) => (n.root ? t('bookmarks.root.' + n.root) : n.title) || '…';
+  const bookmarkTitle = (n) => n.title || hostOf(n.url) || n.url;
+  const selectable = (n) => !!n.norm && !bm.existing.has(n.norm);
+  const bookmarksIn = (n) => (n.children ? n.children.flatMap(bookmarksIn) : [n]);
+
+  // The tree filtered by the search: bookmarks whose title or address
+  // contains the text, folders with such bookmarks (all of a folder's
+  // bookmarks if its name contains the text).
+  function filterTree(nodes, q) {
+    if (!q) return nodes;
+    const out = [];
+    for (const n of nodes) {
+      if (n.children) {
+        if (folderTitle(n).toLowerCase().includes(q)) out.push(n);
+        else {
+          const children = filterTree(n.children, q);
+          if (children.length) out.push({ ...n, children });
+        }
+      } else if (n.title.toLowerCase().includes(q) || n.url.toLowerCase().includes(q)) out.push(n);
+    }
+    return out;
+  }
+
+  function folderRow(n, depth, q) {
+    const row = el('div', 'bm-row folder');
+    row.style.setProperty('--depth', depth);
+    const open = !!q || bm.open.has(n.key);
+    const inside = bookmarksIn(n);
+    const urls = [...new Set(inside.filter(selectable).map((b) => b.norm))];
+    const chosen = urls.filter((u) => bm.selected.has(u)).length;
+    const box = el('input');
+    box.type = 'checkbox';
+    box.tabIndex = -1;
+    box.disabled = !urls.length;
+    box.checked = urls.length > 0 && chosen === urls.length;
+    box.indeterminate = chosen > 0 && chosen < urls.length;
+    box.onclick = (e) => {
+      e.stopPropagation();
+      const all = chosen === urls.length;
+      for (const u of urls) { if (all) bm.selected.delete(u); else bm.selected.add(u); }
+      renderBookmarks();
+    };
+    row.append(el('span', 'twisty', open ? '▾' : '▸'), box, el('span', 'title', folderTitle(n)), el('span', 'count', String(inside.length)));
+    row.onclick = () => {
+      if (q) return;   // while searching, the folders stay open
+      if (!bm.open.delete(n.key)) bm.open.add(n.key);
+      renderBookmarks();
+    };
+    return { row, open };
+  }
+
+  function bookmarkRow(n, depth) {
+    const row = el('div', 'bm-row');
+    row.style.setProperty('--depth', depth);
+    const ok = selectable(n);
+    const box = el('input');
+    box.type = 'checkbox';
+    box.tabIndex = -1;
+    box.disabled = !ok;
+    box.checked = ok && bm.selected.has(n.norm);
+    row.classList.toggle('disabled', !ok);
+    row.title = n.url;
+    row.append(el('span', 'twisty'), box, el('span', 'title', bookmarkTitle(n)), el('span', 'url', n.url));
+    if (n.norm && !ok) row.append(el('span', 'tag', t('bookmarks.inList')));
+    const toggle = (e) => {
+      e.stopPropagation();
+      if (!ok) return;
+      if (!bm.selected.delete(n.norm)) bm.selected.add(n.norm);
+      renderBookmarks();
+    };
+    row.onclick = toggle;
+    box.onclick = toggle;
+    return row;
+  }
+
+  function renderBookmarks() {
+    const scroll = bmTree.scrollTop;
+    const status = (text, err) => bmTree.replaceChildren(el('div', 'bm-status' + (err ? ' err' : ''), text));
+    if (bm.status === 'loading') status(t('bookmarks.loading'));
+    else if (bm.status === 'error') status(t('bookmarks.error'), true);
+    else if (!bm.tree) status(bm.sources?.length === 0 && !bm.file ? t('bookmarks.noSources') : '');
+    else if (!bm.tree.length) status(t('bookmarks.empty'));
+    else {
+      const q = bmSearch.value.trim().toLowerCase();
+      const rows = [];
+      const walk = (list, depth) => {
+        for (const n of list) {
+          if (!n.children) { rows.push(bookmarkRow(n, depth)); continue; }
+          const { row, open } = folderRow(n, depth, q);
+          rows.push(row);
+          if (open) walk(n.children, depth + 1);
+        }
+      };
+      walk(filterTree(bm.tree, q), 0);
+      if (rows.length) bmTree.replaceChildren(...rows);
+      else status(t('bookmarks.noMatch'));
+    }
+    bmTree.scrollTop = scroll;
+    updateAddOk();
+  }
+
+  function updateAddOk() {
+    const target = $('add-target');
+    target.hidden = addTab === 'url';
+    if (addTab === 'url') {
+      addOk.textContent = t('addDialog.ok');
+      addOk.disabled = false;
+      return;
+    }
+    const n = bm.selected.size;
+    target.textContent = t('bookmarks.target', { list: listName(currentList()) });
+    target.title = target.textContent;
+    addOk.textContent = n === 0 ? t('bookmarks.addNone') : t(n === 1 ? 'bookmarks.add.one' : 'bookmarks.add.other', { count: n });
+    addOk.disabled = n === 0;
+  }
+
+  function showTree(tree, status = null) {
+    bm.selected.clear();
+    bm.tree = tree ? prepareTree(tree) : null;
+    bm.status = status;
+    bmTree.scrollTop = 0;
+    renderBookmarks();
+  }
+
+  function renderSourceSelect() {
+    const options = (bm.sources ?? []).map((s) => new Option(s.profile ? `${s.browser} · ${s.profile}` : s.browser, s.id));
+    if (bm.file) options.push(new Option(t('bookmarks.fileSource', { name: bm.file.name }), FILE_SOURCE));
+    if (!options.length) {
+      const none = new Option(bm.sources ? t('bookmarks.noSources') : t('bookmarks.loading'), '');
+      none.disabled = true;
+      options.push(none);
+    }
+    bmSourceSelect.replaceChildren(...options);
+    bmSourceSelect.disabled = !bm.sources?.length && !bm.file;
+    bmSourceSelect.value = bm.source ?? '';
+  }
+
+  async function showSource(id) {
+    bm.source = id;
+    renderSourceSelect();
+    const request = ++bm.request;
+    if (id === FILE_SOURCE) return showTree(bm.file.error ? null : bm.file.tree, bm.file.error ? 'error' : null);
+    lastSource = id;
+    showTree(null, 'loading');
+    const res = await window.overlay.readBookmarks(id);
+    if (request !== bm.request) return;
+    showTree(res.error ? null : res.tree, res.error ? 'error' : null);
+  }
+
+  // The sources are listed again at every opening (browsers installed or
+  // profiles added meanwhile); the one used last is shown first.
+  async function loadSources() {
+    const request = ++bm.request;
+    bm.status = 'loading';
+    renderBookmarks();
+    const sources = await window.overlay.bookmarkSources();
+    if (request !== bm.request) return;
+    bm.sources = sources;
+    const first = sources.find((s) => s.id === lastSource) ?? sources[0];
+    if (first) return showSource(first.id);
+    bm.status = null;
+    renderSourceSelect();
+    renderBookmarks();
+  }
+
+  bmSourceSelect.onchange = () => showSource(bmSourceSelect.value);
+  bmSearch.oninput = () => { bmTree.scrollTop = 0; renderBookmarks(); };
+  // Enter in the search field does not add the selection.
+  bmSearch.onkeydown = (e) => { if (e.key === 'Enter') e.preventDefault(); };
+  $('bm-file').onclick = async () => {
+    const res = await window.overlay.openBookmarkFile();
+    if (!res || addDialog.hidden) return;
+    bm.file = res;
+    showSource(FILE_SOURCE);
+  };
+
+  function showAddTab(tab) {
+    addTab = tab;
+    $('add-tab-url').setAttribute('aria-selected', tab === 'url');
+    $('add-tab-bm').setAttribute('aria-selected', tab === 'bm');
+    $('add-url').hidden = tab !== 'url';
+    $('add-bm').hidden = tab !== 'bm';
+    addDialog.classList.toggle('wide', tab === 'bm');
+    addError.textContent = '';
+    if (tab === 'bm' && !bm.sources && bm.status !== 'loading') loadSources();
+    else if (tab === 'bm') renderBookmarks();
+    updateAddOk();
+    setTimeout(() => (tab === 'url' ? addInput : bmSearch).focus());
+  }
+  $('add-tab-url').onclick = () => showAddTab('url');
+  $('add-tab-bm').onclick = () => showAddTab('bm');
+
+  function openAddDialog(tab) {
+    closeDialog?.(null);   // one dialog at a time
+    addInput.value = '';
+    bmSearch.value = '';
+    Object.assign(bm, { sources: null, file: null, source: null, tree: null, status: null });
+    bm.request++;
+    bm.selected.clear();
+    bm.existing = new Set(currentList().sites.map((s) => s.url));
+    renderSourceSelect();
+    addDialog.hidden = false;
+    showAddTab(tab);
+
+    return new Promise((resolve) => {
+      closeDialog = (result) => {
+        closeDialog = null;
+        addDialog.hidden = true;
+        addForm.onsubmit = null;
+        bm.request++;
+        bm.tree = null;
+        resolve(result || null);
+      };
+      addForm.onsubmit = (e) => {
+        e.preventDefault();
+        if (addTab === 'url') {
+          if (!normalizeUrl(addInput.value)) { addError.textContent = t('site.invalidUrl'); addInput.focus(); return; }
+          closeDialog({ url: addInput.value });
+          return;
+        }
+        if (!bm.selected.size) return;
+        closeDialog({ bookmarks: [...bm.selected].map((url) => ({ url, title: bm.titles.get(url) })) });
+      };
+    });
+  }
+  $('add-cancel').onclick = () => closeDialog?.(null);
+  addDialog.addEventListener('mousedown', (e) => { if (e.target === addDialog) closeDialog?.(null); });
 
   // When the window gets focus, the keyboard goes to the open site
   // (otherwise it would stay on the page holding the tabs), unless

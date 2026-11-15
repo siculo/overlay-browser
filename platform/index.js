@@ -57,6 +57,16 @@
 //                                      Activity Monitor (macOS)
 //                        'workingSet'  physical memory in use, shared memory
 //                                      included: the sum overestimates
+//   bookmarkStores()   where the installed browsers keep their data, for the
+//                      bookmark import (see bookmarks.js): a list of
+//                      { browser, engine, dir }, where engine is
+//                        'chromium'  user data folder: Local State plus
+//                                    one folder per profile, each with its
+//                                    Bookmarks file (older Opera versions:
+//                                    the Bookmarks file in the folder itself)
+//                        'firefox'   folder with profiles.ini, each
+//                                    profile with its places.sqlite
+//                      Folders that do not exist are skipped by the caller.
 //
 // generic.js implements the interface with Electron alone: the other
 // modules start from it and override what they do natively.
