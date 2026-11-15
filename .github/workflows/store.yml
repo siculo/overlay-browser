@@ -1,0 +1,30 @@
+# Builds the Microsoft Store package (.appx) on demand and attaches it to the
+# run as an artifact. The package is unsigned on purpose: the Store signs it
+# when it is submitted from Partner Center ("MSIX or PWA app" product).
+# Download the artifact and upload it by hand in the submission's Packages page.
+name: Microsoft Store package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  appx:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build AppX package
+        run: npx electron-builder --win appx --publish never
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: store-package
+          if-no-files-found: error
+          path: dist/*.appx

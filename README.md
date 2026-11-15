@@ -93,9 +93,17 @@ Sites, key, language, window position and last opened site are saved in:
 ~/Library/Application Support/overlay-browser/prefs.json   (macOS)
 ```
 
+The version installed from the **Microsoft Store** keeps its preferences in its own package folder instead, where Windows redirects `%APPDATA%`:
+
+```
+%LOCALAPPDATA%\Packages\FabrizioDiGiuseppe.overlaybrowser_<id>\LocalCache\Roaming\overlay-browser\prefs.json
+```
+
+So the Store version and the installer/portable version do not share sites and settings: when switching from one to the other you start from scratch (or copy `prefs.json` by hand, with the app closed).
+
 To start from scratch, close the app and delete that file.
 
-To **uninstall** the installed version: *Windows Settings → Apps → Installed apps → Overlay Browser → Uninstall*. The `%APPDATA%\overlay-browser` folder must be deleted manually if you also want to remove the preferences. The portable version is removed by simply deleting the `.exe` file, the AppImage by deleting the `.AppImage` file, the macOS app by dragging it from *Applications* to the Trash.
+To **uninstall** the installed version: *Windows Settings → Apps → Installed apps → Overlay Browser → Uninstall*. The `%APPDATA%\overlay-browser` folder must be deleted manually if you also want to remove the preferences; the Store version removes its preferences together with the app. The portable version is removed by simply deleting the `.exe` file, the AppImage by deleting the `.AppImage` file, the macOS app by dragging it from *Applications* to the Trash.
 
 ---
 

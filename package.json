@@ -10,6 +10,7 @@
     "dist:win": "electron-builder --win",
     "dist:portable": "electron-builder --win portable",
     "dist:installer": "electron-builder --win nsis",
+    "dist:store": "electron-builder --win appx",
     "dist:linux": "electron-builder --linux",
     "dist:mac": "electron-builder --mac"
   },
@@ -80,6 +81,15 @@
     },
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
+    },
+    "appx": {
+      "identityName": "FabrizioDiGiuseppe.overlaybrowser",
+      "publisher": "CN=F4A96C79-99CB-40F5-86E9-BAF8F73389BF",
+      "publisherDisplayName": "Fabrizio Di Giuseppe",
+      "displayName": "overlay browser",
+      "applicationId": "OverlayBrowser",
+      "languages": ["en-US", "it-IT"],
+      "artifactName": "${productName}-Store-${version}.${ext}"
     }
   },
   "dependencies": {
