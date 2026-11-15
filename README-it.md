@@ -77,7 +77,7 @@ La finestra è leggermente trasparente, così si intravede il gioco dietro. Per 
 
 ### Lingua
 
-L'app usa la lingua del sistema, se è tra quelle disponibili (per ora italiano e inglese); altrimenti usa l'inglese. Per sceglierne un'altra apri le **Impostazioni**, sezione *Lingua*: puoi scegliere *Lingua di sistema* oppure una delle lingue dell'app. La modifica si applica subito.
+L'app usa la lingua del sistema, se è tra quelle disponibili (italiano, inglese, francese, portoghese, russo, spagnolo e tedesco); altrimenti usa l'inglese. Per sceglierne un'altra apri le **Impostazioni**, sezione *Lingua*: puoi scegliere *Lingua di sistema* oppure una delle lingue dell'app. La modifica si applica subito.
 
 > **Attenzione in gioco:** mentre giochi (ad esempio a Star Citizen) la combinazione arriva anche al gioco, oltre che all'overlay. Scegline una che nel gioco non è assegnata a nessun comando, altrimenti aprendo l'overlay attiverai anche quel comando.
 

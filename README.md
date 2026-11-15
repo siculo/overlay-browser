@@ -77,7 +77,7 @@ The window is slightly translucent, so you can glimpse the game behind it. To ch
 
 ### Language
 
-The app uses the system language, if it is among the available ones (English and Italian for now); otherwise it uses English. To pick another one open the **Settings**, *Language* section: you can choose *System language* or one of the app's languages. The change applies immediately.
+The app uses the system language, if it is among the available ones (English, Italian, French, German, Portuguese, Russian and Spanish); otherwise it uses English. To pick another one open the **Settings**, *Language* section: you can choose *System language* or one of the app's languages. The change applies immediately.
 
 > **Careful in game:** while you play (for example Star Citizen) the combination also reaches the game, not just the overlay. Pick one that isn't bound to any command in the game, otherwise opening the overlay will also trigger that command.
 

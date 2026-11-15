@@ -88,7 +88,7 @@
       "publisherDisplayName": "Fabrizio Di Giuseppe",
       "displayName": "overlay browser",
       "applicationId": "OverlayBrowser",
-      "languages": ["en-US", "it-IT"],
+      "languages": ["en-US", "it-IT", "de-DE", "es-ES", "fr-FR", "pt-BR", "ru-RU"],
       "artifactName": "${productName}-Store-${version}.${ext}"
     }
   },
