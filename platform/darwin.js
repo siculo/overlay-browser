@@ -137,6 +137,7 @@ function bookmarkStores() {
   add('Vivaldi', 'chromium', 'Vivaldi');
   add('Chromium', 'chromium', 'Chromium');
   add('Opera', 'chromium', 'com.operasoftware.Opera');
+  add('Comet', 'chromium', 'Comet');
   add('Firefox', 'firefox', 'Firefox');
   add('LibreWolf', 'firefox', 'librewolf');
   return stores;
