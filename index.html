@@ -146,6 +146,8 @@
   #settings > * { max-width: 720px; }
   /* Site lists: the current one first, then the others (collapsed) */
   #lists { display: flex; flex-direction: column; gap: 18px; max-width: 720px; margin-top: 8px; }
+  /* More room between the boxes above the lists and the current list */
+  #pinned:not([hidden]) ~ #lists, #preset:not([hidden]) ~ #lists { margin-top: 20px; }
   .list-head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid #333; }
   .list-head.toggle { cursor: pointer; }
   .list-head.toggle:hover .name { text-decoration: underline; }
@@ -401,6 +403,7 @@
   const isSite = (id) => id !== null && id !== SETTINGS;
   let editing = null;           // id of the site being edited on the Home page
   const expanded = new Set();   // ids of the other lists opened on the Home page
+  const collapsed = new Set();  // keys (listKey) of the lists closed on the Home page while current
   let listError = null;         // { key, msg }: error shown under a list (invalid address)
   const drafts = new Map();     // input key -> text being typed, kept when the Home is rendered again
   let focusKey = null;          // input to focus after the next render
@@ -852,21 +855,20 @@
   }
 
   // A list on the Home page: header, then (if open) its sites and the add form.
-  // The current list is always open; the others open by clicking the header.
+  // The current list starts open, the others closed; each one opens and
+  // closes by clicking its header.
   function listSection(l, isCurrent) {
     const section = el('section', 'list');
     section.classList.toggle('current', isCurrent);
-    const open = isCurrent || expanded.has(l.id);
+    const open = isCurrent ? !collapsed.has(listKey(l)) : expanded.has(l.id);
 
-    const head = el('div', 'list-head');
-    if (!isCurrent) {
-      head.classList.add('toggle');
-      head.append(el('span', 'twisty', open ? '▾' : '▸'));
-      head.onclick = () => {
-        if (!expanded.delete(l.id)) expanded.add(l.id);
-        renderHome();
-      };
-    }
+    const head = el('div', 'list-head toggle');
+    head.append(el('span', 'twisty', open ? '▾' : '▸'));
+    head.onclick = () => {
+      if (isCurrent) { if (!collapsed.delete(listKey(l))) collapsed.add(listKey(l)); }
+      else if (!expanded.delete(l.id)) expanded.add(l.id);
+      renderHome();
+    };
     head.append(el('span', 'name', listName(l)));
     if (isCurrent) head.append(el('span', 'badge', t('lists.current')));
     if (!l.id) head.append(el('span', 'badge new', t('lists.new')));
