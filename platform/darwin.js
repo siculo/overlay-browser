@@ -174,5 +174,7 @@ module.exports = {
   afterShow() {},
   memoryUsage,
   bookmarkStores,
+  // Other apps' data (the browsers' too) needs Full Disk Access.
+  privacySettings: 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles',
   ...(objc ? { beforeShow, foregroundApp } : {}),
 };

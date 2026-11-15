@@ -661,6 +661,7 @@ ipcMain.handle('state:load', () => ({
     features: platform.features,
     opacity: platform.opacity,   // 'css': the page applies settings.opacity itself
     opacityRange: OPACITY_RANGE,
+    privacySettings: !!platform.privacySettings,   // the page can offer bookmarks:privacy
   },
   unloadRange: UNLOAD_RANGE,
   version: app.getVersion(),   // shown on the Settings page
@@ -733,14 +734,18 @@ ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
 
 let bookmarkSources = [];
 
+// { sources: [{ id, browser, profile }], denied: [browser] }: denied are the
+// browsers whose data the system does not let the app read.
 ipcMain.handle('bookmarks:sources', () => {
+  let denied = [];
   try {
-    bookmarkSources = bookmarks.listSources(platform.bookmarkStores());
+    ({ sources: bookmarkSources, denied } = bookmarks.listSources(platform.bookmarkStores()));
   } catch (err) {
     log(`bookmarks: cannot list the sources: ${err?.stack || err}`);
     bookmarkSources = [];
   }
-  return bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile }));
+  if (denied.length) log(`bookmarks: no access to the data of ${denied.join(', ')}`);
+  return { sources: bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile })), denied };
 });
 ipcMain.handle('bookmarks:read', (_e, id) => {
   const source = bookmarkSources.find((s) => s.id === id);
@@ -749,8 +754,12 @@ ipcMain.handle('bookmarks:read', (_e, id) => {
     return { tree: bookmarks.readSource(source) };
   } catch (err) {
     log(`bookmarks: cannot read ${source.browser} (${source.file}): ${err?.stack || err}`);
-    return { error: true };
+    return { error: true, denied: bookmarks.isDenied(err) };
   }
+});
+// The system settings page that gives the app access to the browsers' data.
+ipcMain.handle('bookmarks:privacy', () => {
+  if (platform.privacySettings) shell.openExternal(platform.privacySettings);
 });
 
 // While a file dialog is open the overlay has no focus, but must not hide

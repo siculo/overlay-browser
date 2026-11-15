@@ -16,6 +16,10 @@
 //   - HTML files in the Netscape bookmark format, which every browser
 //     exports (also Safari, whose own bookmarks need permissions).
 //
+// The system can forbid reading a browser's data even though the folder
+// is there (macOS protects other apps' data unless the app has Full Disk
+// Access): such browsers are reported as denied, not left out silently.
+//
 // The result is a tree of nodes:
 //   folder: { title, children, root? }   root: 'bar', 'menu', 'other' or
 //                                        'mobile' for the browser's own
@@ -29,6 +33,8 @@ const path = require('path');
 
 const exists = (p) => { try { fs.accessSync(p); return true; } catch { return false; } };
 const readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
+// Errors of a folder or file that exists but cannot be read.
+const isDenied = (err) => err?.code === 'EPERM' || err?.code === 'EACCES';
 const isWebUrl = (url) => typeof url === 'string' && /^https?:\/\//i.test(url);
 
 // ---------- sources ----------
@@ -41,7 +47,7 @@ function chromiumProfiles(dir) {
   let info = {};
   try { info = readJson(path.join(dir, 'Local State')).profile?.info_cache ?? {}; } catch { /* no names */ }
   let names;
-  try { names = fs.readdirSync(dir); } catch { return []; }
+  try { names = fs.readdirSync(dir); } catch (err) { if (isDenied(err)) throw err; return []; }
   return names
     .filter((n) => (n === 'Default' || /^Profile \d+$/.test(n)) && exists(path.join(dir, n, 'Bookmarks')))
     .sort((a, b) => (a === 'Default' ? -1 : b === 'Default' ? 1 : Number(a.slice(8)) - Number(b.slice(8))))
@@ -51,7 +57,7 @@ function chromiumProfiles(dir) {
 // Firefox: the profiles listed in profiles.ini that have bookmarks.
 function firefoxProfiles(dir) {
   let ini;
-  try { ini = fs.readFileSync(path.join(dir, 'profiles.ini'), 'utf8'); } catch { return []; }
+  try { ini = fs.readFileSync(path.join(dir, 'profiles.ini'), 'utf8'); } catch (err) { if (isDenied(err)) throw err; return []; }
   const sections = [];
   let cur = null;
   for (const line of ini.split(/\r?\n/)) {
@@ -69,16 +75,25 @@ function firefoxProfiles(dir) {
     .filter((p) => exists(p.file));
 }
 
-// The sources found on this system: { id, browser, profile, engine, file }.
-// `profile` is null when the browser has only one profile.
+// The sources found on this system, { sources, denied }: the sources are
+// { id, browser, profile, engine, file }, `profile` null when the browser
+// has only one profile; `denied` names the browsers whose data the system
+// does not let us read.
 function listSources(stores) {
   const sources = [];
+  const denied = new Set();
   for (const { browser, engine, dir } of stores) {
     if (!exists(dir)) continue;
     let profiles;
-    if (engine === 'chromium') profiles = chromiumProfiles(dir);
-    else if (engine === 'firefox') profiles = firefoxProfiles(dir);
-    else continue;
+    try {
+      if (engine === 'chromium') profiles = chromiumProfiles(dir);
+      else if (engine === 'firefox') profiles = firefoxProfiles(dir);
+      else continue;
+    } catch (err) {
+      if (!isDenied(err)) throw err;
+      denied.add(browser);
+      continue;
+    }
     for (const p of profiles) sources.push({ browser, engine, profile: p.profile, file: p.file });
   }
   // In alphabetical order of the browser (sort is stable: each browser's
@@ -88,11 +103,15 @@ function listSources(stores) {
   // Flatpak): its profiles are told apart by name only if there are several.
   const count = new Map();
   for (const s of sources) count.set(s.browser, (count.get(s.browser) ?? 0) + 1);
-  return sources.map((s, i) => ({
-    id: String(i),
-    ...s,
-    profile: count.get(s.browser) > 1 ? s.profile : null,
-  }));
+  return {
+    sources: sources.map((s, i) => ({
+      id: String(i),
+      ...s,
+      profile: count.get(s.browser) > 1 ? s.profile : null,
+    })),
+    // Not when another installation of the same browser can be read.
+    denied: [...denied].filter((b) => !count.has(b)).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })),
+  };
 }
 
 // ---------- reading ----------
@@ -256,4 +275,4 @@ function toHtml(folders) {
   ].join('\n');
 }
 
-module.exports = { listSources, readSource, readHtmlFile, parseHtml, toHtml };
+module.exports = { isDenied, listSources, readSource, readHtmlFile, parseHtml, toHtml };

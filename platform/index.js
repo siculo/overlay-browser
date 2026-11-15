@@ -67,6 +67,10 @@
 //                        'firefox'   folder with profiles.ini, each
 //                                    profile with its places.sqlite
 //                      Folders that do not exist are skipped by the caller.
+//   privacySettings    address of the system settings page where the app is
+//                      allowed to read other apps' data (macOS: Full Disk
+//                      Access), offered when a browser's data cannot be
+//                      read; null where there is none
 //
 // generic.js implements the interface with Electron alone: the other
 // modules start from it and override what they do natively.

@@ -93,6 +93,11 @@
   #add-input, #bm-search { width: 100%; }
   .bm-source { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   #bm-source { flex: 1; min-width: 0; }
+  /* Browsers whose data the system does not let the app read */
+  .bm-denied { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px 9px; font-size: 12px; line-height: 1.4; color: #db8; background: #2a2416; border: 1px solid #4a3f22; border-radius: 4px; }
+  .bm-denied[hidden] { display: none; }
+  .bm-denied span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .bm-denied button { flex: none; }
   /* Bookmark tree: one row per folder or bookmark, indented by depth */
   .bm-tree { margin-top: 8px; height: min(360px, calc(100vh - 300px)); min-height: 90px; overflow-y: auto; padding: 4px 0; background: #161616; border: 1px solid #333; border-radius: 4px; }
   .bm-row { display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px calc(8px + var(--depth) * 18px); cursor: pointer; user-select: none; }
@@ -357,6 +362,10 @@
           <label for="bm-source" data-i18n="bookmarks.from"></label>
           <select id="bm-source"></select>
           <button type="button" id="bm-file" data-i18n="bookmarks.file"></button>
+        </div>
+        <div class="bm-denied" id="bm-denied" hidden>
+          <span id="bm-denied-msg"></span>
+          <button type="button" id="bm-privacy" data-i18n="bookmarks.openPrivacy"></button>
         </div>
         <input id="bm-search" type="search" data-i18n-placeholder="bookmarks.search">
         <label class="bm-all"><input type="checkbox" id="bm-all"><span data-i18n="bookmarks.all"></span></label>
@@ -1406,8 +1415,10 @@
   let addTab = 'url';
   let addHome = false;     // opened from the Home: bookmarks only, list chosen in the dialog
   let lastSource = null;   // id of the browser source used last (this session)
+  let privacySettings = false;   // main.js can open the system settings that allow reading the browsers' data
   const bm = {
     sources: null,        // [{ id, browser, profile }], null until listed
+    denied: [],           // browsers whose data the system does not let the app read
     file: null,           // { name, tree, error } of the HTML file chosen
     source: null,         // id of the source shown, or FILE_SOURCE
     loading: false,
@@ -1484,9 +1495,22 @@
   }
 
   function showImport(res) {
-    if (res.error) importPicker.setStatus(t('bookmarks.error'), true);
+    if (res.error) importPicker.setStatus(t(res.denied ? 'bookmarks.deniedSource' : 'bookmarks.error'), true);
     else importPicker.setTree(prepareImport(res.tree));
   }
+
+  // The browsers found but not readable, with the way to allow it where
+  // the system has one (macOS: Full Disk Access, then a restart).
+  function renderDenied() {
+    $('bm-denied').hidden = !bm.denied.length;
+    if (!bm.denied.length) return;
+    const browsers = bm.denied.join(', ');
+    $('bm-denied-msg').textContent = privacySettings
+      ? t('bookmarks.deniedHelp', { browsers })
+      : t('bookmarks.denied', { browsers });
+    $('bm-privacy').hidden = !privacySettings;
+  }
+  $('bm-privacy').onclick = () => window.overlay.openPrivacySettings();
 
   function renderSourceSelect() {
     const options = (bm.sources ?? []).map((s) => new Option(s.profile ? `${s.browser} · ${s.profile}` : s.browser, s.id));
@@ -1518,10 +1542,12 @@
     const request = ++bm.request;
     bm.loading = true;
     importPicker.setStatus(t('bookmarks.loading'));
-    const sources = await window.overlay.bookmarkSources();
+    const { sources, denied } = await window.overlay.bookmarkSources();
     if (request !== bm.request) return;
     bm.loading = false;
     bm.sources = sources;
+    bm.denied = denied;
+    renderDenied();
     const first = sources.find((s) => s.id === lastSource) ?? sources[0];
     if (first) return showSource(first.id);
     renderSourceSelect();
@@ -1558,7 +1584,8 @@
     $('import-msg').hidden = !home;
     addInput.value = '';
     $('bm-search').value = '';
-    Object.assign(bm, { sources: null, file: null, source: null, loading: false });
+    Object.assign(bm, { sources: null, denied: [], file: null, source: null, loading: false });
+    renderDenied();
     bm.request++;
     importPicker.setTree(null);
     setTarget(currentList());
@@ -1988,6 +2015,7 @@
   (async () => {
     const state = await window.overlay.loadState();
     initOpacity(state.platform, state.settings.opacity);
+    privacySettings = state.platform.privacySettings;
     accentSetting = state.settings.accent;
     languageSetting = state.settings.language;
     applyI18n(state.i18n);
