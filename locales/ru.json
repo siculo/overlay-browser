@@ -48,6 +48,7 @@
   "addDialog.message": "Адрес сайта для добавления:",
   "addDialog.placeholder": "например, https://example.com",
   "addDialog.ok": "Добавить",
+  "openDialog.message": "Страница хочет открыть {url} в новой вкладке, но в списке нет вкладки для этого сайта. Добавить его в список?",
 
   "dialog.ok": "ОК",
   "dialog.cancel": "Отмена",

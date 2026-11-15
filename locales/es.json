@@ -48,6 +48,7 @@
   "addDialog.message": "Dirección del sitio que añadir:",
   "addDialog.placeholder": "p. ej. https://example.com",
   "addDialog.ok": "Añadir",
+  "openDialog.message": "La página quiere abrir {url} en una pestaña nueva, pero la lista no tiene una pestaña para ese sitio. ¿Añadirlo a la lista?",
 
   "dialog.ok": "Aceptar",
   "dialog.cancel": "Cancelar",

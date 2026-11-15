@@ -410,13 +410,14 @@
 
   // ---------- tab / webview ----------
 
-  function getWebview(site) {
+  // `url`: the page to load if the webview is created (default: the site's address).
+  function getWebview(site, url = site.url) {
     let wv = webviews.get(site.id);
     if (!wv) {
       wv = document.createElement('webview');
       // Windows opened by the site (logins, target=_blank): see 'site popups' in main.js.
       wv.setAttribute('allowpopups', '');
-      wv.src = site.url;
+      wv.src = url;
       wv.style.display = 'none';
       // Fallback for sites that set the title via JavaScript: use the first
       // title the page reports, if we don't have one already.
@@ -961,6 +962,34 @@
     const site = addSite(currentList(), url);
     if (site) activate(site.id);
   }
+
+  // A page asked to open an address in a new tab (see 'site popups' in
+  // main.js). It opens in the tab of the same site (same host, "www."
+  // ignored) of the current list: the tab of the page that asked, if it is
+  // that site, otherwise the first one. If the list has no such tab, the
+  // user is asked whether to add the address to the list as a new site.
+  const hostOf = (url) => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return null; } };
+
+  async function openSiteUrl(url, contentsId) {
+    const host = hostOf(url);
+    if (!host) return;
+    const sites = currentList().sites.filter((s) => hostOf(s.url) === host);
+    const opener = sites.find((s) => {
+      try { return webviews.get(s.id)?.getWebContentsId() === contentsId; } catch { return false; }
+    });
+    const site = opener ?? sites[0];
+    if (site) {
+      const wv = webviews.get(site.id);
+      if (wv) wv.src = url; else getWebview(site, url);
+      activate(site.id);
+      return;
+    }
+    const ok = await openDialog({ message: t('openDialog.message', { url }), okLabel: t('addDialog.ok') });
+    if (!ok) return;
+    const added = addSite(currentList(), url);
+    if (added) activate(added.id);
+  }
+  window.overlay.onOpenSite(openSiteUrl);
 
   // ---------- application the overlay was opened over ----------
   //

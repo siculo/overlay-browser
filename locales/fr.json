@@ -48,6 +48,7 @@
   "addDialog.message": "Adresse du site à ajouter :",
   "addDialog.placeholder": "ex. https://example.com",
   "addDialog.ok": "Ajouter",
+  "openDialog.message": "La page veut ouvrir {url} dans un nouvel onglet, mais la liste n'a pas d'onglet pour ce site. L'ajouter à la liste ?",
 
   "dialog.ok": "OK",
   "dialog.cancel": "Annuler",

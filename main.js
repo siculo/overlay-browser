@@ -587,16 +587,27 @@ function setShortcut(accelerator) {
 
 // ---------- site popups ----------
 //
-// Windows opened by the sites (window.open, links with target=_blank) are
-// allowed, so that logins through another site work (e.g. "Continue with
-// Google": the popup reports the result to the page that opened it). They
-// open as child windows of the overlay, on top of it, without menu bar.
+// What a browser opens in a tab (links with target=_blank, window.open
+// without window features, Ctrl/middle click: disposition 'foreground-tab'
+// or 'background-tab') opens in a tab of the overlay: the page receives the
+// address ('site:open') and shows it in the tab of that site, or offers to
+// add the site to the list. The windows the site explicitly asks for
+// (window.open with window features, e.g. "Continue with Google": the popup
+// reports the result to the page that opened it) are allowed, as child
+// windows of the overlay, on top of it, without menu bar.
+const TAB_DISPOSITIONS = new Set(['foreground-tab', 'background-tab']);
 app.on('web-contents-created', (_e, contents) => {
   if (contents.getType() !== 'webview') return;
-  contents.setWindowOpenHandler(() => ({
-    action: 'allow',
-    overrideBrowserWindowOptions: { parent: win, icon: ICON_PATH, autoHideMenuBar: true },
-  }));
+  contents.setWindowOpenHandler(({ url, disposition }) => {
+    if (TAB_DISPOSITIONS.has(disposition)) {
+      if (/^https?:/i.test(url)) win.webContents.send('site:open', url, contents.id);
+      return { action: 'deny' };
+    }
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: { parent: win, icon: ICON_PATH, autoHideMenuBar: true },
+    };
+  });
   contents.on('did-create-window', (popup) => {
     popup.removeMenu();
     popup.setAlwaysOnTop(true, 'screen-saver');

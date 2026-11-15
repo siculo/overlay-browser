@@ -48,6 +48,7 @@
   "addDialog.message": "Address of the site to add:",
   "addDialog.placeholder": "e.g. https://example.com",
   "addDialog.ok": "Add",
+  "openDialog.message": "This page wants to open {url} in a new tab, but the list has no tab for that site. Add it to the list?",
 
   "dialog.ok": "OK",
   "dialog.cancel": "Cancel",

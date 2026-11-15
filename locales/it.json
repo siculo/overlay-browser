@@ -48,6 +48,7 @@
   "addDialog.message": "Indirizzo del sito da aggiungere:",
   "addDialog.placeholder": "es. https://example.com",
   "addDialog.ok": "Aggiungi",
+  "openDialog.message": "La pagina vuole aprire {url} in un nuovo tab, ma la lista non ha un tab per quel sito. Aggiungerlo alla lista?",
 
   "dialog.ok": "OK",
   "dialog.cancel": "Annulla",

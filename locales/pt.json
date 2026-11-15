@@ -48,6 +48,7 @@
   "addDialog.message": "Endereço do site a adicionar:",
   "addDialog.placeholder": "ex.: https://example.com",
   "addDialog.ok": "Adicionar",
+  "openDialog.message": "A página quer abrir {url} em uma nova aba, mas a lista não tem uma aba para esse site. Adicioná-lo à lista?",
 
   "dialog.ok": "OK",
   "dialog.cancel": "Cancelar",
