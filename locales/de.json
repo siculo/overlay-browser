@@ -20,6 +20,8 @@
   "home.add": "Hinzufügen",
   "home.importBookmarks": "Lesezeichen importieren…",
   "home.exportBookmarks": "Lesezeichen exportieren…",
+  "home.bookmarks": "Lesezeichen",
+  "home.bookmarksDesc": "Importiere die Lesezeichen der Browser in die Listen oder exportiere die Listen in eine Lesezeichendatei für einen Browser.",
   "home.empty": "Keine Websites. Füge unten eine hinzu.",
 
   "lists.general": "Allgemein",
@@ -54,6 +56,7 @@
   "addDialog.tabBookmarks": "Lesezeichen",
   "openDialog.message": "Die Seite möchte {url} in einem neuen Tab öffnen, aber die Liste hat keinen Tab für diese Website. Zur Liste hinzufügen?",
 
+  "importDialog.message": "Wähle die Lesezeichen, die einer Liste hinzugefügt werden sollen, aus einem Browser oder aus einer von einem Browser exportierten Datei.",
   "bookmarks.from": "Aus:",
   "bookmarks.file": "Datei…",
   "bookmarks.fileSource": "Datei: {name}",
@@ -68,6 +71,7 @@
   "bookmarks.add.one": "1 Website hinzufügen",
   "bookmarks.add.other": "{count} Websites hinzufügen",
   "bookmarks.target": "In die Liste: {list}",
+  "bookmarks.targetLabel": "In die Liste:",
   "bookmarks.root.bar": "Lesezeichenleiste",
   "bookmarks.root.menu": "Lesezeichen-Menü",
   "bookmarks.root.other": "Weitere Lesezeichen",

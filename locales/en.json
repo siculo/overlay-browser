@@ -20,6 +20,8 @@
   "home.add": "Add",
   "home.importBookmarks": "Import bookmarks…",
   "home.exportBookmarks": "Export bookmarks…",
+  "home.bookmarks": "Bookmarks",
+  "home.bookmarksDesc": "Import the browsers' bookmarks into the lists, or export the lists to a bookmark file to open in a browser.",
   "home.empty": "No sites. Add one below.",
 
   "lists.general": "General",
@@ -54,6 +56,7 @@
   "addDialog.tabBookmarks": "Bookmarks",
   "openDialog.message": "This page wants to open {url} in a new tab, but the list has no tab for that site. Add it to the list?",
 
+  "importDialog.message": "Choose the bookmarks to add to a list, from a browser or from a file exported by a browser.",
   "bookmarks.from": "From:",
   "bookmarks.file": "File…",
   "bookmarks.fileSource": "File: {name}",
@@ -68,6 +71,7 @@
   "bookmarks.add.one": "Add 1 site",
   "bookmarks.add.other": "Add {count} sites",
   "bookmarks.target": "To the list: {list}",
+  "bookmarks.targetLabel": "To the list:",
   "bookmarks.root.bar": "Bookmarks bar",
   "bookmarks.root.menu": "Bookmarks menu",
   "bookmarks.root.other": "Other bookmarks",

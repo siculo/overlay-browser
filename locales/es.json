@@ -20,6 +20,8 @@
   "home.add": "Añadir",
   "home.importBookmarks": "Importar marcadores…",
   "home.exportBookmarks": "Exportar marcadores…",
+  "home.bookmarks": "Marcadores",
+  "home.bookmarksDesc": "Importa a las listas los marcadores de los navegadores, o exporta las listas a un archivo de marcadores para abrir en un navegador.",
   "home.empty": "No hay sitios. Añade uno abajo.",
 
   "lists.general": "General",
@@ -54,6 +56,7 @@
   "addDialog.tabBookmarks": "Marcadores",
   "openDialog.message": "La página quiere abrir {url} en una pestaña nueva, pero la lista no tiene una pestaña para ese sitio. ¿Añadirlo a la lista?",
 
+  "importDialog.message": "Elige los marcadores que añadir a una lista, desde un navegador o desde un archivo exportado por un navegador.",
   "bookmarks.from": "Desde:",
   "bookmarks.file": "Archivo…",
   "bookmarks.fileSource": "Archivo: {name}",
@@ -68,6 +71,7 @@
   "bookmarks.add.one": "Añadir 1 sitio",
   "bookmarks.add.other": "Añadir {count} sitios",
   "bookmarks.target": "En la lista: {list}",
+  "bookmarks.targetLabel": "En la lista:",
   "bookmarks.root.bar": "Barra de marcadores",
   "bookmarks.root.menu": "Menú de marcadores",
   "bookmarks.root.other": "Otros marcadores",

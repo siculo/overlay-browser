@@ -20,6 +20,8 @@
   "home.add": "Добавить",
   "home.importBookmarks": "Импорт закладок…",
   "home.exportBookmarks": "Экспорт закладок…",
+  "home.bookmarks": "Закладки",
+  "home.bookmarksDesc": "Импортируйте закладки браузеров в списки или экспортируйте списки в файл закладок для браузера.",
   "home.empty": "Сайтов нет. Добавьте сайт ниже.",
 
   "lists.general": "Общий",
@@ -54,6 +56,7 @@
   "addDialog.tabBookmarks": "Закладки",
   "openDialog.message": "Страница хочет открыть {url} в новой вкладке, но в списке нет вкладки для этого сайта. Добавить его в список?",
 
+  "importDialog.message": "Выберите закладки для добавления в список — из браузера или из файла, экспортированного браузером.",
   "bookmarks.from": "Откуда:",
   "bookmarks.file": "Файл…",
   "bookmarks.fileSource": "Файл: {name}",
@@ -68,6 +71,7 @@
   "bookmarks.add.one": "Добавить 1 сайт",
   "bookmarks.add.other": "Добавить сайты: {count}",
   "bookmarks.target": "В список: {list}",
+  "bookmarks.targetLabel": "В список:",
   "bookmarks.root.bar": "Панель закладок",
   "bookmarks.root.menu": "Меню закладок",
   "bookmarks.root.other": "Другие закладки",

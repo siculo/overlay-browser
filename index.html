@@ -110,14 +110,9 @@
   /* List the bookmarks are added to, left of the buttons */
   #add-target { flex: 1; min-width: 0; align-self: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #999; }
   .bm-status.err { color: #f77; }
-  /* Home: import into the current list, below its add form; export of all
-     the lists, above them */
-  .import-row, .home-actions { display: flex; justify-content: flex-end; }
-  .import-row { margin-top: -2px; }
-  .home-actions { max-width: 720px; margin-bottom: -4px; }
-  .import-row button, .home-actions button { font-size: 13px; padding: 2px 8px; background: none; border-color: transparent; color: var(--accent-text); }
-  .import-row button:hover, .home-actions button:hover:not(:disabled) { background: var(--accent-soft); }
-  .home-actions button:disabled:hover { background: none; }
+  /* Import from the Home: list the bookmarks are added to, left of the buttons */
+  #add-list-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; color: #999; }
+  #add-list { flex: 0 1 auto; min-width: 0; font-size: 13px; padding: 3px 6px; }
   /* "All bookmarks" checkbox above the tree (import and export) */
   .bm-all { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 0 9px; cursor: pointer; user-select: none; }
   .bm-all input { margin: 0; cursor: inherit; }
@@ -178,6 +173,11 @@
   .error { color: #f77; font-size: 13px; min-height: 1em; }
   .error:empty { display: none; }
   #home h2 { margin: 28px 0 12px; font-weight: 500; font-size: 18px; }
+  /* Home: bookmark import and export, after the lists */
+  #home-bookmarks { max-width: 720px; margin-top: 36px; padding-top: 14px; border-top: 1px solid #333; }
+  #home-bookmarks h2 { margin: 0 0 4px; font-size: 14px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+  #home-bookmarks .desc { margin-bottom: 10px; font-size: 13px; color: #999; }
+  #home-bookmarks .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   /* Boxes above the lists: list chosen by hand, predefined list offered */
   .notice { display: flex; align-items: center; gap: 8px; max-width: 720px; margin: 0 0 8px; padding: 6px 10px; font-size: 13px; color: #bbb; background: #1c1c1c; border: 1px solid #333; border-left: 3px solid var(--accent); border-radius: 4px; }
   .notice .name { color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -240,8 +240,15 @@
       <button id="preset-use"></button>
       <button id="preset-dismiss"></button>
     </div>
-    <div class="home-actions"><button id="export-btn" data-i18n="home.exportBookmarks"></button></div>
     <div id="lists"></div>
+    <section id="home-bookmarks">
+      <h2 data-i18n="home.bookmarks"></h2>
+      <div class="desc" data-i18n="home.bookmarksDesc"></div>
+      <div class="actions">
+        <button id="import-btn" data-i18n="home.importBookmarks"></button>
+        <button id="export-btn" data-i18n="home.exportBookmarks"></button>
+      </div>
+    </section>
   </div>
 
   <div id="settings" class="page" hidden>
@@ -334,7 +341,7 @@
 
   <div id="add-dialog" class="modal" hidden>
     <form class="box" id="add-form">
-      <div class="dialog-tabs" role="tablist">
+      <div class="dialog-tabs" id="add-tabs" role="tablist">
         <button type="button" role="tab" id="add-tab-url" data-i18n="addDialog.tabUrl"></button>
         <button type="button" role="tab" id="add-tab-bm" data-i18n="addDialog.tabBookmarks"></button>
       </div>
@@ -343,6 +350,7 @@
         <input id="add-input" data-i18n-placeholder="addDialog.placeholder">
       </div>
       <div id="add-bm" role="tabpanel" hidden>
+        <div class="dialog-msg" id="import-msg" data-i18n="importDialog.message"></div>
         <div class="bm-source">
           <label for="bm-source" data-i18n="bookmarks.from"></label>
           <select id="bm-source"></select>
@@ -355,6 +363,7 @@
       <div class="error" id="add-error"></div>
       <div class="buttons">
         <span id="add-target"></span>
+        <label id="add-list-pick" hidden><span data-i18n="bookmarks.targetLabel"></span><select id="add-list"></select></label>
         <button type="button" id="add-cancel" data-i18n="dialog.cancel"></button>
         <button type="submit" id="add-ok" class="primary"></button>
       </div>
@@ -894,14 +903,7 @@
       focusKey = 'add:' + l.id;
       addSite(l, input.value);
     };
-    body.append(form);
-    // Bookmarks are imported into the current list only.
-    if (isCurrent) {
-      const row = el('div', 'import-row');
-      row.append(button(t('home.importBookmarks'), importBookmarks));
-      body.append(row);
-    }
-    body.append(el('div', 'error', listError?.key === listKey(l) ? listError.msg : ''));
+    body.append(form, el('div', 'error', listError?.key === listKey(l) ? listError.msg : ''));
     section.append(body);
     return section;
   }
@@ -1073,11 +1075,11 @@
     }
   }
 
-  // "Import bookmarks..." on the Home: the sites are added to the current
-  // list, and the Home stays open.
+  // "Import bookmarks..." on the Home: only the bookmarks, added to the list
+  // chosen in the dialog (the current one at first); the Home stays open.
   async function importBookmarks() {
-    const res = await openAddDialog('bm');
-    if (res?.bookmarks) addSites(currentList(), res.bookmarks);
+    const res = await openAddDialog('bm', { home: true });
+    if (res?.bookmarks) addSites(res.list, res.bookmarks);
   }
 
   // A page asked to open an address in a new tab (see 'site popups' in
@@ -1384,20 +1386,23 @@
 
   // ---------- adding sites: address or bookmarks ----------
   //
-  // The "+" in the bar opens it on the Address tab, "Import bookmarks..." on
-  // the Home on the Bookmarks one. Bookmarks come from a browser found on the
+  // The "+" in the bar opens it with two tabs, Address and Bookmarks, adding
+  // to the current list. "Import bookmarks..." on the Home (`home`) opens
+  // only the bookmarks, with the choice of the list to add them to (the
+  // current one at first). Bookmarks come from a browser found on the
   // system (one source per browser profile) or from an HTML file exported by
   // a browser; they are read by the main process (see bookmarks.js) and
-  // chosen in a tree (treePicker), by address: those already in the current
-  // list cannot be chosen. Returns { url } or { bookmarks: [{ url, title }] },
-  // null if cancelled. One dialog at a time: it shares closeDialog with
-  // openDialog.
+  // chosen in a tree (treePicker), by address: those already in the target
+  // list cannot be chosen. Returns { url } or { bookmarks: [{ url, title }],
+  // list }, null if cancelled. One dialog at a time: it shares closeDialog
+  // with openDialog.
 
   const addDialog = $('add-dialog'), addForm = $('add-form'), addInput = $('add-input');
   const addOk = $('add-ok'), addError = $('add-error');
   const bmSourceSelect = $('bm-source');
   const FILE_SOURCE = ':file';
   let addTab = 'url';
+  let addHome = false;     // opened from the Home: bookmarks only, list chosen in the dialog
   let lastSource = null;   // id of the browser source used last (this session)
   const bm = {
     sources: null,        // [{ id, browser, profile }], null until listed
@@ -1405,7 +1410,9 @@
     source: null,         // id of the source shown, or FILE_SOURCE
     loading: false,
     titles: new Map(),    // address -> title of its first bookmark
-    existing: new Set(),  // addresses already in the current list
+    target: null,         // list the bookmarks are added to
+    targets: [],          // lists that can be chosen (from the Home)
+    existing: new Set(),  // addresses already in the target list
     request: 0,           // ignores readings that are no longer current
   };
 
@@ -1438,16 +1445,37 @@
     return tree;
   }
 
+  // The target list: its addresses cannot be chosen any more (and are
+  // dropped from the selection).
+  function setTarget(l) {
+    bm.target = l;
+    bm.existing = new Set(l.sites.map((s) => s.url));
+    for (const url of [...importPicker.selected]) if (bm.existing.has(url)) importPicker.selected.delete(url);
+    importPicker.render();
+  }
+
+  // From the Home: all the lists, in the order of the Home; the current one
+  // may still be a new one (created when its first site is added).
+  function renderListSelect() {
+    const cur = currentList();
+    bm.targets = [cur, ...lists.filter((l) => l !== cur)];
+    $('add-list').replaceChildren(...bm.targets.map((l, i) =>
+      new Option(l.id ? listName(l) : `${listName(l)} (${t('lists.new')})`, String(i))));
+    $('add-list').value = String(bm.targets.indexOf(bm.target));
+  }
+  $('add-list').onchange = () => setTarget(bm.targets[Number($('add-list').value)]);
+
   function updateAddOk() {
     const target = $('add-target');
-    target.hidden = addTab === 'url';
+    target.hidden = addTab === 'url' || addHome;
+    $('add-list-pick').hidden = !addHome;
     if (addTab === 'url') {
       addOk.textContent = t('addDialog.ok');
       addOk.disabled = false;
       return;
     }
     const n = importPicker.selected.size;
-    target.textContent = t('bookmarks.target', { list: listName(currentList()) });
+    target.textContent = t('bookmarks.target', { list: listName(bm.target) });
     target.title = target.textContent;
     addOk.textContent = n === 0 ? t('bookmarks.addNone') : t(n === 1 ? 'bookmarks.add.one' : 'bookmarks.add.other', { count: n });
     addOk.disabled = n === 0;
@@ -1521,14 +1549,18 @@
   $('add-tab-url').onclick = () => showAddTab('url');
   $('add-tab-bm').onclick = () => showAddTab('bm');
 
-  function openAddDialog(tab) {
+  function openAddDialog(tab, { home = false } = {}) {
     closeDialog?.(null);   // one dialog at a time
+    addHome = home;
+    $('add-tabs').hidden = home;
+    $('import-msg').hidden = !home;
     addInput.value = '';
     $('bm-search').value = '';
     Object.assign(bm, { sources: null, file: null, source: null, loading: false });
     bm.request++;
-    bm.existing = new Set(currentList().sites.map((s) => s.url));
     importPicker.setTree(null);
+    setTarget(currentList());
+    if (home) renderListSelect();
     renderSourceSelect();
     addDialog.hidden = false;
     showAddTab(tab);
@@ -1551,7 +1583,7 @@
         }
         const chosen = importPicker.selected;
         if (!chosen.size) return;
-        closeDialog({ bookmarks: [...chosen].map((url) => ({ url, title: bm.titles.get(url) })) });
+        closeDialog({ bookmarks: [...chosen].map((url) => ({ url, title: bm.titles.get(url) })), list: bm.target });
       };
     });
   }
@@ -1627,6 +1659,7 @@
     });
   }
   $('export-btn').onclick = openExportDialog;
+  $('import-btn').onclick = importBookmarks;
   $('export-cancel').onclick = () => closeDialog?.(null);
   exportDialog.addEventListener('mousedown', (e) => { if (e.target === exportDialog) closeDialog?.(null); });
 

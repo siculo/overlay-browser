@@ -20,6 +20,8 @@
   "home.add": "Ajouter",
   "home.importBookmarks": "Importer des favoris…",
   "home.exportBookmarks": "Exporter des favoris…",
+  "home.bookmarks": "Favoris",
+  "home.bookmarksDesc": "Importe dans les listes les favoris des navigateurs, ou exporte les listes dans un fichier de favoris à ouvrir dans un navigateur.",
   "home.empty": "Aucun site. Ajoutez-en un ci-dessous.",
 
   "lists.general": "Générale",
@@ -54,6 +56,7 @@
   "addDialog.tabBookmarks": "Favoris",
   "openDialog.message": "La page veut ouvrir {url} dans un nouvel onglet, mais la liste n'a pas d'onglet pour ce site. L'ajouter à la liste ?",
 
+  "importDialog.message": "Choisis les favoris à ajouter à une liste, depuis un navigateur ou depuis un fichier exporté par un navigateur.",
   "bookmarks.from": "Depuis :",
   "bookmarks.file": "Fichier…",
   "bookmarks.fileSource": "Fichier : {name}",
@@ -68,6 +71,7 @@
   "bookmarks.add.one": "Ajouter 1 site",
   "bookmarks.add.other": "Ajouter {count} sites",
   "bookmarks.target": "Dans la liste : {list}",
+  "bookmarks.targetLabel": "Dans la liste :",
   "bookmarks.root.bar": "Barre de favoris",
   "bookmarks.root.menu": "Menu des marque-pages",
   "bookmarks.root.other": "Autres favoris",
