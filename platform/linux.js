@@ -220,8 +220,10 @@ function afterShow(win) {
 
 function beforeHide(win) {
   // Give focus back only if the overlay had it: if the user has meanwhile
-  // switched to another window, they must not be disturbed.
-  if (!win.isFocused() || !previousActive || previousActive === xidOf(win)) return;
+  // switched to another window, they must not be disturbed. "The overlay"
+  // includes its site popups (child windows).
+  const focused = [win, ...win.getChildWindows()].some((w) => !w.isDestroyed() && w.isFocused());
+  if (!focused || !previousActive || previousActive === xidOf(win)) return;
   try { activate(previousActive); } catch (err) { console.error(err); }
 }
 

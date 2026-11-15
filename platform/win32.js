@@ -174,8 +174,9 @@ function afterShow(win) {
 
 function beforeHide(win) {
   // Give focus back only if the overlay had it: if the user has meanwhile
-  // switched to another window, they must not be disturbed.
-  if (win.isFocused() && previousForeground && win32.IsWindow(previousForeground) &&
+  // switched to another window, they must not be disturbed. "The overlay"
+  // includes its site popups: any window of our process.
+  if (ownsForeground() && previousForeground && win32.IsWindow(previousForeground) &&
       !sameHwnd(previousForeground, hwndOf(win))) {
     try { win32.SetForegroundWindow(previousForeground); } catch (err) { console.error(err); }
   }

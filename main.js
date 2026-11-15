@@ -360,6 +360,8 @@ function showWindow() {
   platformCall('beforeShow');
   if (win.isMinimized()) win.restore();
   win.show();
+  for (const w of hiddenPopups) if (!w.isDestroyed()) w.showInactive();
+  hiddenPopups = [];
   platformCall('afterShow');
   win.webContents.send('win:visible', true);
   detectForegroundApp();
@@ -391,8 +393,14 @@ function detectForegroundApp() {
   win.webContents.send('app:foreground', foregroundApp);
 }
 
+// The site popups (see 'site popups') are hidden and shown with the
+// overlay: a login left halfway is found again at the next show.
+let hiddenPopups = [];
+
 function hideWindow() {
   platformCall('beforeHide');
+  hiddenPopups = win.getChildWindows().filter((w) => w.isVisible());
+  for (const w of hiddenPopups) w.hide();
   win.hide();
   win.webContents.send('win:visible', false);
 }
@@ -411,12 +419,25 @@ function toggleWindow() {
 // while the overlay stays in the foreground. Such a blur is ignored and the
 // keyboard focus is given back to the overlay. Where the platform cannot
 // tell (ownsForeground() null), every blur hides.
+//
+// The overlay and its site popups (see 'site popups') count as one: moving
+// the focus between them is not a blur, losing it from any of them is.
+// With popups open the check waits for the focus to settle, since the
+// window losing it is told before the one getting it.
 let lastBlurHide = 0;
-function hideOnBlur() {
-  if (!prefs.settings.hideOnBlur || !win.isVisible()) return;
-  // A site popup (e.g. a login) has the focus: the overlay must stay open,
-  // hiding it would hide the popup too, and must not take the focus back.
-  if (win.getChildWindows().some((w) => w.isVisible())) return;
+let blurTimer = null;
+const overlayWindows = () => [win, ...win.getChildWindows()].filter((w) => !w.isDestroyed());
+const overlayFocused = () => overlayWindows().some((w) => w.isFocused());
+
+function onOverlayBlur(blurred) {
+  clearTimeout(blurTimer);
+  if (win.getChildWindows().length === 0) return hideOnBlur(blurred);
+  blurTimer = setTimeout(() => hideOnBlur(blurred), 100);
+}
+
+// `blurred`: the window that lost the focus, the one to give it back to.
+function hideOnBlur(blurred) {
+  if (!prefs.settings.hideOnBlur || !win.isVisible() || overlayFocused()) return;
   let owns = null;
   try {
     owns = platform.ownsForeground(win);
@@ -425,7 +446,8 @@ function hideOnBlur() {
   }
   if (owns) {
     log(`focus: blur ignored, the overlay is still in the foreground (${Date.now() - shownAt} ms after show)`);
-    setImmediate(() => { if (win.isVisible() && !win.isFocused()) win.focus(); });
+    const target = blurred.isDestroyed() || !blurred.isVisible() ? win : blurred;
+    setImmediate(() => { if (win.isVisible() && !overlayFocused()) target.focus(); });
     return;
   }
   lastBlurHide = Date.now();
@@ -611,6 +633,12 @@ app.on('web-contents-created', (_e, contents) => {
   contents.on('did-create-window', (popup) => {
     popup.removeMenu();
     popup.setAlwaysOnTop(true, 'screen-saver');
+    popup.on('blur', () => onOverlayBlur(popup));
+    // When the popup closes (e.g. at the end of a login) the overlay takes
+    // the focus back, otherwise it would not notice the next blur.
+    popup.on('closed', () => {
+      if (!win.isDestroyed() && win.isVisible() && !overlayFocused()) win.focus();
+    });
     log(`popup opened from ${contents.getURL()}`);
   });
 });
@@ -737,7 +765,7 @@ function start() {
   });
   win.setAlwaysOnTop(true, 'screen-saver');
   win.loadFile('index.html');
-  win.on('blur', hideOnBlur);
+  win.on('blur', () => onOverlayBlur(win));
   trackBounds(win);
   platform.init(win);
 
