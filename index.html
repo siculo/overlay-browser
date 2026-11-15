@@ -93,6 +93,9 @@
   #add-input, #bm-search { width: 100%; }
   .bm-source { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
   #bm-source { flex: 1; min-width: 0; }
+  /* Instead of the select where there are no browsers to choose (macOS) */
+  #bm-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #bm-file-name.none { color: #888; }
   /* Browsers whose data the system does not let the app read */
   .bm-denied { margin-bottom: 8px; padding: 6px 9px; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; color: #db8; background: #2a2416; border: 1px solid #4a3f22; border-radius: 4px; }
   /* Bookmark tree: one row per folder or bookmark, indented by depth */
@@ -358,6 +361,7 @@
         <div class="bm-source">
           <label for="bm-source" data-i18n="bookmarks.from"></label>
           <select id="bm-source"></select>
+          <span id="bm-file-name" hidden></span>
           <button type="button" id="bm-file" data-i18n="bookmarks.file"></button>
         </div>
         <div class="bm-denied" id="bm-denied" hidden></div>
@@ -1500,11 +1504,22 @@
     $('bm-denied').textContent = bm.denied.length ? t('bookmarks.denied', { browsers: bm.denied.join(', ') }) : '';
   }
 
+  // Where the browsers cannot be read (macOS) there is nothing to choose:
+  // the select gives way to the name of the chosen file.
   function renderSourceSelect() {
+    const fileName = $('bm-file-name');
+    bmSourceSelect.hidden = !browserBookmarks;
+    fileName.hidden = browserBookmarks;
+    if (!browserBookmarks) {
+      fileName.textContent = bm.file ? bm.file.name : t('bookmarks.noFile');
+      fileName.title = bm.file ? bm.file.name : '';
+      fileName.classList.toggle('none', !bm.file);
+      return;
+    }
     const options = (bm.sources ?? []).map((s) => new Option(s.profile ? `${s.browser} · ${s.profile}` : s.browser, s.id));
     if (bm.file) options.push(new Option(t('bookmarks.fileSource', { name: bm.file.name }), FILE_SOURCE));
     if (!options.length) {
-      const none = new Option(!browserBookmarks ? t('bookmarks.noFile') : bm.sources ? t('bookmarks.noSources') : t('bookmarks.loading'), '');
+      const none = new Option(bm.sources ? t('bookmarks.noSources') : t('bookmarks.loading'), '');
       none.disabled = true;
       options.push(none);
     }
