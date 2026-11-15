@@ -151,5 +151,8 @@ module.exports = {
   // The panel becomes the key window when shown, without activating the app.
   afterShow() {},
   memoryUsage,
+  // No bookmarkStores: macOS does not let an app read other apps' data
+  // (the browsers' too) without Full Disk Access. Bookmarks are imported
+  // from an HTML file exported by the browser.
   ...(objc ? { beforeShow, foregroundApp } : {}),
 };

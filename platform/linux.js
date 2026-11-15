@@ -248,6 +248,31 @@ function memoryUsage(metrics) {
   return { kind: 'pss', bytes: new Map(metrics.map((m, i) => [m.pid, pss[i]])) };
 }
 
+// Data folders of the browsers, for the bookmark import: also the Snap and
+// Flatpak installs, which keep them under their own folders.
+function bookmarkStores() {
+  const path = require('path');
+  const home = require('os').homedir();
+  const config = process.env.XDG_CONFIG_HOME || path.join(home, '.config');
+  const stores = [];
+  const add = (browser, engine, dir) => stores.push({ browser, engine, dir });
+  add('Chrome', 'chromium', path.join(config, 'google-chrome'));
+  add('Chrome', 'chromium', path.join(home, '.var/app/com.google.Chrome/config/google-chrome'));
+  add('Edge', 'chromium', path.join(config, 'microsoft-edge'));
+  add('Brave', 'chromium', path.join(config, 'BraveSoftware/Brave-Browser'));
+  add('Brave', 'chromium', path.join(home, '.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser'));
+  add('Vivaldi', 'chromium', path.join(config, 'vivaldi'));
+  add('Chromium', 'chromium', path.join(config, 'chromium'));
+  add('Chromium', 'chromium', path.join(home, 'snap/chromium/common/chromium'));
+  add('Chromium', 'chromium', path.join(home, '.var/app/org.chromium.Chromium/config/chromium'));
+  add('Opera', 'chromium', path.join(config, 'opera'));
+  add('Firefox', 'firefox', path.join(home, '.mozilla/firefox'));
+  add('Firefox', 'firefox', path.join(home, 'snap/firefox/common/.mozilla/firefox'));
+  add('Firefox', 'firefox', path.join(home, '.var/app/org.mozilla.firefox/.mozilla/firefox'));
+  add('LibreWolf', 'firefox', path.join(home, '.librewolf'));
+  return stores;
+}
+
 module.exports = {
   ...generic,
   id: x11 ? 'linux-x11' : 'linux-basic',
@@ -257,5 +282,6 @@ module.exports = {
     app.commandLine.appendSwitch('ozone-platform', 'x11');
   },
   memoryUsage,
+  bookmarkStores,
   ...(x11 ? { beforeShow, afterShow, beforeHide, foregroundApp } : {}),
 };

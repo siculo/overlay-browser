@@ -426,6 +426,27 @@ function memoryUsage(metrics) {
   return { kind: 'private', bytes: new Map(metrics.map((m) => [m.pid, m.memory.privateBytes * 1024])) };
 }
 
+// ---------- browsers ----------
+
+// Data folders of the browsers, for the bookmark import.
+function bookmarkStores() {
+  const path = require('path');
+  const local = process.env.LOCALAPPDATA, roaming = process.env.APPDATA;
+  const stores = [];
+  const add = (browser, engine, base, dir) => { if (base) stores.push({ browser, engine, dir: path.join(base, dir) }); };
+  add('Chrome', 'chromium', local, 'Google/Chrome/User Data');
+  add('Edge', 'chromium', local, 'Microsoft/Edge/User Data');
+  add('Brave', 'chromium', local, 'BraveSoftware/Brave-Browser/User Data');
+  add('Vivaldi', 'chromium', local, 'Vivaldi/User Data');
+  add('Chromium', 'chromium', local, 'Chromium/User Data');
+  add('Opera', 'chromium', roaming, 'Opera Software/Opera Stable');
+  add('Opera GX', 'chromium', roaming, 'Opera Software/Opera GX Stable');
+  add('Firefox', 'firefox', roaming, 'Mozilla/Firefox');
+  add('LibreWolf', 'firefox', roaming, 'librewolf');
+  add('Zen', 'firefox', roaming, 'zen');
+  return stores;
+}
+
 // ---------- module ----------
 
 module.exports = win32 ? {
@@ -443,6 +464,7 @@ module.exports = win32 ? {
   foregroundApp,
   ownsForeground,
   memoryUsage,
+  bookmarkStores,
 } : {
   // Without the native API only the parts that do not need it remain.
   ...generic,
@@ -450,4 +472,5 @@ module.exports = win32 ? {
   features: { ...generic.features, keyboardHook: true },
   opacity: 'native',
   memoryUsage,
+  bookmarkStores,
 };

@@ -1,7 +1,8 @@
-const { app, BrowserWindow, globalShortcut, ipcMain, Menu, nativeImage, net, screen, shell, Tray, webContents } = require('electron');
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, screen, shell, Tray, webContents } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
+const bookmarks = require('./bookmarks');
 
 platform.configureApp(app);
 
@@ -437,7 +438,7 @@ function onOverlayBlur(blurred) {
 
 // `blurred`: the window that lost the focus, the one to give it back to.
 function hideOnBlur(blurred) {
-  if (!prefs.settings.hideOnBlur || !win.isVisible() || overlayFocused()) return;
+  if (!prefs.settings.hideOnBlur || !win.isVisible() || overlayFocused() || fileDialogOpen) return;
   let owns = null;
   try {
     owns = platform.ownsForeground(win);
@@ -660,6 +661,7 @@ ipcMain.handle('state:load', () => ({
     features: platform.features,
     opacity: platform.opacity,   // 'css': the page applies settings.opacity itself
     opacityRange: OPACITY_RANGE,
+    browserBookmarks: platform.bookmarkStores().length > 0,   // else bookmarks are imported from a file only
   },
   unloadRange: UNLOAD_RANGE,
   version: app.getVersion(),   // shown on the Settings page
@@ -722,6 +724,94 @@ ipcMain.handle('presets:applied', (_e, exe) => {
   savePrefs();
 });
 ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
+
+// ---------- bookmark import ----------
+//
+// The page lists the browsers' bookmark sources (see bookmarks.js) and
+// reads one of them, or an HTML file chosen with the system's file dialog.
+// The page only gets the ids of the sources: it cannot make the main
+// process read other files.
+
+let bookmarkSources = [];
+
+// { sources: [{ id, browser, profile }], denied: [browser] }: denied are the
+// browsers whose data the system does not let the app read.
+ipcMain.handle('bookmarks:sources', () => {
+  let denied = [];
+  try {
+    ({ sources: bookmarkSources, denied } = bookmarks.listSources(platform.bookmarkStores()));
+  } catch (err) {
+    log(`bookmarks: cannot list the sources: ${err?.stack || err}`);
+    bookmarkSources = [];
+  }
+  if (denied.length) log(`bookmarks: no access to the data of ${denied.join(', ')}`);
+  return { sources: bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile })), denied };
+});
+ipcMain.handle('bookmarks:read', (_e, id) => {
+  const source = bookmarkSources.find((s) => s.id === id);
+  if (!source) return { error: true };
+  try {
+    return { tree: bookmarks.readSource(source) };
+  } catch (err) {
+    log(`bookmarks: cannot read ${source.browser} (${source.file}): ${err?.stack || err}`);
+    return { error: true, denied: bookmarks.isDenied(err) };
+  }
+});
+
+// While a file dialog is open the overlay has no focus, but must not hide
+// (see hideOnBlur); when it closes the overlay takes the focus back.
+let fileDialogOpen = false;
+
+async function withFileDialog(show) {
+  fileDialogOpen = true;
+  try {
+    return await show();
+  } finally {
+    fileDialogOpen = false;
+    if (win.isVisible()) win.focus();
+  }
+}
+
+ipcMain.handle('bookmarks:file', async () => {
+  const result = await withFileDialog(() => dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: [
+      { name: t('bookmarks.fileFilter'), extensions: ['html', 'htm'] },
+      { name: t('bookmarks.allFiles'), extensions: ['*'] },
+    ],
+  }));
+  if (result.canceled || !result.filePaths[0]) return null;
+  const file = result.filePaths[0];
+  try {
+    return { name: path.basename(file), tree: bookmarks.readHtmlFile(file) };
+  } catch (err) {
+    log(`bookmarks: cannot read ${file}: ${err?.stack || err}`);
+    return { name: path.basename(file), error: true };
+  }
+});
+
+// Export: the folders chosen by the page ([{ title, sites: [{ title, url }] }])
+// saved as an HTML bookmark file where the user chooses. Returns null if
+// the save dialog is cancelled.
+ipcMain.handle('bookmarks:export', async (_e, folders) => {
+  const html = bookmarks.toHtml(folders);
+  if (!html) return { error: true };
+  const d = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const result = await withFileDialog(() => dialog.showSaveDialog(win, {
+    defaultPath: path.join(app.getPath('documents'), `overlay-browser-bookmarks-${date}.html`),
+    filters: [{ name: t('bookmarks.fileFilter'), extensions: ['html'] }],
+  }));
+  if (result.canceled || !result.filePath) return null;
+  try {
+    fs.writeFileSync(result.filePath, html);
+    log(`bookmarks: exported to ${result.filePath}`);
+    return { ok: true };
+  } catch (err) {
+    log(`bookmarks: cannot write ${result.filePath}: ${err?.stack || err}`);
+    return { error: true };
+  }
+});
 ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerator)));
 // While the user records a new combination, the current one must be
 // suspended, otherwise pressing it would hide the window instead of capturing it.

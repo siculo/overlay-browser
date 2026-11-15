@@ -75,14 +75,53 @@
   #bar > #home-btn.active, #bar > #settings-btn.active { height: 32px; margin-bottom: 0; border-radius: 8px 8px 0 0; background: var(--sheet); box-shadow: inset 0 2px 0 var(--accent); font-weight: 500; }
   #bar > #settings-btn.active { color: #fff; }
 
-  /* Dialog (confirmations and address input) */
-  #dialog { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); -webkit-app-region: no-drag; }
-  #dialog .box { width: min(440px, calc(100vw - 32px)); padding: 18px; background: #1c1c1c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
-  #dialog-msg { margin-bottom: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+  /* Dialogs: confirmations and address input (#dialog), adding sites from
+     an address or from bookmarks (#add-dialog) */
+  .modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.55); -webkit-app-region: no-drag; }
+  .modal .box { width: min(440px, calc(100vw - 32px)); padding: 18px; background: #1c1c1c; border: 1px solid #444; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
+  #dialog-msg, .dialog-msg { display: block; margin-bottom: 12px; line-height: 1.4; overflow-wrap: anywhere; }
   #dialog-input { width: 100%; }
-  #dialog .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+  .modal .buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
   #dialog-ok.danger { background: #7a2a2a; border-color: #944; color: #eee; }
   #dialog-ok.danger:hover { background: #8e3333; border-color: #944; }
+  /* Adding sites: tabs Address / Bookmarks; the Bookmarks one is wider */
+  #add-dialog.wide .box, #export-dialog .box { width: min(640px, calc(100vw - 32px)); }
+  .dialog-tabs { display: flex; gap: 4px; margin: -6px 0 14px; border-bottom: 1px solid #333; }
+  .dialog-tabs button { background: none; border: none; border-radius: 4px 4px 0 0; padding: 5px 12px; color: #999; }
+  .dialog-tabs button:hover { background: #262626; color: #ddd; }
+  .dialog-tabs button[aria-selected=true] { color: #fff; box-shadow: inset 0 -2px 0 var(--accent); }
+  #add-input, #bm-search { width: 100%; }
+  .bm-source { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  #bm-source { flex: 1; min-width: 0; }
+  /* Instead of the select where there are no browsers to choose (macOS) */
+  #bm-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #bm-file-name.none { color: #888; }
+  /* Browsers whose data the system does not let the app read */
+  .bm-denied { margin-bottom: 8px; padding: 6px 9px; font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; color: #db8; background: #2a2416; border: 1px solid #4a3f22; border-radius: 4px; }
+  /* Bookmark tree: one row per folder or bookmark, indented by depth */
+  .bm-tree { margin-top: 8px; height: min(360px, calc(100vh - 300px)); min-height: 90px; overflow-y: auto; padding: 4px 0; background: #161616; border: 1px solid #333; border-radius: 4px; }
+  .bm-row { display: flex; align-items: center; gap: 6px; padding: 3px 8px 3px calc(8px + var(--depth) * 18px); cursor: pointer; user-select: none; }
+  .bm-row:hover { background: #222; }
+  .bm-row .twisty { flex: none; width: 1em; color: #888; text-align: center; }
+  .bm-row input { flex: none; margin: 0; cursor: inherit; }
+  .bm-row .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .bm-row.folder .title { font-weight: 500; }
+  .bm-row .url, .bm-row .count { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: #888; }
+  .bm-row .count { color: #777; }
+  .bm-row.disabled { cursor: default; color: #777; }
+  .bm-row.disabled:hover { background: none; }
+  .bm-row .tag { flex: none; font-size: 11px; color: #999; }
+  .bm-status { padding: 12px; color: #999; }
+  /* List the bookmarks are added to, left of the buttons */
+  #add-target { flex: 1; min-width: 0; align-self: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #999; }
+  .bm-status.err { color: #f77; }
+  /* Import from the Home: list the bookmarks are added to, left of the buttons */
+  #add-list-pick { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; color: #999; }
+  #add-list { flex: 0 1 auto; min-width: 0; font-size: 13px; padding: 3px 6px; }
+  /* "All bookmarks" checkbox above the tree (import and export) */
+  .bm-all { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 0 9px; cursor: pointer; user-select: none; }
+  .bm-all input { margin: 0; cursor: inherit; }
+  #ex-search { width: 100%; }
 
   /* Navigation bar of the active site, below the tabs */
   #nav { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
@@ -112,6 +151,8 @@
   #settings > * { max-width: 720px; }
   /* Site lists: the current one first, then the others (collapsed) */
   #lists { display: flex; flex-direction: column; gap: 18px; max-width: 720px; margin-top: 8px; }
+  /* More room between the boxes above the lists and the current list */
+  #pinned:not([hidden]) ~ #lists, #preset:not([hidden]) ~ #lists { margin-top: 20px; }
   .list-head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 1px solid #333; }
   .list-head.toggle { cursor: pointer; }
   .list-head.toggle:hover .name { text-decoration: underline; }
@@ -139,6 +180,11 @@
   .error { color: #f77; font-size: 13px; min-height: 1em; }
   .error:empty { display: none; }
   #home h2 { margin: 28px 0 12px; font-weight: 500; font-size: 18px; }
+  /* Home: bookmark import and export, after the lists */
+  #home-bookmarks { max-width: 720px; margin-top: 36px; padding-top: 14px; border-top: 1px solid #333; }
+  #home-bookmarks h2 { margin: 0 0 4px; font-size: 14px; color: #999; text-transform: uppercase; letter-spacing: 0.04em; }
+  #home-bookmarks .desc { margin-bottom: 10px; font-size: 13px; color: #999; }
+  #home-bookmarks .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   /* Boxes above the lists: list chosen by hand, predefined list offered */
   .notice { display: flex; align-items: center; gap: 8px; max-width: 720px; margin: 0 0 8px; padding: 6px 10px; font-size: 13px; color: #bbb; background: #1c1c1c; border: 1px solid #333; border-left: 3px solid var(--accent); border-radius: 4px; }
   .notice .name { color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
@@ -202,6 +248,14 @@
       <button id="preset-dismiss"></button>
     </div>
     <div id="lists"></div>
+    <section id="home-bookmarks">
+      <h2 data-i18n="home.bookmarks"></h2>
+      <div class="desc" data-i18n="home.bookmarksDesc"></div>
+      <div class="actions">
+        <button id="import-btn" data-i18n="home.importBookmarks"></button>
+        <button id="export-btn" data-i18n="home.exportBookmarks"></button>
+      </div>
+    </section>
   </div>
 
   <div id="settings" class="page" hidden>
@@ -266,7 +320,7 @@
 
   <div id="views" hidden></div>
 
-  <div id="dialog" hidden>
+  <div id="dialog" class="modal" hidden>
     <form class="box" id="dialog-form">
       <div id="dialog-msg"></div>
       <input id="dialog-input" hidden>
@@ -274,6 +328,53 @@
       <div class="buttons">
         <button type="button" id="dialog-cancel" data-i18n="dialog.cancel"></button>
         <button type="submit" id="dialog-ok" class="primary"></button>
+      </div>
+    </form>
+  </div>
+
+  <div id="export-dialog" class="modal" hidden>
+    <form class="box" id="export-form">
+      <div class="dialog-msg" data-i18n="exportDialog.message"></div>
+      <input id="ex-search" type="search" data-i18n-placeholder="bookmarks.search">
+      <label class="bm-all"><input type="checkbox" id="ex-all"><span data-i18n="bookmarks.all"></span></label>
+      <div id="ex-tree" class="bm-tree"></div>
+      <div class="error" id="export-error"></div>
+      <div class="buttons">
+        <button type="button" id="export-cancel" data-i18n="dialog.cancel"></button>
+        <button type="submit" id="export-ok" class="primary"></button>
+      </div>
+    </form>
+  </div>
+
+  <div id="add-dialog" class="modal" hidden>
+    <form class="box" id="add-form">
+      <div class="dialog-tabs" id="add-tabs" role="tablist">
+        <button type="button" role="tab" id="add-tab-url" data-i18n="addDialog.tabUrl"></button>
+        <button type="button" role="tab" id="add-tab-bm" data-i18n="addDialog.tabBookmarks"></button>
+      </div>
+      <div id="add-url" role="tabpanel">
+        <label class="dialog-msg" for="add-input" data-i18n="addDialog.message"></label>
+        <input id="add-input" data-i18n-placeholder="addDialog.placeholder">
+      </div>
+      <div id="add-bm" role="tabpanel" hidden>
+        <div class="dialog-msg" id="import-msg" data-i18n="importDialog.message"></div>
+        <div class="bm-source">
+          <label for="bm-source" data-i18n="bookmarks.from"></label>
+          <select id="bm-source"></select>
+          <span id="bm-file-name" hidden></span>
+          <button type="button" id="bm-file" data-i18n="bookmarks.file"></button>
+        </div>
+        <div class="bm-denied" id="bm-denied" hidden></div>
+        <input id="bm-search" type="search" data-i18n-placeholder="bookmarks.search">
+        <label class="bm-all"><input type="checkbox" id="bm-all"><span data-i18n="bookmarks.all"></span></label>
+        <div id="bm-tree" class="bm-tree"></div>
+      </div>
+      <div class="error" id="add-error"></div>
+      <div class="buttons">
+        <span id="add-target"></span>
+        <label id="add-list-pick" hidden><span data-i18n="bookmarks.targetLabel"></span><select id="add-list"></select></label>
+        <button type="button" id="add-cancel" data-i18n="dialog.cancel"></button>
+        <button type="submit" id="add-ok" class="primary"></button>
       </div>
     </form>
   </div>
@@ -309,6 +410,7 @@
   const isSite = (id) => id !== null && id !== SETTINGS;
   let editing = null;           // id of the site being edited on the Home page
   const expanded = new Set();   // ids of the other lists opened on the Home page
+  const collapsed = new Set();  // keys (listKey) of the lists closed on the Home page while current
   let listError = null;         // { key, msg }: error shown under a list (invalid address)
   const drafts = new Map();     // input key -> text being typed, kept when the Home is rendered again
   let focusKey = null;          // input to focus after the next render
@@ -760,21 +862,20 @@
   }
 
   // A list on the Home page: header, then (if open) its sites and the add form.
-  // The current list is always open; the others open by clicking the header.
+  // The current list starts open, the others closed; each one opens and
+  // closes by clicking its header.
   function listSection(l, isCurrent) {
     const section = el('section', 'list');
     section.classList.toggle('current', isCurrent);
-    const open = isCurrent || expanded.has(l.id);
+    const open = isCurrent ? !collapsed.has(listKey(l)) : expanded.has(l.id);
 
-    const head = el('div', 'list-head');
-    if (!isCurrent) {
-      head.classList.add('toggle');
-      head.append(el('span', 'twisty', open ? '▾' : '▸'));
-      head.onclick = () => {
-        if (!expanded.delete(l.id)) expanded.add(l.id);
-        renderHome();
-      };
-    }
+    const head = el('div', 'list-head toggle');
+    head.append(el('span', 'twisty', open ? '▾' : '▸'));
+    head.onclick = () => {
+      if (isCurrent) { if (!collapsed.delete(listKey(l))) collapsed.add(listKey(l)); }
+      else if (!expanded.delete(l.id)) expanded.add(l.id);
+      renderHome();
+    };
     head.append(el('span', 'name', listName(l)));
     if (isCurrent) head.append(el('span', 'badge', t('lists.current')));
     if (!l.id) head.append(el('span', 'badge new', t('lists.new')));
@@ -844,6 +945,7 @@
     const selection = focused && [document.activeElement.selectionStart, document.activeElement.selectionEnd];
     renderPinned();
     renderPreset();
+    $('export-btn').disabled = !hasSites();
     const cur = currentList();
     const others = lists.filter((l) => l !== cur);
     listsEl.replaceChildren(listSection(cur, true));
@@ -885,6 +987,25 @@
     render();
     resolveTitle(site);
     return site;
+  }
+
+  // Adds several sites ({ url, title }) at the end of a list, skipping the
+  // addresses it already has. Returns the added sites.
+  function addSites(l, entries) {
+    const have = new Set(l.sites.map((s) => s.url));
+    const added = [];
+    for (const e of entries) {
+      const url = normalizeUrl(e.url);
+      if (!url || have.has(url)) continue;
+      have.add(url);
+      added.push({ id: crypto.randomUUID(), url, title: e.title || null });
+    }
+    if (!added.length) return added;
+    materialize(l).sites.push(...added);
+    save();
+    render();
+    for (const site of added) if (!site.title) resolveTitle(site);
+    return added;
   }
 
   function updateSite(id, raw) {
@@ -949,18 +1070,25 @@
     lookupPreset();
   }
 
-  // Adding from the "+" in the bar: asks for the address and opens the new tab right away.
+  // Adding from the "+" in the bar: asks for an address or bookmarks (see
+  // openAddDialog) and opens the (first) new tab right away.
   async function promptAddTab() {
-    const url = await openDialog({
-      message: t('addDialog.message'),
-      input: '',
-      placeholder: t('addDialog.placeholder'),
-      okLabel: t('addDialog.ok'),
-      validate: (v) => (normalizeUrl(v) ? null : t('site.invalidUrl')),
-    });
-    if (url === null) return;
-    const site = addSite(currentList(), url);
-    if (site) activate(site.id);
+    const res = await openAddDialog('url');
+    if (!res) return;
+    if (res.url) {
+      const site = addSite(currentList(), res.url);
+      if (site) activate(site.id);
+    } else {
+      const added = addSites(currentList(), res.bookmarks);
+      if (added.length) activate(added[0].id);
+    }
+  }
+
+  // "Import bookmarks..." on the Home: only the bookmarks, added to the list
+  // chosen in the dialog (the current one at first); the Home stays open.
+  async function importBookmarks() {
+    const res = await openAddDialog('bm', { home: true });
+    if (res?.bookmarks) addSites(res.list, res.bookmarks);
   }
 
   // A page asked to open an address in a new tab (see 'site popups' in
@@ -1100,6 +1228,472 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && closeDialog) { e.preventDefault(); closeDialog(false); }
   });
+
+  // ---------- bookmark tree with checkboxes ----------
+  //
+  // Used by the import (bookmarks of a browser or of a file) and by the
+  // export (the site lists). The tree is made of folders { title, children }
+  // and bookmarks { title, url }. A bookmark is selected by its `idOf`
+  // (the import selects by address, so the same address in several folders
+  // counts once); `selectable` tells whether it can be chosen, `tagOf` a
+  // note for its row. A folder's checkbox selects all the selectable
+  // bookmarks it contains, the optional `allBox` all of them: those shown,
+  // while searching. Folders open and close by clicking them; while
+  // searching the folders with results are all open. `status` replaces the
+  // tree with a message (loading, error...).
+
+  const bookmarksIn = (n) => (n.children ? n.children.flatMap(bookmarksIn) : [n]);
+
+  function treePicker({ container, search, allBox, idOf, selectable = () => true, tagOf = () => null, empty, onChange }) {
+    const p = { tree: null, status: null, error: false, selected: new Set(), open: new Set() };
+    const folderTitle = (n) => n.title || '…';
+    const bookmarkTitle = (n) => n.title || hostOf(n.url) || n.url;
+    const idsIn = (nodes) => [...new Set(nodes.flatMap(bookmarksIn).filter(selectable).map(idOf))];
+
+    // Bookmarks whose title or address contains the text, folders with such
+    // bookmarks (all of a folder's bookmarks if its name contains the text).
+    function filter(nodes, q) {
+      if (!q) return nodes;
+      const out = [];
+      for (const n of nodes) {
+        if (n.children) {
+          if (folderTitle(n).toLowerCase().includes(q)) out.push(n);
+          else {
+            const children = filter(n.children, q);
+            if (children.length) out.push({ ...n, children });
+          }
+        } else if (n.title.toLowerCase().includes(q) || n.url.toLowerCase().includes(q)) out.push(n);
+      }
+      return out;
+    }
+
+    // Checkbox for a group of bookmarks: checked if all are selected,
+    // indeterminate if some; clicking selects them all, or none if all were.
+    function groupBox(box, ids) {
+      const chosen = ids.filter((id) => p.selected.has(id)).length;
+      box.disabled = !ids.length;
+      box.checked = ids.length > 0 && chosen === ids.length;
+      box.indeterminate = chosen > 0 && chosen < ids.length;
+      box.onclick = (e) => {
+        e.stopPropagation();
+        const all = chosen === ids.length;
+        for (const id of ids) { if (all) p.selected.delete(id); else p.selected.add(id); }
+        render();
+      };
+    }
+
+    function checkbox() {
+      const box = el('input');
+      box.type = 'checkbox';
+      box.tabIndex = -1;
+      return box;
+    }
+
+    function folderRow(n, depth, q) {
+      const row = el('div', 'bm-row folder');
+      row.style.setProperty('--depth', depth);
+      const open = !!q || p.open.has(n.key);
+      const box = checkbox();
+      groupBox(box, idsIn([n]));
+      row.append(el('span', 'twisty', open ? '▾' : '▸'), box, el('span', 'title', folderTitle(n)),
+        el('span', 'count', String(bookmarksIn(n).length)));
+      row.onclick = () => {
+        if (q) return;
+        if (!p.open.delete(n.key)) p.open.add(n.key);
+        render();
+      };
+      return { row, open };
+    }
+
+    function bookmarkRow(n, depth) {
+      const row = el('div', 'bm-row');
+      row.style.setProperty('--depth', depth);
+      const ok = selectable(n);
+      const box = checkbox();
+      box.disabled = !ok;
+      box.checked = ok && p.selected.has(idOf(n));
+      row.classList.toggle('disabled', !ok);
+      row.title = n.url;
+      row.append(el('span', 'twisty'), box, el('span', 'title', bookmarkTitle(n)), el('span', 'url', n.url));
+      const tag = tagOf(n);
+      if (tag) row.append(el('span', 'tag', tag));
+      const toggle = (e) => {
+        e.stopPropagation();
+        if (!ok) return;
+        if (!p.selected.delete(idOf(n))) p.selected.add(idOf(n));
+        render();
+      };
+      row.onclick = toggle;
+      box.onclick = toggle;
+      return row;
+    }
+
+    function render() {
+      const scroll = container.scrollTop;
+      const message = (text, err) => container.replaceChildren(el('div', 'bm-status' + (err ? ' err' : ''), text));
+      const q = search.value.trim().toLowerCase();
+      const nodes = p.tree && !p.status ? filter(p.tree, q) : [];
+      if (allBox) groupBox(allBox, idsIn(nodes));
+      if (p.status !== null) message(p.status, p.error);
+      else if (!p.tree) message('');
+      else if (!p.tree.length) message(empty());
+      else {
+        const rows = [];
+        const walk = (list, depth) => {
+          for (const n of list) {
+            if (!n.children) { rows.push(bookmarkRow(n, depth)); continue; }
+            const { row, open } = folderRow(n, depth, q);
+            rows.push(row);
+            if (open) walk(n.children, depth + 1);
+          }
+        };
+        walk(nodes, 0);
+        if (rows.length) container.replaceChildren(...rows);
+        else message(t('bookmarks.noMatch'));
+      }
+      container.scrollTop = scroll;
+      onChange?.();
+    }
+
+    // A new tree: `open` 'top' (top folders open) or 'all'; `selectAll`
+    // selects all its bookmarks.
+    p.setTree = (tree, { open = 'top', selectAll = false } = {}) => {
+      let next = 0;
+      const walk = (nodes, depth) => {
+        for (const n of nodes) {
+          if (!n.children) continue;
+          n.key = String(next++);
+          if (open === 'all' || depth === 0) p.open.add(n.key);
+          walk(n.children, depth + 1);
+        }
+      };
+      p.open.clear();
+      p.selected.clear();
+      p.tree = tree;
+      p.status = null;
+      if (tree) {
+        walk(tree, 0);
+        if (selectAll) for (const id of idsIn(tree)) p.selected.add(id);
+      }
+      container.scrollTop = 0;
+      render();
+    };
+    p.setStatus = (text, error = false) => {
+      p.tree = null;
+      p.selected.clear();
+      p.status = text;
+      p.error = error;
+      render();
+    };
+    p.render = render;
+
+    search.addEventListener('input', () => { container.scrollTop = 0; render(); });
+    // Enter in the search field does not confirm the dialog.
+    search.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.preventDefault(); });
+    return p;
+  }
+
+  // ---------- adding sites: address or bookmarks ----------
+  //
+  // The "+" in the bar opens it with two tabs, Address and Bookmarks, adding
+  // to the current list. "Import bookmarks..." on the Home (`home`) opens
+  // only the bookmarks, with the choice of the list to add them to (the
+  // current one at first). Bookmarks come from a browser found on the
+  // system (one source per browser profile) or from an HTML file exported by
+  // a browser; they are read by the main process (see bookmarks.js) and
+  // chosen in a tree (treePicker), by address: those already in the target
+  // list cannot be chosen. Returns { url } or { bookmarks: [{ url, title }],
+  // list }, null if cancelled. One dialog at a time: it shares closeDialog
+  // with openDialog.
+
+  const addDialog = $('add-dialog'), addForm = $('add-form'), addInput = $('add-input');
+  const addOk = $('add-ok'), addError = $('add-error');
+  const bmSourceSelect = $('bm-source');
+  const FILE_SOURCE = ':file';
+  let addTab = 'url';
+  let addHome = false;     // opened from the Home: bookmarks only, list chosen in the dialog
+  let lastSource = null;   // id of the browser source used last (this session)
+  let browserBookmarks = true;   // false: the platform cannot read the browsers (macOS), bookmarks come from a file only
+  const bm = {
+    sources: null,        // [{ id, browser, profile }], null until listed
+    denied: [],           // browsers whose data the system does not let the app read
+    file: null,           // { name, tree, error } of the HTML file chosen
+    source: null,         // id of the source shown, or FILE_SOURCE
+    loading: false,
+    titles: new Map(),    // address -> title of its first bookmark
+    target: null,         // list the bookmarks are added to
+    targets: [],          // lists that can be chosen (from the Home)
+    existing: new Set(),  // addresses already in the target list
+    request: 0,           // ignores readings that are no longer current
+  };
+
+  const importPicker = treePicker({
+    container: $('bm-tree'),
+    search: $('bm-search'),
+    allBox: $('bm-all'),
+    idOf: (n) => n.norm,
+    selectable: (n) => !!n.norm && !bm.existing.has(n.norm),
+    tagOf: (n) => (n.norm && bm.existing.has(n.norm) ? t('bookmarks.inList') : null),
+    empty: () => t('bookmarks.empty'),
+    onChange: () => updateAddOk(),
+  });
+
+  // Names the browsers' own top folders and gives each bookmark its
+  // normalized address, the one the lists keep.
+  function prepareImport(tree) {
+    bm.titles.clear();
+    const walk = (nodes) => {
+      for (const n of nodes) {
+        if (n.root) n.title = t('bookmarks.root.' + n.root);
+        if (n.children) walk(n.children);
+        else {
+          n.norm = normalizeUrl(n.url);
+          if (n.norm && !bm.titles.has(n.norm)) bm.titles.set(n.norm, n.title);
+        }
+      }
+    };
+    walk(tree);
+    return tree;
+  }
+
+  // The target list: its addresses cannot be chosen any more (and are
+  // dropped from the selection).
+  function setTarget(l) {
+    bm.target = l;
+    bm.existing = new Set(l.sites.map((s) => s.url));
+    for (const url of [...importPicker.selected]) if (bm.existing.has(url)) importPicker.selected.delete(url);
+    importPicker.render();
+  }
+
+  // From the Home: all the lists, in the order of the Home; the current one
+  // may still be a new one (created when its first site is added).
+  function renderListSelect() {
+    const cur = currentList();
+    bm.targets = [cur, ...lists.filter((l) => l !== cur)];
+    $('add-list').replaceChildren(...bm.targets.map((l, i) =>
+      new Option(l.id ? listName(l) : `${listName(l)} (${t('lists.new')})`, String(i))));
+    $('add-list').value = String(bm.targets.indexOf(bm.target));
+  }
+  $('add-list').onchange = () => setTarget(bm.targets[Number($('add-list').value)]);
+
+  function updateAddOk() {
+    const target = $('add-target');
+    target.hidden = addTab === 'url' || addHome;
+    $('add-list-pick').hidden = !addHome;
+    if (addTab === 'url') {
+      addOk.textContent = t('addDialog.ok');
+      addOk.disabled = false;
+      return;
+    }
+    const n = importPicker.selected.size;
+    target.textContent = t('bookmarks.target', { list: listName(bm.target) });
+    target.title = target.textContent;
+    addOk.textContent = n === 0 ? t('bookmarks.addNone') : t(n === 1 ? 'bookmarks.add.one' : 'bookmarks.add.other', { count: n });
+    addOk.disabled = n === 0;
+  }
+
+  function showImport(res) {
+    if (res.error) importPicker.setStatus(t(res.denied ? 'bookmarks.deniedSource' : 'bookmarks.error'), true);
+    else importPicker.setTree(prepareImport(res.tree));
+  }
+
+  // The browsers found but not readable: their bookmarks can still come
+  // from an exported file.
+  function renderDenied() {
+    $('bm-denied').hidden = !bm.denied.length;
+    $('bm-denied').textContent = bm.denied.length ? t('bookmarks.denied', { browsers: bm.denied.join(', ') }) : '';
+  }
+
+  // Where the browsers cannot be read (macOS) there is nothing to choose:
+  // the select gives way to the name of the chosen file.
+  function renderSourceSelect() {
+    const fileName = $('bm-file-name');
+    bmSourceSelect.hidden = !browserBookmarks;
+    fileName.hidden = browserBookmarks;
+    if (!browserBookmarks) {
+      fileName.textContent = bm.file ? bm.file.name : t('bookmarks.noFile');
+      fileName.title = bm.file ? bm.file.name : '';
+      fileName.classList.toggle('none', !bm.file);
+      return;
+    }
+    const options = (bm.sources ?? []).map((s) => new Option(s.profile ? `${s.browser} · ${s.profile}` : s.browser, s.id));
+    if (bm.file) options.push(new Option(t('bookmarks.fileSource', { name: bm.file.name }), FILE_SOURCE));
+    if (!options.length) {
+      const none = new Option(bm.sources ? t('bookmarks.noSources') : t('bookmarks.loading'), '');
+      none.disabled = true;
+      options.push(none);
+    }
+    bmSourceSelect.replaceChildren(...options);
+    bmSourceSelect.disabled = !bm.sources?.length && !bm.file;
+    bmSourceSelect.value = bm.source ?? '';
+  }
+
+  async function showSource(id) {
+    bm.source = id;
+    renderSourceSelect();
+    const request = ++bm.request;
+    if (id === FILE_SOURCE) return showImport(bm.file);
+    lastSource = id;
+    importPicker.setStatus(t('bookmarks.loading'));
+    const res = await window.overlay.readBookmarks(id);
+    if (request === bm.request) showImport(res);
+  }
+
+  // The sources are listed again at every opening (browsers installed or
+  // profiles added meanwhile); the one used last is shown first.
+  async function loadSources() {
+    const request = ++bm.request;
+    bm.loading = true;
+    importPicker.setStatus(t('bookmarks.loading'));
+    const { sources, denied } = await window.overlay.bookmarkSources();
+    if (request !== bm.request) return;
+    bm.loading = false;
+    bm.sources = sources;
+    bm.denied = denied;
+    renderDenied();
+    const first = sources.find((s) => s.id === lastSource) ?? sources[0];
+    if (first) return showSource(first.id);
+    renderSourceSelect();
+    importPicker.setStatus(t(browserBookmarks ? 'bookmarks.noSources' : 'bookmarks.fileOnly'));
+  }
+
+  bmSourceSelect.onchange = () => showSource(bmSourceSelect.value);
+  $('bm-file').onclick = async () => {
+    const res = await window.overlay.openBookmarkFile();
+    if (!res || addDialog.hidden) return;
+    bm.file = res;
+    showSource(FILE_SOURCE);
+  };
+
+  function showAddTab(tab) {
+    addTab = tab;
+    $('add-tab-url').setAttribute('aria-selected', tab === 'url');
+    $('add-tab-bm').setAttribute('aria-selected', tab === 'bm');
+    $('add-url').hidden = tab !== 'url';
+    $('add-bm').hidden = tab !== 'bm';
+    addDialog.classList.toggle('wide', tab === 'bm');
+    addError.textContent = '';
+    if (tab === 'bm' && !bm.sources && !bm.loading) loadSources();
+    updateAddOk();
+    setTimeout(() => (tab === 'url' ? addInput : $('bm-search')).focus());
+  }
+  $('add-tab-url').onclick = () => showAddTab('url');
+  $('add-tab-bm').onclick = () => showAddTab('bm');
+
+  function openAddDialog(tab, { home = false } = {}) {
+    closeDialog?.(null);   // one dialog at a time
+    addHome = home;
+    $('add-tabs').hidden = home;
+    $('import-msg').hidden = !home;
+    addInput.value = '';
+    $('bm-search').value = '';
+    Object.assign(bm, { sources: null, denied: [], file: null, source: null, loading: false });
+    renderDenied();
+    bm.request++;
+    importPicker.setTree(null);
+    setTarget(currentList());
+    if (home) renderListSelect();
+    renderSourceSelect();
+    addDialog.hidden = false;
+    showAddTab(tab);
+
+    return new Promise((resolve) => {
+      closeDialog = (result) => {
+        closeDialog = null;
+        addDialog.hidden = true;
+        addForm.onsubmit = null;
+        bm.request++;
+        importPicker.setTree(null);
+        resolve(result || null);
+      };
+      addForm.onsubmit = (e) => {
+        e.preventDefault();
+        if (addTab === 'url') {
+          if (!normalizeUrl(addInput.value)) { addError.textContent = t('site.invalidUrl'); addInput.focus(); return; }
+          closeDialog({ url: addInput.value });
+          return;
+        }
+        const chosen = importPicker.selected;
+        if (!chosen.size) return;
+        closeDialog({ bookmarks: [...chosen].map((url) => ({ url, title: bm.titles.get(url) })), list: bm.target });
+      };
+    });
+  }
+  $('add-cancel').onclick = () => closeDialog?.(null);
+  addDialog.addEventListener('mousedown', (e) => { if (e.target === addDialog) closeDialog?.(null); });
+
+  // ---------- export ----------
+  //
+  // "Export bookmarks..." on the Home: the sites of all the lists, one folder
+  // per list (current one first, as on the Home), all selected at first.
+  // The chosen ones are saved by the main process as an HTML bookmark file
+  // (see bookmarks.js), with the same folders, which browsers can import.
+
+  const exportDialog = $('export-dialog'), exportForm = $('export-form');
+  const exportOk = $('export-ok'), exportError = $('export-error');
+
+  const exportPicker = treePicker({
+    container: $('ex-tree'),
+    search: $('ex-search'),
+    allBox: $('ex-all'),
+    idOf: (n) => n.id,
+    empty: () => t('exportDialog.empty'),
+    onChange: () => updateExportOk(),
+  });
+
+  const hasSites = () => lists.some((l) => l.sites.length);
+
+  function updateExportOk() {
+    const n = exportPicker.selected.size;
+    exportOk.textContent = n === 0 ? t('exportDialog.none') : t(n === 1 ? 'exportDialog.one' : 'exportDialog.other', { count: n });
+    exportOk.disabled = n === 0;
+  }
+
+  function exportTree() {
+    const cur = currentList();
+    return [cur, ...lists.filter((l) => l !== cur)]
+      .filter((l) => l.sites.length)
+      .map((l) => ({ title: listName(l), children: l.sites.map((s) => ({ id: s.id, title: siteName(s), url: s.url })) }));
+  }
+
+  function openExportDialog() {
+    closeDialog?.(null);   // one dialog at a time
+    $('ex-search').value = '';
+    exportError.textContent = '';
+    exportPicker.setTree(exportTree(), { open: 'all', selectAll: true });
+    exportDialog.hidden = false;
+    setTimeout(() => $('ex-search').focus());
+
+    return new Promise((resolve) => {
+      closeDialog = (result) => {
+        closeDialog = null;
+        exportDialog.hidden = true;
+        exportForm.onsubmit = null;
+        exportPicker.setTree(null);
+        resolve(!!result);
+      };
+      exportForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const chosen = exportPicker.selected;
+        const folders = exportPicker.tree
+          .map((f) => ({ title: f.title, sites: f.children.filter((s) => chosen.has(s.id)).map(({ title, url }) => ({ title, url })) }))
+          .filter((f) => f.sites.length);
+        if (!folders.length) return;
+        exportError.textContent = '';
+        exportOk.disabled = true;
+        const res = await window.overlay.exportBookmarks(folders);
+        if (exportDialog.hidden) return;   // closed meanwhile
+        updateExportOk();
+        if (!res) return;                  // the save dialog was cancelled
+        if (res.error) { exportError.textContent = t('exportDialog.error'); return; }
+        closeDialog(true);
+      };
+    });
+  }
+  $('export-btn').onclick = openExportDialog;
+  $('import-btn').onclick = importBookmarks;
+  $('export-cancel').onclick = () => closeDialog?.(null);
+  exportDialog.addEventListener('mousedown', (e) => { if (e.target === exportDialog) closeDialog?.(null); });
 
   // When the window gets focus, the keyboard goes to the open site
   // (otherwise it would stay on the page holding the tabs), unless
@@ -1424,6 +2018,7 @@
   (async () => {
     const state = await window.overlay.loadState();
     initOpacity(state.platform, state.settings.opacity);
+    browserBookmarks = state.platform.browserBookmarks;
     accentSetting = state.settings.accent;
     languageSetting = state.settings.language;
     applyI18n(state.i18n);
