@@ -27,9 +27,15 @@ const DEFAULT_SETTINGS = {
   opacity: 0.95,        // window opacity, from OPACITY_RANGE.min (most transparent) to 1 (opaque)
   accent: 'amber',      // accent color of the interface, one of ACCENTS
   unloadAfter: 30,      // minutes after which the pages not in use (all but the active tab) are closed, UNLOAD_RANGE
+  browseStart: '',      // start page of the free browsing tab: an http(s) address, '' = none
+  searchEngine: 'google', // search engine of the free browsing tab, one of SEARCH_ENGINES
+  searchCustom: '',     // address of the 'custom' search engine, with %s in place of the text; '' = none
+  fixedTabs: 'labels',  // fixed tabs (Home, Browse, Settings): 'labels' (icon and name) or 'icons' (icon only)
 };
 const UNLOAD_RANGE = { min: 5, max: 60 };
 // Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
+// Names of the search engines; their addresses are defined by the page (index.html).
+const SEARCH_ENGINES = ['google', 'bing', 'duckduckgo', 'brave', 'ecosia', 'startpage', 'custom'];
 const ACCENTS = ['amber', 'orange', 'red', 'pink', 'purple', 'blue', 'cyan', 'green'];
 // Below the minimum the window would be too hard to read.
 const OPACITY_RANGE = { min: 0.3, max: 1 };
@@ -42,10 +48,18 @@ function isValidSetting(key, value) {
   if (key === 'language') return isLanguageSetting(value);
   if (key === 'opacity') return Number.isFinite(value) && value >= OPACITY_RANGE.min && value <= OPACITY_RANGE.max;
   if (key === 'accent') return ACCENTS.includes(value);
+  if (key === 'browseStart') return value === '' || isHttpUrl(value);
+  if (key === 'fixedTabs') return value === 'labels' || value === 'icons';
+  if (key === 'searchEngine') return SEARCH_ENGINES.includes(value);
+  if (key === 'searchCustom') return value === '' || (value.includes('%s') && isHttpUrl(value.replaceAll('%s', 'x')));
   if (key === 'unloadAfter') {
     return Number.isInteger(value) && value >= UNLOAD_RANGE.min && value <= UNLOAD_RANGE.max;
   }
   return true;
+}
+
+function isHttpUrl(value) {
+  try { return /^https?:$/.test(new URL(value).protocol); } catch { return false; }
 }
 
 // Window options for the translucency, depending on how the platform obtains it.

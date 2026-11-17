@@ -43,8 +43,12 @@
   /* #tabs does not grow beyond its content, so the "+" sits right after the last tab */
   #tabs { flex: 0 1 auto; min-width: 0; display: flex; align-items: flex-end; overflow-x: hidden; scroll-behavior: smooth; }
   #tabs-wrap { flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: 4px; }
-  .arrow { padding: 3px 8px; }
-  #add-tab { padding: 3px 9px; font-weight: bold; font-size: 16px; }
+  /* Scroll arrows and "+": Material Icons "chevron_left", "chevron_right"
+     and "add" (Apache 2.0) */
+  #tabs-wrap > button { display: flex; align-items: center; justify-content: center; }
+  #tabs-wrap > button .icon { flex: none; width: 18px; height: 18px; fill: currentColor; }
+  .arrow { padding: 3px 4px; }
+  #add-tab { padding: 3px 6px; }
 
   /* Tab: label with ellipsis + close button, shaped like a tab whose active
      one is attached to the sheet below. Thin separators between inactive
@@ -54,9 +58,14 @@
   .tab.active::before, .tab:hover::before, .tab.active + .tab::before, .tab:hover + .tab::before { display: none; }
   .tab:hover { background: #161616; color: #ddd; }
   .tab.active { background: var(--sheet); color: #fff; box-shadow: inset 0 2px 0 var(--accent); }
+  /* The tab whose address is the page shown in another tab (see pageMatch) */
+  .tab.match, .tab.match:hover { background: var(--accent-soft); color: var(--accent-text); }
+  .tab.match::before, .tab.match + .tab::before { display: none; }
   .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* The ×: always on the active tab, on the others only on hover */
-  .tab .close { flex: none; width: 18px; height: 18px; line-height: 17px; text-align: center; border-radius: 4px; color: #aaa; visibility: hidden; }
+  /* The ×: always on the active tab, on the others only on hover
+     (Material Icons "close", Apache 2.0) */
+  .tab .close { flex: none; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; color: #aaa; visibility: hidden; }
+  .tab .close .icon { width: 14px; height: 14px; fill: currentColor; }
   .tab.active .close, .tab:hover .close { visibility: visible; }
   .tab .close:hover { background: #3a3a3a; color: #fff; }
 
@@ -67,13 +76,18 @@
   .tab.dragging:not(.active) { background: #222; color: #ddd; }
   .tab.dragging::before, .tab.dragging + .tab::before { display: none; }
 
-  /* Home: fixed, always in the accent color; when active, a tab too */
-  #bar > #home-btn { display: flex; align-items: center; gap: 6px; margin-right: 6px; padding: 0 12px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-text); font-weight: 500; }
-  #bar > #home-btn:hover { background: var(--accent-soft-hover); color: var(--accent-text); }
-  #home-btn .icon { font-size: 16px; line-height: 1; }
-  /* Settings, when open: a small tab as well */
-  #bar > #home-btn.active, #bar > #settings-btn.active { height: 32px; margin-bottom: 0; border-radius: 8px 8px 0 0; background: var(--sheet); box-shadow: inset 0 2px 0 var(--accent); font-weight: 500; }
-  #bar > #settings-btn.active { color: #fff; }
+  /* Fixed tabs (Home, Browse, Settings): text in the accent color, to tell
+     them from the sites' tabs; when active, attached to the sheet like a
+     tab. Icon and name, or the icon only (settings.fixedTabs = 'icons',
+     class on body; the name is then in the tooltip). */
+  #bar > .fixed { display: flex; align-items: center; gap: 6px; padding: 0 12px; border-radius: 6px; color: var(--accent-text); font-weight: 500; }
+  #bar > .fixed:hover { background: #222; color: var(--accent-text); }
+  #bar > .fixed.active { height: 32px; margin-bottom: 0; border-radius: 8px 8px 0 0; background: var(--sheet); box-shadow: inset 0 2px 0 var(--accent); }
+  #bar > #browse-btn { margin-right: 6px; }
+  /* Icons: Material Icons "home", "language" and "settings" (Apache 2.0) */
+  .fixed .icon { flex: none; width: 16px; height: 16px; fill: currentColor; }
+  body.fixed-icons #bar > .fixed { padding: 0 9px; }
+  body.fixed-icons .fixed .label { display: none; }
 
   /* Dialogs: confirmations and address input (#dialog), adding sites from
      an address or from bookmarks (#add-dialog) */
@@ -126,8 +140,24 @@
   /* Navigation bar of the active site, below the tabs */
   #nav { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
   #nav button { -webkit-app-region: no-drag; min-width: 32px; }
+  /* Icons of the navigation buttons: Material Icons "keyboard_tab"
+     (mirrored), "arrow_back", "arrow_forward", "refresh" and "push_pin"
+     (Apache 2.0) */
+  #nav button .icon { flex: none; width: 16px; height: 16px; fill: currentColor; }
+  #nav-site, #nav-back, #nav-forward, #nav-reload, #nav-pin { display: flex; align-items: center; justify-content: center; align-self: stretch; }
   button:disabled { opacity: 0.4; cursor: default; }
   button:disabled:hover { background: #2a2a2a; }
+  /* Address field of the free browsing tab */
+  #nav-url { flex: 1; min-width: 0; -webkit-app-region: no-drag; }
+  /* In the sites' tabs: the address only, selectable but not editable,
+     without border and background */
+  #nav-url[readonly], #nav-url[readonly]:focus { color: #aaa; background: transparent; border-color: transparent; }
+  #nav-url.invalid, #opt-browse-start.invalid, #opt-search-custom.invalid { border-color: #c55; }
+  #nav-pin { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 6px; }
+
+  /* Free browsing tab with no page open */
+  #browse-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; color: #888; text-align: center; }
+  #opt-browse-start, #opt-search-custom { flex: 1; min-width: 0; max-width: 420px; }
 
   /* Home */
   #home, .page { flex: 1; overflow-y: auto; padding: 24px; }
@@ -144,7 +174,6 @@
   .setting.check { align-items: flex-start; cursor: pointer; max-width: 720px; }
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
   .setting .desc { display: block; font-size: 13px; color: #999; margin-top: 2px; }
-  #settings-btn { padding: 3px 8px; }
   /* Content of the Home (notices and lists) and of the Settings, at most
      720px wide, centered in the page */
   #home > *, #settings > * { margin-inline: auto; }
@@ -199,7 +228,7 @@
   .hint.err { color: #f77; }
   input[type=range] { width: 220px; padding: 0; border: none; background: none; }
   #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
-  #opacity-setting { margin-top: 14px; }
+  #opacity-setting, #browse-start-setting, #search-setting, #fixed-tabs-setting { margin-top: 14px; }
   /* Memory: total, then one row per process (pages, interface, GPU...) */
   #memory-total { margin-top: 18px; font-size: 16px; }
   #opt-unload-value { min-width: 4em; font-variant-numeric: tabular-nums; }
@@ -218,21 +247,24 @@
 </head>
 <body>
   <div id="bar">
-    <button id="home-btn"><span class="icon">&#8962;</span><span data-i18n="bar.home"></span></button>
+    <button id="home-btn" class="fixed" data-i18n-title="bar.home"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span class="label" data-i18n="bar.home"></span></button>
+    <button id="browse-btn" class="fixed" data-i18n-title="bar.browseTitle"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg><span class="label" data-i18n="bar.browse"></span></button>
     <div id="tabs-wrap">
-      <button class="arrow" id="left" hidden>&#9664;</button>
+      <button class="arrow" id="left" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
       <div id="tabs"></div>
-      <button class="arrow" id="right" hidden>&#9654;</button>
-      <button id="add-tab" data-i18n-title="bar.addSite">+</button>
+      <button class="arrow" id="right" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
+      <button id="add-tab" data-i18n-title="bar.addSite"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
     </div>
-    <button id="settings-btn" data-i18n-title="bar.settings">&#9881;</button>
+    <button id="settings-btn" class="fixed" data-i18n-title="bar.settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span class="label" data-i18n="bar.settings"></span></button>
   </div>
 
   <div id="nav" hidden>
-    <button id="nav-site" data-i18n-title="nav.siteHome">&#8962;</button>
-    <button id="nav-back" data-i18n-title="nav.back">&#8592;</button>
-    <button id="nav-forward" data-i18n-title="nav.forward">&#8594;</button>
-    <button id="nav-reload" data-i18n-title="nav.reload">&#8635;</button>
+    <button id="nav-site" data-i18n-title="nav.siteHome"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path transform="matrix(-1 0 0 1 24 0)" d="M11.59 7.41L15.17 11H1v2h14.17l-3.59 3.59L13 18l6-6-6-6-1.41 1.41zM20 6v12h2V6h-2z"/></svg></button>
+    <button id="nav-back" data-i18n-title="nav.back"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button>
+    <button id="nav-forward" data-i18n-title="nav.forward"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg></button>
+    <button id="nav-reload" data-i18n-title="nav.reload"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
+    <input id="nav-url" type="text" spellcheck="false" hidden>
+    <button id="nav-pin" data-i18n-title="nav.pinTitle" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg><span data-i18n="nav.pin"></span></button>
   </div>
 
   <div id="home">
@@ -280,10 +312,29 @@
         <span class="desc" data-i18n="settings.hideOnBlurDesc"></span></span>
     </label>
 
+    <div class="setting" id="browse-start-setting">
+      <label for="opt-browse-start" data-i18n="settings.browseStart"></label>
+      <input id="opt-browse-start" type="text" spellcheck="false" data-i18n-placeholder="settings.browseStartPlaceholder">
+    </div>
+    <div class="hint" id="browse-start-hint" data-i18n="settings.browseStartDesc"></div>
+    <div class="setting" id="search-setting">
+      <label for="opt-search" data-i18n="settings.search"></label>
+      <select id="opt-search"></select>
+      <input id="opt-search-custom" type="text" spellcheck="false" placeholder="https://example.com/search?q=%s" hidden>
+    </div>
+    <div class="hint" id="search-hint" hidden></div>
+
     <h2 data-i18n="settings.appearance"></h2>
     <div class="setting">
       <span id="accent-label" data-i18n="settings.accent"></span>
       <div id="accents" role="radiogroup" aria-labelledby="accent-label"></div>
+    </div>
+    <div class="setting" id="fixed-tabs-setting">
+      <label for="opt-fixed-tabs" data-i18n="settings.fixedTabs"></label>
+      <select id="opt-fixed-tabs">
+        <option value="labels" data-i18n="settings.fixedTabsLabels"></option>
+        <option value="icons" data-i18n="settings.fixedTabsIcons"></option>
+      </select>
     </div>
     <div id="opacity-setting" hidden>
       <div class="setting">
@@ -313,7 +364,7 @@
 
   </div>
 
-  <div id="views" hidden></div>
+  <div id="views" hidden><div id="browse-empty" data-i18n="browse.empty" hidden></div></div>
 
   <div id="dialog" class="modal" hidden>
     <form class="box" id="dialog-form">
@@ -378,7 +429,7 @@
   const $ = (id) => document.getElementById(id);
   const homeBtn = $('home-btn'), tabsEl = $('tabs'), leftBtn = $('left'), rightBtn = $('right');
   const home = $('home'), listsEl = $('lists'), views = $('views');
-  const settingsBtn = $('settings-btn'), settingsPage = $('settings');
+  const settingsBtn = $('settings-btn'), settingsPage = $('settings'), browseBtn = $('browse-btn');
 
   // ---------- site lists ----------
   //
@@ -388,7 +439,7 @@
   // null (no application detected: the general list, which always exists
   // and cannot be removed). `name` is the application's name, or the window
   // title when the list was created (null for the general list). `activeTab`
-  // is the tab the list was left on: a site's id, HOME or SETTINGS.
+  // is the tab the list was left on: a site's id, HOME, SETTINGS or BROWSE.
   //
   // The current list, whose sites are the tabs, is the one chosen by hand
   // (pinnedId) if any, otherwise the one of the application the overlay was
@@ -401,7 +452,9 @@
   const webviews = new Map();   // site id -> webview (one "tab" per site, created on first access, kept across lists)
   const SETTINGS = ':settings'; // value of `active` for the Settings page
   const HOME = ':home';         // a list's `activeTab` when it was left on the Home (`active` null)
-  let active = null;            // id of the active site, null = Home, SETTINGS = Settings
+  const BROWSE = ':browse';     // value of `active` for the free browsing tab (one for all lists)
+  let active = null;            // id of the active site, null = Home, SETTINGS = Settings, BROWSE = free browsing
+  // Whether a tab shows a page (webview): the sites and the free browsing tab.
   const isSite = (id) => id !== null && id !== SETTINGS;
   let editing = null;           // id of the site being edited on the Home page
   const expanded = new Set();   // ids of the other lists opened on the Home page
@@ -507,13 +560,16 @@
 
   // ---------- tab / webview ----------
 
-  // `url`: the page to load if the webview is created (default: the last
-  // page visited if its page was closed for being unused, see unloadPage,
-  // otherwise the site's address).
-  function getWebview(site, url = lastUrls.get(site.id) ?? site.url) {
-    let wv = webviews.get(site.id);
+  // `id`: a site's id or BROWSE. `url`: the page to load if the webview is
+  // created (default: the last page visited if its page was closed for
+  // being unused, see unloadPage, otherwise the site's address, or the start
+  // page for the free browsing tab). Returns null if there is nothing to load
+  // (free browsing tab without a start page).
+  function getWebview(id, url = lastUrls.get(id) ?? (id === BROWSE ? browseStart : findSite(id)?.url)) {
+    let wv = webviews.get(id);
     if (!wv) {
-      lastUrls.delete(site.id);
+      if (!url) return null;
+      lastUrls.delete(id);
       wv = document.createElement('webview');
       // Windows opened by the site (logins, target=_blank): see 'site popups' in main.js.
       wv.setAttribute('allowpopups', '');
@@ -521,16 +577,19 @@
       wv.style.display = 'none';
       // Fallback for sites that set the title via JavaScript: use the first
       // title the page reports, if we don't have one already.
+      // The id is looked up at every event: a page of the free browsing tab
+      // or of a site becomes another site's when it is pinned (see pinPage).
+      const idOf = () => { for (const [k, v] of webviews) if (v === wv) return k; return null; };
       wv.addEventListener('page-title-updated', (e) => {
-        const s = findSite(site.id);
+        const s = findSite(idOf());
         if (s && !s.title && e.title) { s.title = e.title; save(); render(); }
       });
-      // History changes on every navigation: update Back/Forward.
+      // History changes on every navigation: update Back/Forward (and the address).
       for (const ev of ['dom-ready', 'did-navigate', 'did-navigate-in-page', 'did-stop-loading']) {
-        wv.addEventListener(ev, () => { if (active === site.id) updateNav(); });
+        wv.addEventListener(ev, () => { if (active === idOf()) updateNav(ev !== 'did-stop-loading'); });
       }
       views.append(wv);
-      webviews.set(site.id, wv);
+      webviews.set(id, wv);
     }
     return wv;
   }
@@ -550,14 +609,17 @@
     if (cur.id && cur.activeTab !== tab) { cur.activeTab = tab; save(); }
     active = id;
     watchMemory(id === SETTINGS);
-    if (isSite(id)) getWebview(findSite(id));
+    if (isSite(id)) getWebview(id);
     home.hidden = id !== null;
     settingsPage.hidden = id !== SETTINGS;
     views.hidden = !isSite(id);
     for (const [wid, wv] of webviews) wv.style.display = wid === id ? 'flex' : 'none';
+    browseEmpty.hidden = !(id === BROWSE && !webviews.has(BROWSE));
     markIdle();
     renderTabs();
-    updateNav();
+    updateNav(true);
+    // Free browsing tab with no page: the address is typed right away.
+    if (id === BROWSE && !webviews.has(BROWSE)) navUrl.focus();
   }
 
   // At startup and after the current list has changed (another application,
@@ -570,7 +632,7 @@
     const last = cur.activeTab;
     let id;
     if (last === HOME) id = null;
-    else if (last === SETTINGS) id = SETTINGS;
+    else if (last === SETTINGS || last === BROWSE) id = last;
     else if (cur.sites.some((s) => s.id === last)) id = last;
     else id = cur.sites[0]?.id ?? null;
     activate(id);
@@ -663,24 +725,172 @@
   // ---------- navigation ----------
 
   const navEl = $('nav'), navBack = $('nav-back'), navForward = $('nav-forward');
+  const navSite = $('nav-site'), navReload = $('nav-reload'), navUrl = $('nav-url'), navPin = $('nav-pin');
+  const browseEmpty = $('browse-empty');
+  let browseStart = '';   // start page of the free browsing tab (settings.browseStart), '' = none
 
-  function updateNav() {
+  // The address field shows the page's address in every tab with a page;
+  // it can be edited only in the free browsing tab. `showUrl`: update it
+  // even while it has the focus (otherwise left alone, so as not to replace
+  // what the user is typing), after a navigation or a tab change.
+  function updateNav(showUrl = false) {
     navEl.hidden = !isSite(active);
     const wv = isSite(active) ? webviews.get(active) : null;
-    // canGoBack/canGoForward throw until the webview is ready.
-    let back = false, forward = false;
+    // canGoBack/canGoForward/getURL throw until the webview is ready.
+    let back = false, forward = false, url = '';
     try { back = wv.canGoBack(); forward = wv.canGoForward(); } catch { /* not ready yet */ }
+    try { url = wv.getURL(); } catch { url = wv?.src ?? ''; }
     navBack.disabled = !back;
     navForward.disabled = !forward;
+    const browse = active === BROWSE;
+    navUrl.hidden = !isSite(active);
+    navUrl.readOnly = !browse;
+    navUrl.placeholder = !browse ? '' : searchName() ? t('nav.addressWith', { engine: searchName() }) : t('nav.address');
+    navPin.hidden = !isSite(active);
+    // In the free browsing tab, the "site home" button goes to the start page.
+    navSite.disabled = browse && !browseStart;
+    navReload.disabled = !wv;
+    // A page that is already a tab of the list (the tab itself, on its
+    // address, or another one) cannot be pinned: another tab is highlighted.
+    // Also after the in-page navigations (history.pushState), with which
+    // many sites change page without loading it.
+    const match = isSite(active) ? pageMatch(url) : null;
+    navPin.disabled = !/^https?:/i.test(url) || !!match;
+    navPin.title = match ? t('nav.pinned', { name: siteName(match) }) : t('nav.pinTitle');
+    markMatch(match && match.id !== active ? match.id : null);
+    if (showUrl || document.activeElement !== navUrl || navUrl.readOnly) {
+      navUrl.value = /^https?:/i.test(url) ? url : '';
+      navUrl.classList.remove('invalid');
+    }
+  }
+
+  // Search engines of the free browsing tab (settings.searchEngine: the
+  // names are validated in main.js, SEARCH_ENGINES): `%s` is replaced by the
+  // encoded text. 'custom' uses the address in settings.searchCustom; while
+  // it has none, Google is used.
+  const SEARCH_ENGINES = {
+    google: { name: 'Google', url: 'https://www.google.com/search?q=%s' },
+    bing: { name: 'Bing', url: 'https://www.bing.com/search?q=%s' },
+    duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=%s' },
+    brave: { name: 'Brave Search', url: 'https://search.brave.com/search?q=%s' },
+    ecosia: { name: 'Ecosia', url: 'https://www.ecosia.org/search?q=%s' },
+    startpage: { name: 'Startpage', url: 'https://www.startpage.com/do/search?q=%s' },
+  };
+  let searchEngine = 'google', searchCustom = '';
+
+  const searchTemplate = () => searchEngine === 'custom'
+    ? searchCustom || SEARCH_ENGINES.google.url
+    : (SEARCH_ENGINES[searchEngine] ?? SEARCH_ENGINES.google).url;
+  // Name shown in the field, null for a custom engine.
+  const searchName = () => searchEngine === 'custom' ? (searchCustom ? null : SEARCH_ENGINES.google.name)
+    : (SEARCH_ENGINES[searchEngine] ?? SEARCH_ENGINES.google).name;
+
+  // What is typed in the field of the free browsing tab: an address (with a
+  // scheme, or without spaces and with a host such as "example.com",
+  // "localhost:8080" or an IP address), otherwise a search. Returns the page
+  // to open, null if there is nothing to open (empty, or an invalid address
+  // with a scheme).
+  function addressOrSearch(raw) {
+    const text = raw.trim();
+    if (!text) return null;
+    if (/^[a-z][a-z\d+.-]*:\/\//i.test(text)) return normalizeUrl(text);
+    const host = /^([^\s/?#:]+|\[[\da-f:.]+\])(:\d+)?([/?#]\S*)?$/i.exec(text)?.[1];
+    const isHost = host && (host === 'localhost' || host.startsWith('[') ||
+      /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
+      /^([\p{L}\p{N}-]+\.)+\p{L}[\p{L}\p{N}-]*$/iu.test(host));
+    if (isHost) { const url = normalizeUrl(text); if (url) return url; }
+    return searchTemplate().replaceAll('%s', encodeURIComponent(text));
+  }
+
+  // The current list's site whose address is the page's (the active tab's
+  // own site first), or null. Ignored: http/https, "www.", the final "/" of
+  // the path and the fragment (#...).
+  function pageMatch(url) {
+    const key = (u) => {
+      const n = normalizeUrl(u ?? '');
+      if (!n) return null;
+      const { host, pathname, search } = new URL(n);
+      return host.replace(/^www\./, '') + pathname.replace(/\/+$/, '') + search;
+    };
+    const page = key(url);
+    if (!page) return null;
+    const own = findSite(active);
+    if (own && key(own.url) === page) return own;
+    return currentList().sites.find((s) => key(s.url) === page) || null;
+  }
+
+  // Highlights the tab of the site `id` (null: none), scrolling to it.
+  let matchId = null;
+  function markMatch(id) {
+    if (id !== matchId) {
+      matchId = id;
+      if (id) tabsEl.querySelector(`.tab[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+    for (const tab of tabsEl.children) tab.classList.toggle('match', !!id && tab.dataset.id === id);
+  }
+
+  // Opens an address in the free browsing tab.
+  function browseTo(url) {
+    const wv = webviews.get(BROWSE);
+    // loadURL throws until the page is ready (e.g. the start page still loading).
+    if (wv) { try { wv.loadURL(url); } catch { wv.src = url; } } else getWebview(BROWSE, url);
+    activate(BROWSE);
   }
 
   navBack.onclick = () => webviews.get(active)?.goBack();
   navForward.onclick = () => webviews.get(active)?.goForward();
-  $('nav-reload').onclick = () => webviews.get(active)?.reload();
-  $('nav-site').onclick = () => {
+  navReload.onclick = () => webviews.get(active)?.reload();
+  navSite.onclick = () => {
+    if (active === BROWSE) { if (browseStart) browseTo(browseStart); return; }
     const site = findSite(active);
     if (site) webviews.get(active)?.loadURL(site.url);
   };
+  navUrl.onkeydown = (e) => {
+    if (e.key === 'Escape') { updateNav(true); webviews.get(active)?.focus(); return; }
+    if (e.key !== 'Enter' || navUrl.readOnly) return;
+    const url = addressOrSearch(navUrl.value);
+    if (!url) { navUrl.classList.add('invalid'); return; }
+    browseTo(url);
+    webviews.get(BROWSE)?.focus();
+  };
+  navUrl.oninput = () => navUrl.classList.remove('invalid');
+  navUrl.onfocus = () => navUrl.select();
+  navPin.onclick = pinPage;
+
+  // Pins the page of the active tab: it becomes a new tab (site) of the
+  // current list, keeping its page and history. From the free browsing tab
+  // the new tab goes at the end and the free browsing tab starts again from
+  // its start page (or empty); from a site's tab it goes right after it, and
+  // that tab starts again from its site's address when it is opened.
+  // After a confirmation (the page may change meanwhile: it is read again).
+  async function pinPage() {
+    const from = active;
+    const wv = webviews.get(from);
+    const page = () => {
+      try { return { url: normalizeUrl(wv.getURL()), title: wv.getTitle() || null }; } catch { return { url: null, title: null }; }
+    };
+    let { url, title } = page();
+    if (!url || pageMatch(url)) return;
+    const ok = await openDialog({
+      message: t('nav.pinConfirm', { name: title || url, list: listName(currentList()) }),
+      okLabel: t('nav.pin'),
+    });
+    if (!ok || active !== from || webviews.get(from) !== wv) return;
+    ({ url, title } = page());
+    if (!url || pageMatch(url)) return;
+    const site = { id: crypto.randomUUID(), url, title };
+    const l = materialize(currentList());
+    const at = l.sites.findIndex((s) => s.id === from);
+    if (at >= 0) l.sites.splice(at + 1, 0, site); else l.sites.push(site);
+    webviews.delete(from);
+    idleSince.delete(from);
+    lastUrls.delete(from);
+    webviews.set(site.id, wv);
+    save();
+    activate(site.id);
+    render();
+    if (!title) resolveTitle(site);
+  }
 
   // ---------- drag to reorder ----------
   //
@@ -798,10 +1008,13 @@
 
   // ---------- render ----------
 
+  const CLOSE_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+
   function renderTabs() {
     if (dragging) return;   // done at the end of the drag (see makeSortable)
     homeBtn.classList.toggle('active', active === null);
     settingsBtn.classList.toggle('active', active === SETTINGS);
+    browseBtn.classList.toggle('active', active === BROWSE);
     tabsEl.replaceChildren(...currentList().sites.map((site) => {
       const tab = el('div', 'tab');
       tab.dataset.id = site.id;
@@ -811,13 +1024,16 @@
       tab.onclick = () => activate(site.id);
       // Middle click on the tab: close it, as in browsers.
       tab.onauxclick = (e) => { if (e.button === 1) confirmRemove(site.id); };
-      const close = el('span', 'close', '×');
+      const close = el('span', 'close');
+      close.innerHTML = CLOSE_ICON;
       close.title = t('site.remove');
       close.onclick = (e) => { e.stopPropagation(); confirmRemove(site.id); };
       tab.append(el('span', 'label', siteName(site)), close);
       return tab;
     }));
     tabsEl.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    // The sites may have changed: the tab to highlight and the Pin button too.
+    updateNav();
     updateArrows();
   }
 
@@ -1024,14 +1240,18 @@
     render();
   }
 
+  // If the tab removed was the active one, the next tab is opened, else the
+  // previous one, else the free browsing tab.
   function removeSite(id) {
     const l = listOfSite(id);
+    const at = l.sites.findIndex((s) => s.id === id);
+    const neighbour = l.sites[at + 1] ?? l.sites[at - 1] ?? null;
     l.sites = l.sites.filter((s) => s.id !== id);
     if (l.activeTab === id) l.activeTab = null;
     closeWebview(id);
     if (editing === id) editing = null;
     save();
-    if (active === id) activate(null);
+    if (active === id) activate(neighbour?.id ?? BROWSE);
     render();
   }
 
@@ -1095,6 +1315,10 @@
   async function openSiteUrl(url, contentsId) {
     const host = hostOf(url);
     if (!host) return;
+    // Asked by the free browsing tab: it opens there.
+    let fromBrowse = false;
+    try { fromBrowse = webviews.get(BROWSE)?.getWebContentsId() === contentsId; } catch { /* not attached yet */ }
+    if (fromBrowse) { browseTo(url); return; }
     const sites = currentList().sites.filter((s) => hostOf(s.url) === host);
     const opener = sites.find((s) => {
       try { return webviews.get(s.id)?.getWebContentsId() === contentsId; } catch { return false; }
@@ -1102,7 +1326,7 @@
     const site = opener ?? sites[0];
     if (site) {
       const wv = webviews.get(site.id);
-      if (wv) wv.src = url; else getWebview(site, url);
+      if (wv) wv.src = url; else getWebview(site.id, url);
       activate(site.id);
       return;
     }
@@ -1697,6 +1921,7 @@
   });
 
   homeBtn.onclick = () => activate(null);
+  browseBtn.onclick = () => activate(BROWSE);
   settingsBtn.onclick = () => activate(SETTINGS);
   window.overlay.onSettings(() => activate(SETTINGS));
   $('add-tab').onclick = promptAddTab;
@@ -1807,6 +2032,105 @@
     }
   }
 
+  // ---------- start page of the free browsing tab ----------
+  //
+  // Saved when the field is left or Enter is pressed: empty (no start page)
+  // or a valid address, otherwise the field is marked and nothing is saved.
+
+  const browseStartInput = $('opt-browse-start'), browseStartHint = $('browse-start-hint');
+
+  function initBrowseStart(value) {
+    browseStart = value;
+    browseStartInput.value = value;
+    const commit = () => {
+      const raw = browseStartInput.value.trim();
+      const url = raw ? normalizeUrl(raw) : '';
+      const invalid = url === null;
+      browseStartInput.classList.toggle('invalid', invalid);
+      browseStartHint.classList.toggle('err', invalid);
+      browseStartHint.textContent = t(invalid ? 'settings.browseStartInvalid' : 'settings.browseStartDesc');
+      if (invalid) return;
+      browseStartInput.value = url;
+      if (url === browseStart) return;
+      browseStart = url;
+      window.overlay.setSetting('browseStart', url);
+    };
+    browseStartInput.onchange = commit;
+    browseStartInput.onkeydown = (e) => { if (e.key === 'Enter') commit(); };
+  }
+
+  // ---------- search engine of the free browsing tab ----------
+  //
+  // One of SEARCH_ENGINES, or a custom address with %s in place of the text
+  // (shown only for 'custom'; saved like the start page, when valid).
+
+  const searchSelect = $('opt-search'), searchCustomInput = $('opt-search-custom'), searchHint = $('search-hint');
+
+  // A custom address: an http(s) address containing %s, normalized like the
+  // sites' (https:// added if missing); null if invalid, '' if empty.
+  function normalizeTemplate(raw) {
+    const text = raw.trim();
+    if (!text) return '';
+    if (!text.includes('%s')) return null;
+    const MARK = 'QUERY0SEARCH0TEXT';
+    return normalizeUrl(text.replaceAll('%s', MARK))?.replaceAll(MARK, '%s') ?? null;
+  }
+
+  function renderSearch(invalid = false) {
+    const options = Object.entries(SEARCH_ENGINES).map(([key, e]) => new Option(e.name, key));
+    searchSelect.replaceChildren(...options, new Option(t('settings.searchCustom'), 'custom'));
+    searchSelect.value = searchEngine;
+    const custom = searchEngine === 'custom';
+    searchCustomInput.hidden = searchHint.hidden = !custom;
+    searchCustomInput.classList.toggle('invalid', invalid);
+    searchHint.classList.toggle('err', invalid);
+    searchHint.textContent = t(invalid ? 'settings.searchCustomInvalid' : 'settings.searchCustomDesc');
+    updateNav();
+  }
+
+  function initSearch(settings) {
+    searchEngine = settings.searchEngine;
+    searchCustom = settings.searchCustom;
+    searchCustomInput.value = searchCustom;
+    searchSelect.onchange = () => {
+      searchEngine = searchSelect.value;
+      window.overlay.setSetting('searchEngine', searchEngine);
+      renderSearch();
+      if (searchEngine === 'custom' && !searchCustom) searchCustomInput.focus();
+    };
+    const commit = () => {
+      const url = normalizeTemplate(searchCustomInput.value);
+      if (url === null) { renderSearch(true); return; }
+      searchCustomInput.value = url;
+      renderSearch();
+      if (url === searchCustom) return;
+      searchCustom = url;
+      window.overlay.setSetting('searchCustom', url);
+      updateNav();
+    };
+    searchCustomInput.onchange = commit;
+    searchCustomInput.onkeydown = (e) => { if (e.key === 'Enter') commit(); };
+    renderSearch();
+  }
+
+  // ---------- fixed tabs: icon and name, or icon only ----------
+
+  const fixedTabsSelect = $('opt-fixed-tabs');
+
+  function applyFixedTabs(value) {
+    document.body.classList.toggle('fixed-icons', value === 'icons');
+    updateArrows();
+  }
+
+  function initFixedTabs(value) {
+    fixedTabsSelect.value = value;
+    applyFixedTabs(value);
+    fixedTabsSelect.onchange = () => {
+      applyFixedTabs(fixedTabsSelect.value);
+      window.overlay.setSetting('fixedTabs', fixedTabsSelect.value);
+    };
+  }
+
   // ---------- opacity ----------
   //
   // The slider works in percent; the setting is a fraction (0.3–1). It is
@@ -1904,11 +2228,12 @@
   // null for the minor ones (added up in a single row).
   function memoryLabel(p, siteOfContents) {
     if (p.ui) return t('memory.ui');
-    const sites = p.contents.map((id) => findSite(siteOfContents.get(id))).filter(Boolean);
-    if (sites.length) {
-      return sites.map((s) => {
-        const min = minutesToUnload(s.id);
-        const label = `${siteName(s)} · ${listName(listOfSite(s.id))}`;
+    const ids = p.contents.map((id) => siteOfContents.get(id)).filter((id) => id === BROWSE || findSite(id));
+    if (ids.length) {
+      return ids.map((id) => {
+        const min = minutesToUnload(id);
+        const s = findSite(id);
+        const label = s ? `${siteName(s)} · ${listName(listOfSite(id))}` : t('bar.browse');
         return min === null ? label : `${label} ${t('memory.unloadIn', { count: min })}`;
       }).join(', ');
     }
@@ -2002,6 +2327,7 @@
     // Texts built while rendering, and messages still in the old language.
     showError();
     render();
+    renderSearch(searchCustomInput.classList.contains('invalid'));
     renderMemory();
     showUnloadAfter();
     if (!capturing) showShortcut(currentShortcut);
@@ -2026,6 +2352,9 @@
     showShortcut(currentShortcut);
     initOptions(state.settings);
     initUnload(state.unloadRange, state.settings);
+    initBrowseStart(state.settings.browseStart);
+    initSearch(state.settings);
+    initFixedTabs(state.settings.fixedTabs);
     $('app-version').textContent = `Overlay Browser ${state.version}`;
     $('app-repo').onclick = (e) => { e.preventDefault(); window.overlay.openRepo(); };
     // No page is open yet: the current list starts from its first tab,
