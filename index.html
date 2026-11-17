@@ -70,16 +70,18 @@
   .tab.dragging:not(.active) { background: #222; color: #ddd; }
   .tab.dragging::before, .tab.dragging + .tab::before { display: none; }
 
-  /* Home: fixed, always in the accent color; when active, a tab too */
-  #bar > #home-btn { display: flex; align-items: center; gap: 6px; margin-right: 6px; padding: 0 12px; border-radius: 6px; background: var(--accent-soft); color: var(--accent-text); font-weight: 500; }
-  #bar > #home-btn:hover { background: var(--accent-soft-hover); color: var(--accent-text); }
-  #home-btn .icon { font-size: 16px; line-height: 1; }
-  /* Settings, when open: a small tab as well */
-  #bar > #home-btn.active, #bar > #settings-btn.active, #bar > #browse-btn.active { height: 32px; margin-bottom: 0; border-radius: 8px 8px 0 0; background: var(--sheet); box-shadow: inset 0 2px 0 var(--accent); font-weight: 500; }
-  #bar > #settings-btn.active, #bar > #browse-btn.active { color: #fff; }
-  /* Free browsing tab: always present, right after the Home */
-  #bar > #browse-btn { display: flex; align-items: center; gap: 6px; margin-right: 6px; padding: 0 12px; }
-  #browse-btn .icon { font-size: 15px; line-height: 1; }
+  /* Fixed tabs (Home, Browse, Settings): text in the accent color, to tell
+     them from the sites' tabs; when active, attached to the sheet like a
+     tab. Icon and name, or the icon only (settings.fixedTabs = 'icons',
+     class on body; the name is then in the tooltip). */
+  #bar > .fixed { display: flex; align-items: center; gap: 6px; padding: 0 12px; border-radius: 6px; color: var(--accent-text); font-weight: 500; }
+  #bar > .fixed:hover { background: #222; color: var(--accent-text); }
+  #bar > .fixed.active { height: 32px; margin-bottom: 0; border-radius: 8px 8px 0 0; background: var(--sheet); box-shadow: inset 0 2px 0 var(--accent); }
+  #bar > #browse-btn { margin-right: 6px; }
+  /* Icons: Material Icons "home", "language" and "settings" (Apache 2.0) */
+  .fixed .icon { flex: none; width: 16px; height: 16px; fill: currentColor; }
+  body.fixed-icons #bar > .fixed { padding: 0 9px; }
+  body.fixed-icons .fixed .label { display: none; }
 
   /* Dialogs: confirmations and address input (#dialog), adding sites from
      an address or from bookmarks (#add-dialog) */
@@ -162,7 +164,6 @@
   .setting.check { align-items: flex-start; cursor: pointer; max-width: 720px; }
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
   .setting .desc { display: block; font-size: 13px; color: #999; margin-top: 2px; }
-  #settings-btn { padding: 3px 8px; }
   /* Content of the Home (notices and lists) and of the Settings, at most
      720px wide, centered in the page */
   #home > *, #settings > * { margin-inline: auto; }
@@ -217,7 +218,7 @@
   .hint.err { color: #f77; }
   input[type=range] { width: 220px; padding: 0; border: none; background: none; }
   #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
-  #opacity-setting, #browse-start-setting, #search-setting { margin-top: 14px; }
+  #opacity-setting, #browse-start-setting, #search-setting, #fixed-tabs-setting { margin-top: 14px; }
   /* Memory: total, then one row per process (pages, interface, GPU...) */
   #memory-total { margin-top: 18px; font-size: 16px; }
   #opt-unload-value { min-width: 4em; font-variant-numeric: tabular-nums; }
@@ -236,15 +237,15 @@
 </head>
 <body>
   <div id="bar">
-    <button id="home-btn"><span class="icon">&#8962;</span><span data-i18n="bar.home"></span></button>
-    <button id="browse-btn" data-i18n-title="bar.browseTitle"><span class="icon">&#9741;</span><span data-i18n="bar.browse"></span></button>
+    <button id="home-btn" class="fixed" data-i18n-title="bar.home"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><span class="label" data-i18n="bar.home"></span></button>
+    <button id="browse-btn" class="fixed" data-i18n-title="bar.browseTitle"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95c-.32-1.25-.78-2.45-1.38-3.56 1.84.63 3.37 1.91 4.33 3.56zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2 0 .68.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-1.84-.63-3.37-1.9-4.33-3.56zm2.95-8H5.08c.96-1.66 2.49-2.93 4.33-3.56C8.81 5.55 8.35 6.75 8.03 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2 0-.68.07-1.35.16-2h4.68c.09.65.16 1.32.16 2 0 .68-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-.96 1.65-2.49 2.93-4.33 3.56zM16.36 14c.08-.66.14-1.32.14-2 0-.68-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z"/></svg><span class="label" data-i18n="bar.browse"></span></button>
     <div id="tabs-wrap">
       <button class="arrow" id="left" hidden>&#9664;</button>
       <div id="tabs"></div>
       <button class="arrow" id="right" hidden>&#9654;</button>
       <button id="add-tab" data-i18n-title="bar.addSite">+</button>
     </div>
-    <button id="settings-btn" data-i18n-title="bar.settings">&#9881;</button>
+    <button id="settings-btn" class="fixed" data-i18n-title="bar.settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><span class="label" data-i18n="bar.settings"></span></button>
   </div>
 
   <div id="nav" hidden>
@@ -317,6 +318,13 @@
     <div class="setting">
       <span id="accent-label" data-i18n="settings.accent"></span>
       <div id="accents" role="radiogroup" aria-labelledby="accent-label"></div>
+    </div>
+    <div class="setting" id="fixed-tabs-setting">
+      <label for="opt-fixed-tabs" data-i18n="settings.fixedTabs"></label>
+      <select id="opt-fixed-tabs">
+        <option value="labels" data-i18n="settings.fixedTabsLabels"></option>
+        <option value="icons" data-i18n="settings.fixedTabsIcons"></option>
+      </select>
     </div>
     <div id="opacity-setting" hidden>
       <div class="setting">
@@ -2068,6 +2076,24 @@
     renderSearch();
   }
 
+  // ---------- fixed tabs: icon and name, or icon only ----------
+
+  const fixedTabsSelect = $('opt-fixed-tabs');
+
+  function applyFixedTabs(value) {
+    document.body.classList.toggle('fixed-icons', value === 'icons');
+    updateArrows();
+  }
+
+  function initFixedTabs(value) {
+    fixedTabsSelect.value = value;
+    applyFixedTabs(value);
+    fixedTabsSelect.onchange = () => {
+      applyFixedTabs(fixedTabsSelect.value);
+      window.overlay.setSetting('fixedTabs', fixedTabsSelect.value);
+    };
+  }
+
   // ---------- opacity ----------
   //
   // The slider works in percent; the setting is a fraction (0.3–1). It is
@@ -2291,6 +2317,7 @@
     initUnload(state.unloadRange, state.settings);
     initBrowseStart(state.settings.browseStart);
     initSearch(state.settings);
+    initFixedTabs(state.settings.fixedTabs);
     $('app-version').textContent = `Overlay Browser ${state.version}`;
     $('app-repo').onclick = (e) => { e.preventDefault(); window.overlay.openRepo(); };
     // No page is open yet: the current list starts from its first tab,
