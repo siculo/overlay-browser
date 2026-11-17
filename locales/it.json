@@ -8,6 +8,8 @@
   "tray.quit": "Esci",
 
   "bar.home": "Home",
+  "bar.browse": "Naviga",
+  "bar.browseTitle": "Navigazione libera: apri qualsiasi indirizzo",
   "bar.addSite": "Aggiungi un sito",
   "bar.settings": "Impostazioni",
 
@@ -15,6 +17,11 @@
   "nav.back": "Indietro",
   "nav.forward": "Avanti",
   "nav.reload": "Ricarica",
+  "nav.address": "Digita un indirizzo",
+  "nav.pin": "Fissa",
+  "nav.pinTitle": "Fissa questa pagina come nuovo tab della lista",
+
+  "browse.empty": "Digita un indirizzo nella barra qui sopra. Puoi impostare una pagina iniziale nelle Impostazioni.",
 
   "home.addPlaceholder": "Indirizzo del sito da aggiungere (es. https://example.com)",
   "home.add": "Aggiungi",
@@ -102,6 +109,10 @@
   "settings.behavior": "Comportamento",
   "settings.hideOnBlur": "Nascondi l'overlay quando perde il focus",
   "settings.hideOnBlurDesc": "Ad esempio cliccando sul gioco o su un'altra finestra.",
+  "settings.browseStart": "Pagina iniziale della navigazione libera:",
+  "settings.browseStartPlaceholder": "Nessuna",
+  "settings.browseStartDesc": "La pagina che il tab Naviga apre all'inizio. Vuota: nessuna pagina, si digita un indirizzo.",
+  "settings.browseStartInvalid": "Indirizzo non valido.",
   "settings.appearance": "Aspetto",
   "settings.accent": "Colore d'accento:",
   "accent.amber": "Ambra",

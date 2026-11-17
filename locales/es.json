@@ -8,6 +8,8 @@
   "tray.quit": "Salir",
 
   "bar.home": "Inicio",
+  "bar.browse": "Navegar",
+  "bar.browseTitle": "Navegación libre: abre cualquier dirección",
   "bar.addSite": "Añadir un sitio",
   "bar.settings": "Ajustes",
 
@@ -15,6 +17,11 @@
   "nav.back": "Atrás",
   "nav.forward": "Adelante",
   "nav.reload": "Recargar",
+  "nav.address": "Escribe una dirección",
+  "nav.pin": "Fijar",
+  "nav.pinTitle": "Fijar esta página como nueva pestaña de la lista",
+
+  "browse.empty": "Escribe una dirección en la barra de arriba. Puedes definir una página de inicio en los Ajustes.",
 
   "home.addPlaceholder": "Dirección del sitio que añadir (p. ej. https://example.com)",
   "home.add": "Añadir",
@@ -102,6 +109,10 @@
   "settings.behavior": "Comportamiento",
   "settings.hideOnBlur": "Ocultar el overlay cuando pierde el foco",
   "settings.hideOnBlurDesc": "Por ejemplo, al hacer clic en el juego o en otra ventana.",
+  "settings.browseStart": "Página de inicio de la navegación libre:",
+  "settings.browseStartPlaceholder": "Ninguna",
+  "settings.browseStartDesc": "La página que abre al principio la pestaña Navegar. Vacía: ninguna página, se escribe una dirección.",
+  "settings.browseStartInvalid": "Dirección no válida.",
   "settings.appearance": "Apariencia",
   "settings.accent": "Color de acento:",
   "accent.amber": "Ámbar",

@@ -8,6 +8,8 @@
   "tray.quit": "Quit",
 
   "bar.home": "Home",
+  "bar.browse": "Browse",
+  "bar.browseTitle": "Free browsing: open any address",
   "bar.addSite": "Add a site",
   "bar.settings": "Settings",
 
@@ -15,6 +17,11 @@
   "nav.back": "Back",
   "nav.forward": "Forward",
   "nav.reload": "Reload",
+  "nav.address": "Type an address",
+  "nav.pin": "Pin",
+  "nav.pinTitle": "Pin this page as a new tab of the list",
+
+  "browse.empty": "Type an address in the bar above. You can set a start page in the Settings.",
 
   "home.addPlaceholder": "Address of the site to add (e.g. https://example.com)",
   "home.add": "Add",
@@ -102,6 +109,10 @@
   "settings.behavior": "Behavior",
   "settings.hideOnBlur": "Hide the overlay when it loses focus",
   "settings.hideOnBlurDesc": "For example when clicking on the game or on another window.",
+  "settings.browseStart": "Free browsing start page:",
+  "settings.browseStartPlaceholder": "None",
+  "settings.browseStartDesc": "The page the Browse tab opens at first. Empty: no page, you type an address.",
+  "settings.browseStartInvalid": "Invalid address.",
   "settings.appearance": "Appearance",
   "settings.accent": "Accent color:",
   "accent.amber": "Amber",

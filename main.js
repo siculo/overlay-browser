@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS = {
   opacity: 0.95,        // window opacity, from OPACITY_RANGE.min (most transparent) to 1 (opaque)
   accent: 'amber',      // accent color of the interface, one of ACCENTS
   unloadAfter: 30,      // minutes after which the pages not in use (all but the active tab) are closed, UNLOAD_RANGE
+  browseStart: '',      // start page of the free browsing tab: an http(s) address, '' = none
 };
 const UNLOAD_RANGE = { min: 5, max: 60 };
 // Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
@@ -42,10 +43,15 @@ function isValidSetting(key, value) {
   if (key === 'language') return isLanguageSetting(value);
   if (key === 'opacity') return Number.isFinite(value) && value >= OPACITY_RANGE.min && value <= OPACITY_RANGE.max;
   if (key === 'accent') return ACCENTS.includes(value);
+  if (key === 'browseStart') return value === '' || isHttpUrl(value);
   if (key === 'unloadAfter') {
     return Number.isInteger(value) && value >= UNLOAD_RANGE.min && value <= UNLOAD_RANGE.max;
   }
   return true;
+}
+
+function isHttpUrl(value) {
+  try { return /^https?:$/.test(new URL(value).protocol); } catch { return false; }
 }
 
 // Window options for the translucency, depending on how the platform obtains it.

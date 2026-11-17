@@ -8,6 +8,8 @@
   "tray.quit": "Quitter",
 
   "bar.home": "Accueil",
+  "bar.browse": "Naviguer",
+  "bar.browseTitle": "Navigation libre : ouvrir n'importe quelle adresse",
   "bar.addSite": "Ajouter un site",
   "bar.settings": "Paramètres",
 
@@ -15,6 +17,11 @@
   "nav.back": "Précédent",
   "nav.forward": "Suivant",
   "nav.reload": "Actualiser",
+  "nav.address": "Saisissez une adresse",
+  "nav.pin": "Épingler",
+  "nav.pinTitle": "Épingler cette page comme nouvel onglet de la liste",
+
+  "browse.empty": "Saisissez une adresse dans la barre ci-dessus. Vous pouvez définir une page d'accueil dans les Paramètres.",
 
   "home.addPlaceholder": "Adresse du site à ajouter (ex. https://example.com)",
   "home.add": "Ajouter",
@@ -102,6 +109,10 @@
   "settings.behavior": "Comportement",
   "settings.hideOnBlur": "Masquer l'overlay quand il perd le focus",
   "settings.hideOnBlurDesc": "Par exemple en cliquant sur le jeu ou sur une autre fenêtre.",
+  "settings.browseStart": "Page d'accueil de la navigation libre :",
+  "settings.browseStartPlaceholder": "Aucune",
+  "settings.browseStartDesc": "La page que l'onglet Naviguer ouvre au départ. Vide : aucune page, on saisit une adresse.",
+  "settings.browseStartInvalid": "Adresse non valide.",
   "settings.appearance": "Apparence",
   "settings.accent": "Couleur d'accent :",
   "accent.amber": "Ambre",
