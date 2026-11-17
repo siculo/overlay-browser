@@ -54,6 +54,9 @@
   .tab.active::before, .tab:hover::before, .tab.active + .tab::before, .tab:hover + .tab::before { display: none; }
   .tab:hover { background: #161616; color: #ddd; }
   .tab.active { background: var(--sheet); color: #fff; box-shadow: inset 0 2px 0 var(--accent); }
+  /* The tab of the page shown in the free browsing tab (see browseMatch) */
+  .tab.match, .tab.match:hover { background: var(--accent-soft); color: var(--accent-text); }
+  .tab.match::before, .tab.match + .tab::before { display: none; }
   .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* The ×: always on the active tab, on the others only on hover */
   .tab .close { flex: none; width: 18px; height: 18px; line-height: 17px; text-align: center; border-radius: 4px; color: #aaa; visibility: hidden; }
@@ -729,7 +732,13 @@
     // In the free browsing tab, the "site home" button goes to the start page.
     navSite.disabled = browse && !browseStart;
     navReload.disabled = !wv;
-    navPin.disabled = !/^https?:/i.test(url);
+    // A page that is already a tab of the list cannot be pinned: that tab is
+    // highlighted. Also after the in-page navigations (history.pushState),
+    // with which many sites change page without loading it.
+    const match = browse ? browseMatch(url) : null;
+    navPin.disabled = !/^https?:/i.test(url) || !!match;
+    navPin.title = match ? t('nav.pinned', { name: siteName(match) }) : t('nav.pinTitle');
+    markMatch(match?.id ?? null);
     if (showUrl || document.activeElement !== navUrl || navUrl.readOnly) {
       navUrl.value = /^https?:/i.test(url) ? url : '';
       navUrl.classList.remove('invalid');
@@ -774,10 +783,34 @@
     return searchTemplate().replaceAll('%s', encodeURIComponent(text));
   }
 
+  // The current list's site whose address is the page's, or null. Ignored:
+  // http/https, "www.", the final "/" of the path and the fragment (#...).
+  function browseMatch(url) {
+    const key = (u) => {
+      const n = normalizeUrl(u ?? '');
+      if (!n) return null;
+      const { host, pathname, search } = new URL(n);
+      return host.replace(/^www\./, '') + pathname.replace(/\/+$/, '') + search;
+    };
+    const page = key(url);
+    return (page && currentList().sites.find((s) => key(s.url) === page)) || null;
+  }
+
+  // Highlights the tab of the site `id` (null: none), scrolling to it.
+  let matchId = null;
+  function markMatch(id) {
+    if (id !== matchId) {
+      matchId = id;
+      if (id) tabsEl.querySelector(`.tab[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+    for (const tab of tabsEl.children) tab.classList.toggle('match', !!id && tab.dataset.id === id);
+  }
+
   // Opens an address in the free browsing tab.
   function browseTo(url) {
     const wv = webviews.get(BROWSE);
-    if (wv) wv.loadURL(url); else getWebview(BROWSE, url);
+    // loadURL throws until the page is ready (e.g. the start page still loading).
+    if (wv) { try { wv.loadURL(url); } catch { wv.src = url; } } else getWebview(BROWSE, url);
     activate(BROWSE);
   }
 
@@ -958,6 +991,8 @@
       return tab;
     }));
     tabsEl.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    // The sites may have changed: the tab to highlight and the Pin button too.
+    updateNav();
     updateArrows();
   }
 

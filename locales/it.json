@@ -21,6 +21,7 @@
   "nav.addressWith": "Cerca con {engine} o digita un indirizzo",
   "nav.pin": "Fissa",
   "nav.pinTitle": "Fissa questa pagina come nuovo tab della lista",
+  "nav.pinned": "Già nella lista: {name}",
 
   "browse.empty": "Cerca o digita un indirizzo nella barra qui sopra. Puoi impostare una pagina iniziale nelle Impostazioni.",
 
