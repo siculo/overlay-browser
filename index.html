@@ -202,7 +202,7 @@
   #opacity-setting { margin-top: 14px; }
   /* Memory: total, then one row per process (pages, interface, GPU...) */
   #memory-total { margin-top: 18px; font-size: 16px; }
-  #opt-unload-value, #opt-unload-current-value { min-width: 4em; font-variant-numeric: tabular-nums; }
+  #opt-unload-value { min-width: 4em; font-variant-numeric: tabular-nums; }
   #memory-table { width: 100%; margin-top: 10px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
   #memory-table td { padding: 5px 0; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #memory-table td.size { width: 7em; text-align: right; font-variant-numeric: tabular-nums; color: #bbb; }
@@ -301,11 +301,6 @@
     </div>
 
     <h2 data-i18n="settings.memory"></h2>
-    <div class="setting">
-      <label for="opt-unload-current" data-i18n="settings.unloadCurrentAfter"></label>
-      <input type="range" id="opt-unload-current" step="5">
-      <output id="opt-unload-current-value" for="opt-unload-current"></output>
-    </div>
     <div class="setting">
       <label for="opt-unload" data-i18n="settings.unloadAfter"></label>
       <input type="range" id="opt-unload" step="5">
@@ -512,10 +507,13 @@
 
   // ---------- tab / webview ----------
 
-  // `url`: the page to load if the webview is created (default: the site's address).
-  function getWebview(site, url = site.url) {
+  // `url`: the page to load if the webview is created (default: the last
+  // page visited if its page was closed for being unused, see unloadPage,
+  // otherwise the site's address).
+  function getWebview(site, url = lastUrls.get(site.id) ?? site.url) {
     let wv = webviews.get(site.id);
     if (!wv) {
+      lastUrls.delete(site.id);
       wv = document.createElement('webview');
       // Windows opened by the site (logins, target=_blank): see 'site popups' in main.js.
       wv.setAttribute('allowpopups', '');
@@ -541,6 +539,7 @@
     webviews.get(id)?.remove();
     webviews.delete(id);
     idleSince.delete(id);
+    lastUrls.delete(id);
   }
 
   function activate(id) {
@@ -562,19 +561,17 @@
   }
 
   // At startup and after the current list has changed (another application,
-  // a list chosen or restored): reopens its last tab, otherwise its first
-  // one; the Home only if the list has no sites. The Settings page stays.
-  // Shows the current list on its last tab: the Home, the Settings page, or
-  // a site if its page is still open (the list is as it was left). If that
-  // page has been closed (see below) or never opened (e.g. at startup), on
-  // its first tab.
+  // a list chosen or restored): shows the current list on its last tab, the
+  // Home, the Settings page or a site, whose page is opened again if it was
+  // closed (see below). If the list has no last tab (or its site was
+  // removed), on its first tab; the Home if the list has no sites.
   function showCurrentList() {
     const cur = currentList();
     const last = cur.activeTab;
     let id;
     if (last === HOME) id = null;
     else if (last === SETTINGS) id = SETTINGS;
-    else if (cur.sites.some((s) => s.id === last) && webviews.has(last)) id = last;
+    else if (cur.sites.some((s) => s.id === last)) id = last;
     else id = cur.sites[0]?.id ?? null;
     activate(id);
     render();
@@ -584,40 +581,43 @@
   // ---------- closing the pages not in use ----------
   //
   // A page (webview) is in use while it is the active tab of the visible
-  // overlay. The others (other tabs, pages of the other lists, all of them
-  // while the overlay is hidden) are closed after some minutes without use
-  // (Settings): `unloadCurrentAfter` for the current list's pages,
-  // `unloadAfter` for the other lists'. Going back to them before then finds
-  // them as they were. A closed page loads again from the site's address
-  // when its tab is opened.
+  // overlay. Each of the others (other tabs, pages of the other lists, all
+  // of them while the overlay is hidden) is closed after some minutes
+  // without use (`unloadAfter`, Settings), whatever its list. Going back to
+  // it before then finds it as it was; after, its tab loads again the last
+  // page visited (without the history).
 
-  // site id -> { since, current }: since when its page is not in use, and
-  // whether it was in the current list then (the time starts again when
-  // the page enters or leaves the current list, whose delay is different).
-  const idleSince = new Map();
-  const unload = { unloadAfter: 5, unloadCurrentAfter: 30 };   // minutes
+  const idleSince = new Map();   // site id -> since when its page is not in use
+  const lastUrls = new Map();    // site id -> last page visited, for the pages closed by unloadPage
+  let unloadAfter = 30;          // minutes
   let overlayVisible = false;    // the window starts hidden (see main.js)
 
   const inUse = (id) => overlayVisible && id === active;
-  const inCurrentList = (id) => currentList().sites.some((s) => s.id === id);
-  const unloadDelay = (idle) => (idle.current ? unload.unloadCurrentAfter : unload.unloadAfter) * 60000;
+  const unloadDelay = () => unloadAfter * 60000;
 
-  // Starts the time of the pages that have just stopped being in use or
-  // changed list, and stops the one of the page in use.
+  // Starts the time of the pages that have just stopped being in use, and
+  // stops the one of the page in use.
   function markIdle() {
     const now = Date.now();
     for (const id of webviews.keys()) {
-      if (inUse(id)) { idleSince.delete(id); continue; }
-      const current = inCurrentList(id);
-      if (idleSince.get(id)?.current !== current) idleSince.set(id, { since: now, current });
+      if (inUse(id)) idleSince.delete(id);
+      else if (!idleSince.has(id)) idleSince.set(id, now);
     }
+  }
+
+  // Closes the page of a site, remembering where it was.
+  function unloadPage(id) {
+    let url = null;
+    try { url = webviews.get(id)?.getURL(); } catch { /* not ready yet */ }
+    closeWebview(id);
+    if (url && /^https?:/i.test(url)) lastUrls.set(id, url);
   }
 
   function sweepPages() {
     markIdle();
     const now = Date.now();
-    for (const [id, idle] of [...idleSince]) {
-      if (now - idle.since >= unloadDelay(idle)) closeWebview(id);
+    for (const [id, since] of [...idleSince]) {
+      if (now - since >= unloadDelay()) unloadPage(id);
     }
   }
   // The time also runs while the overlay is hidden (timers of a hidden
@@ -628,42 +628,35 @@
     overlayVisible = visible;
     sweepPages();
     // The page of the active tab was closed while the overlay was hidden:
-    // the list starts again from its first tab.
-    if (visible && isSite(active) && !webviews.has(active)) showCurrentList();
+    // it is opened again.
+    if (visible && isSite(active) && !webviews.has(active)) activate(active);
   });
 
   // Minutes left before the page of a site is closed, null if it is in use.
   function minutesToUnload(id) {
-    const idle = idleSince.get(id);
-    if (!idle) return null;
-    return Math.max(1, Math.ceil((idle.since + unloadDelay(idle) - Date.now()) / 60000));
+    const since = idleSince.get(id);
+    if (since === undefined) return null;
+    return Math.max(1, Math.ceil((since + unloadDelay() - Date.now()) / 60000));
   }
 
-  // Settings: one slider per delay.
-  const unloadSliders = {
-    unloadCurrentAfter: { input: $('opt-unload-current'), value: $('opt-unload-current-value') },
-    unloadAfter: { input: $('opt-unload'), value: $('opt-unload-value') },
-  };
+  // Settings: the delay's slider.
+  const unloadInput = $('opt-unload'), unloadValue = $('opt-unload-value');
 
   function showUnloadAfter() {
-    for (const [key, s] of Object.entries(unloadSliders)) {
-      s.value.textContent = t('settings.minutes', { count: unload[key] });
-    }
+    unloadValue.textContent = t('settings.minutes', { count: unloadAfter });
   }
 
   function initUnload(range, settings) {
-    for (const [key, s] of Object.entries(unloadSliders)) {
-      unload[key] = settings[key];
-      s.input.min = range.min;
-      s.input.max = range.max;
-      s.input.value = settings[key];
-      s.input.oninput = () => {
-        unload[key] = Number(s.input.value);
-        showUnloadAfter();
-        window.overlay.setSetting(key, unload[key]);
-        renderMemory();
-      };
-    }
+    unloadAfter = settings.unloadAfter;
+    unloadInput.min = range.min;
+    unloadInput.max = range.max;
+    unloadInput.value = unloadAfter;
+    unloadInput.oninput = () => {
+      unloadAfter = Number(unloadInput.value);
+      showUnloadAfter();
+      window.overlay.setSetting('unloadAfter', unloadAfter);
+      renderMemory();
+    };
     showUnloadAfter();
   }
 
@@ -1022,6 +1015,7 @@
     if (url !== site.url) {
       site.url = url;
       site.title = null;
+      lastUrls.delete(id);
       const wv = webviews.get(id);
       if (wv) wv.src = url;
       save();
