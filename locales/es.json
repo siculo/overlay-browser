@@ -17,11 +17,11 @@
   "nav.back": "Atrás",
   "nav.forward": "Adelante",
   "nav.reload": "Recargar",
-  "nav.address": "Escribe una dirección",
+  "nav.address": "Busca o escribe una dirección",
   "nav.pin": "Fijar",
   "nav.pinTitle": "Fijar esta página como nueva pestaña de la lista",
 
-  "browse.empty": "Escribe una dirección en la barra de arriba. Puedes definir una página de inicio en los Ajustes.",
+  "browse.empty": "Busca o escribe una dirección en la barra de arriba. Puedes definir una página de inicio en los Ajustes.",
 
   "home.addPlaceholder": "Dirección del sitio que añadir (p. ej. https://example.com)",
   "home.add": "Añadir",

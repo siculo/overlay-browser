@@ -17,11 +17,11 @@
   "nav.back": "Voltar",
   "nav.forward": "Avançar",
   "nav.reload": "Recarregar",
-  "nav.address": "Digite um endereço",
+  "nav.address": "Pesquise ou digite um endereço",
   "nav.pin": "Fixar",
   "nav.pinTitle": "Fixar esta página como nova aba da lista",
 
-  "browse.empty": "Digite um endereço na barra acima. Você pode definir uma página inicial nas Configurações.",
+  "browse.empty": "Pesquise ou digite um endereço na barra acima. Você pode definir uma página inicial nas Configurações.",
 
   "home.addPlaceholder": "Endereço do site a adicionar (ex.: https://example.com)",
   "home.add": "Adicionar",

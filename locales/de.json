@@ -17,11 +17,11 @@
   "nav.back": "Zurück",
   "nav.forward": "Vorwärts",
   "nav.reload": "Neu laden",
-  "nav.address": "Adresse eingeben",
+  "nav.address": "Suchen oder Adresse eingeben",
   "nav.pin": "Anheften",
   "nav.pinTitle": "Diese Seite als neuen Tab der Liste anheften",
 
-  "browse.empty": "Gib oben in der Leiste eine Adresse ein. In den Einstellungen kannst du eine Startseite festlegen.",
+  "browse.empty": "Gib oben in der Leiste einen Suchbegriff oder eine Adresse ein. In den Einstellungen kannst du eine Startseite festlegen.",
 
   "home.addPlaceholder": "Adresse der hinzuzufügenden Website (z. B. https://example.com)",
   "home.add": "Hinzufügen",

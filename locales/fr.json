@@ -17,11 +17,11 @@
   "nav.back": "Précédent",
   "nav.forward": "Suivant",
   "nav.reload": "Actualiser",
-  "nav.address": "Saisissez une adresse",
+  "nav.address": "Recherchez ou saisissez une adresse",
   "nav.pin": "Épingler",
   "nav.pinTitle": "Épingler cette page comme nouvel onglet de la liste",
 
-  "browse.empty": "Saisissez une adresse dans la barre ci-dessus. Vous pouvez définir une page d'accueil dans les Paramètres.",
+  "browse.empty": "Recherchez ou saisissez une adresse dans la barre ci-dessus. Vous pouvez définir une page d'accueil dans les Paramètres.",
 
   "home.addPlaceholder": "Adresse du site à ajouter (ex. https://example.com)",
   "home.add": "Ajouter",

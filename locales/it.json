@@ -17,11 +17,11 @@
   "nav.back": "Indietro",
   "nav.forward": "Avanti",
   "nav.reload": "Ricarica",
-  "nav.address": "Digita un indirizzo",
+  "nav.address": "Cerca o digita un indirizzo",
   "nav.pin": "Fissa",
   "nav.pinTitle": "Fissa questa pagina come nuovo tab della lista",
 
-  "browse.empty": "Digita un indirizzo nella barra qui sopra. Puoi impostare una pagina iniziale nelle Impostazioni.",
+  "browse.empty": "Cerca o digita un indirizzo nella barra qui sopra. Puoi impostare una pagina iniziale nelle Impostazioni.",
 
   "home.addPlaceholder": "Indirizzo del sito da aggiungere (es. https://example.com)",
   "home.add": "Aggiungi",
