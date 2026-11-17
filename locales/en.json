@@ -18,6 +18,7 @@
   "nav.forward": "Forward",
   "nav.reload": "Reload",
   "nav.address": "Search or type an address",
+  "nav.addressWith": "Search with {engine} or type an address",
   "nav.pin": "Pin",
   "nav.pinTitle": "Pin this page as a new tab of the list",
 
@@ -113,6 +114,10 @@
   "settings.browseStartPlaceholder": "None",
   "settings.browseStartDesc": "The page the Browse tab opens at first. Empty: no page, you type an address.",
   "settings.browseStartInvalid": "Invalid address.",
+  "settings.search": "Search engine:",
+  "settings.searchCustom": "Custom",
+  "settings.searchCustomDesc": "Search address, with %s in place of the searched text.",
+  "settings.searchCustomInvalid": "Invalid address: it must contain %s.",
   "settings.appearance": "Appearance",
   "settings.accent": "Accent color:",
   "accent.amber": "Amber",

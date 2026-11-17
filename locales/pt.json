@@ -18,6 +18,7 @@
   "nav.forward": "Avançar",
   "nav.reload": "Recarregar",
   "nav.address": "Pesquise ou digite um endereço",
+  "nav.addressWith": "Pesquise com {engine} ou digite um endereço",
   "nav.pin": "Fixar",
   "nav.pinTitle": "Fixar esta página como nova aba da lista",
 
@@ -113,6 +114,10 @@
   "settings.browseStartPlaceholder": "Nenhuma",
   "settings.browseStartDesc": "A página que a aba Navegar abre no início. Vazia: nenhuma página, digita-se um endereço.",
   "settings.browseStartInvalid": "Endereço inválido.",
+  "settings.search": "Mecanismo de pesquisa:",
+  "settings.searchCustom": "Personalizado",
+  "settings.searchCustomDesc": "Endereço da pesquisa, com %s no lugar do texto pesquisado.",
+  "settings.searchCustomInvalid": "Endereço inválido: deve conter %s.",
   "settings.appearance": "Aparência",
   "settings.accent": "Cor de destaque:",
   "accent.amber": "Âmbar",

@@ -18,6 +18,7 @@
   "nav.forward": "Avanti",
   "nav.reload": "Ricarica",
   "nav.address": "Cerca o digita un indirizzo",
+  "nav.addressWith": "Cerca con {engine} o digita un indirizzo",
   "nav.pin": "Fissa",
   "nav.pinTitle": "Fissa questa pagina come nuovo tab della lista",
 
@@ -113,6 +114,10 @@
   "settings.browseStartPlaceholder": "Nessuna",
   "settings.browseStartDesc": "La pagina che il tab Naviga apre all'inizio. Vuota: nessuna pagina, si digita un indirizzo.",
   "settings.browseStartInvalid": "Indirizzo non valido.",
+  "settings.search": "Motore di ricerca:",
+  "settings.searchCustom": "Personalizzato",
+  "settings.searchCustomDesc": "Indirizzo della ricerca, con %s al posto del testo cercato.",
+  "settings.searchCustomInvalid": "Indirizzo non valido: deve contenere %s.",
   "settings.appearance": "Aspetto",
   "settings.accent": "Colore d'accento:",
   "accent.amber": "Ambra",

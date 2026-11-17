@@ -18,6 +18,7 @@
   "nav.forward": "Suivant",
   "nav.reload": "Actualiser",
   "nav.address": "Recherchez ou saisissez une adresse",
+  "nav.addressWith": "Recherchez avec {engine} ou saisissez une adresse",
   "nav.pin": "Épingler",
   "nav.pinTitle": "Épingler cette page comme nouvel onglet de la liste",
 
@@ -113,6 +114,10 @@
   "settings.browseStartPlaceholder": "Aucune",
   "settings.browseStartDesc": "La page que l'onglet Naviguer ouvre au départ. Vide : aucune page, on saisit une adresse.",
   "settings.browseStartInvalid": "Adresse non valide.",
+  "settings.search": "Moteur de recherche :",
+  "settings.searchCustom": "Personnalisé",
+  "settings.searchCustomDesc": "Adresse de la recherche, avec %s à la place du texte recherché.",
+  "settings.searchCustomInvalid": "Adresse non valide : elle doit contenir %s.",
   "settings.appearance": "Apparence",
   "settings.accent": "Couleur d'accent :",
   "accent.amber": "Ambre",

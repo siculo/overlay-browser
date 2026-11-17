@@ -136,13 +136,13 @@
   /* In the sites' tabs: the address only, selectable but not editable,
      without border and background */
   #nav-url[readonly], #nav-url[readonly]:focus { color: #aaa; background: transparent; border-color: transparent; }
-  #nav-url.invalid, #opt-browse-start.invalid { border-color: #c55; }
+  #nav-url.invalid, #opt-browse-start.invalid, #opt-search-custom.invalid { border-color: #c55; }
   #nav-pin { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 6px; }
   /* Pushpin: Material Icons "push_pin" (Apache 2.0) */
   #nav-pin .icon { width: 16px; height: 16px; fill: currentColor; }
   /* Free browsing tab with no page open */
   #browse-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; color: #888; text-align: center; }
-  #opt-browse-start { flex: 1; min-width: 0; max-width: 420px; }
+  #opt-browse-start, #opt-search-custom { flex: 1; min-width: 0; max-width: 420px; }
 
   /* Home */
   #home, .page { flex: 1; overflow-y: auto; padding: 24px; }
@@ -214,7 +214,7 @@
   .hint.err { color: #f77; }
   input[type=range] { width: 220px; padding: 0; border: none; background: none; }
   #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
-  #opacity-setting, #browse-start-setting { margin-top: 14px; }
+  #opacity-setting, #browse-start-setting, #search-setting { margin-top: 14px; }
   /* Memory: total, then one row per process (pages, interface, GPU...) */
   #memory-total { margin-top: 18px; font-size: 16px; }
   #opt-unload-value { min-width: 4em; font-variant-numeric: tabular-nums; }
@@ -303,6 +303,12 @@
       <input id="opt-browse-start" type="text" spellcheck="false" data-i18n-placeholder="settings.browseStartPlaceholder">
     </div>
     <div class="hint" id="browse-start-hint" data-i18n="settings.browseStartDesc"></div>
+    <div class="setting" id="search-setting">
+      <label for="opt-search" data-i18n="settings.search"></label>
+      <select id="opt-search"></select>
+      <input id="opt-search-custom" type="text" spellcheck="false" placeholder="https://example.com/search?q=%s" hidden>
+    </div>
+    <div class="hint" id="search-hint" hidden></div>
 
     <h2 data-i18n="settings.appearance"></h2>
     <div class="setting">
@@ -718,7 +724,7 @@
     const browse = active === BROWSE;
     navUrl.hidden = !isSite(active);
     navUrl.readOnly = !browse;
-    navUrl.placeholder = browse ? t('nav.address') : '';
+    navUrl.placeholder = !browse ? '' : searchName() ? t('nav.addressWith', { engine: searchName() }) : t('nav.address');
     navPin.hidden = !browse;
     // In the free browsing tab, the "site home" button goes to the start page.
     navSite.disabled = browse && !browseStart;
@@ -730,8 +736,26 @@
     }
   }
 
-  // Search engine of the free browsing tab: the text is appended, encoded.
-  const SEARCH_URL = 'https://www.google.com/search?q=';
+  // Search engines of the free browsing tab (settings.searchEngine: the
+  // names are validated in main.js, SEARCH_ENGINES): `%s` is replaced by the
+  // encoded text. 'custom' uses the address in settings.searchCustom; while
+  // it has none, Google is used.
+  const SEARCH_ENGINES = {
+    google: { name: 'Google', url: 'https://www.google.com/search?q=%s' },
+    bing: { name: 'Bing', url: 'https://www.bing.com/search?q=%s' },
+    duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=%s' },
+    brave: { name: 'Brave Search', url: 'https://search.brave.com/search?q=%s' },
+    ecosia: { name: 'Ecosia', url: 'https://www.ecosia.org/search?q=%s' },
+    startpage: { name: 'Startpage', url: 'https://www.startpage.com/do/search?q=%s' },
+  };
+  let searchEngine = 'google', searchCustom = '';
+
+  const searchTemplate = () => searchEngine === 'custom'
+    ? searchCustom || SEARCH_ENGINES.google.url
+    : (SEARCH_ENGINES[searchEngine] ?? SEARCH_ENGINES.google).url;
+  // Name shown in the field, null for a custom engine.
+  const searchName = () => searchEngine === 'custom' ? (searchCustom ? null : SEARCH_ENGINES.google.name)
+    : (SEARCH_ENGINES[searchEngine] ?? SEARCH_ENGINES.google).name;
 
   // What is typed in the field of the free browsing tab: an address (with a
   // scheme, or without spaces and with a host such as "example.com",
@@ -747,7 +771,7 @@
       /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
       /^([\p{L}\p{N}-]+\.)+\p{L}[\p{L}\p{N}-]*$/iu.test(host));
     if (isHost) { const url = normalizeUrl(text); if (url) return url; }
-    return SEARCH_URL + encodeURIComponent(text);
+    return searchTemplate().replaceAll('%s', encodeURIComponent(text));
   }
 
   // Opens an address in the free browsing tab.
@@ -1955,6 +1979,60 @@
     browseStartInput.onkeydown = (e) => { if (e.key === 'Enter') commit(); };
   }
 
+  // ---------- search engine of the free browsing tab ----------
+  //
+  // One of SEARCH_ENGINES, or a custom address with %s in place of the text
+  // (shown only for 'custom'; saved like the start page, when valid).
+
+  const searchSelect = $('opt-search'), searchCustomInput = $('opt-search-custom'), searchHint = $('search-hint');
+
+  // A custom address: an http(s) address containing %s, normalized like the
+  // sites' (https:// added if missing); null if invalid, '' if empty.
+  function normalizeTemplate(raw) {
+    const text = raw.trim();
+    if (!text) return '';
+    if (!text.includes('%s')) return null;
+    const MARK = 'QUERY0SEARCH0TEXT';
+    return normalizeUrl(text.replaceAll('%s', MARK))?.replaceAll(MARK, '%s') ?? null;
+  }
+
+  function renderSearch(invalid = false) {
+    const options = Object.entries(SEARCH_ENGINES).map(([key, e]) => new Option(e.name, key));
+    searchSelect.replaceChildren(...options, new Option(t('settings.searchCustom'), 'custom'));
+    searchSelect.value = searchEngine;
+    const custom = searchEngine === 'custom';
+    searchCustomInput.hidden = searchHint.hidden = !custom;
+    searchCustomInput.classList.toggle('invalid', invalid);
+    searchHint.classList.toggle('err', invalid);
+    searchHint.textContent = t(invalid ? 'settings.searchCustomInvalid' : 'settings.searchCustomDesc');
+    updateNav();
+  }
+
+  function initSearch(settings) {
+    searchEngine = settings.searchEngine;
+    searchCustom = settings.searchCustom;
+    searchCustomInput.value = searchCustom;
+    searchSelect.onchange = () => {
+      searchEngine = searchSelect.value;
+      window.overlay.setSetting('searchEngine', searchEngine);
+      renderSearch();
+      if (searchEngine === 'custom' && !searchCustom) searchCustomInput.focus();
+    };
+    const commit = () => {
+      const url = normalizeTemplate(searchCustomInput.value);
+      if (url === null) { renderSearch(true); return; }
+      searchCustomInput.value = url;
+      renderSearch();
+      if (url === searchCustom) return;
+      searchCustom = url;
+      window.overlay.setSetting('searchCustom', url);
+      updateNav();
+    };
+    searchCustomInput.onchange = commit;
+    searchCustomInput.onkeydown = (e) => { if (e.key === 'Enter') commit(); };
+    renderSearch();
+  }
+
   // ---------- opacity ----------
   //
   // The slider works in percent; the setting is a fraction (0.3–1). It is
@@ -2151,7 +2229,7 @@
     // Texts built while rendering, and messages still in the old language.
     showError();
     render();
-    updateNav();
+    renderSearch(searchCustomInput.classList.contains('invalid'));
     renderMemory();
     showUnloadAfter();
     if (!capturing) showShortcut(currentShortcut);
@@ -2177,6 +2255,7 @@
     initOptions(state.settings);
     initUnload(state.unloadRange, state.settings);
     initBrowseStart(state.settings.browseStart);
+    initSearch(state.settings);
     $('app-version').textContent = `Overlay Browser ${state.version}`;
     $('app-repo').onclick = (e) => { e.preventDefault(); window.overlay.openRepo(); };
     // No page is open yet: the current list starts from its first tab,

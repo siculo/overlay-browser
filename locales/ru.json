@@ -18,6 +18,7 @@
   "nav.forward": "Вперёд",
   "nav.reload": "Обновить",
   "nav.address": "Введите запрос или адрес",
+  "nav.addressWith": "Найдите в {engine} или введите адрес",
   "nav.pin": "Закрепить",
   "nav.pinTitle": "Закрепить эту страницу как новую вкладку списка",
 
@@ -113,6 +114,10 @@
   "settings.browseStartPlaceholder": "Нет",
   "settings.browseStartDesc": "Страница, которую вкладка «Обзор» открывает сначала. Пусто: нет страницы, нужно ввести адрес.",
   "settings.browseStartInvalid": "Неверный адрес.",
+  "settings.search": "Поисковая система:",
+  "settings.searchCustom": "Другая",
+  "settings.searchCustomDesc": "Адрес поиска, где %s заменяет искомый текст.",
+  "settings.searchCustomInvalid": "Неверный адрес: он должен содержать %s.",
   "settings.appearance": "Внешний вид",
   "settings.accent": "Акцентный цвет:",
   "accent.amber": "Янтарный",

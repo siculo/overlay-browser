@@ -18,6 +18,7 @@
   "nav.forward": "Adelante",
   "nav.reload": "Recargar",
   "nav.address": "Busca o escribe una dirección",
+  "nav.addressWith": "Busca con {engine} o escribe una dirección",
   "nav.pin": "Fijar",
   "nav.pinTitle": "Fijar esta página como nueva pestaña de la lista",
 
@@ -113,6 +114,10 @@
   "settings.browseStartPlaceholder": "Ninguna",
   "settings.browseStartDesc": "La página que abre al principio la pestaña Navegar. Vacía: ninguna página, se escribe una dirección.",
   "settings.browseStartInvalid": "Dirección no válida.",
+  "settings.search": "Motor de búsqueda:",
+  "settings.searchCustom": "Personalizado",
+  "settings.searchCustomDesc": "Dirección de la búsqueda, con %s en lugar del texto buscado.",
+  "settings.searchCustomInvalid": "Dirección no válida: debe contener %s.",
   "settings.appearance": "Apariencia",
   "settings.accent": "Color de acento:",
   "accent.amber": "Ámbar",

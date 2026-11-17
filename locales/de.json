@@ -18,6 +18,7 @@
   "nav.forward": "Vorwärts",
   "nav.reload": "Neu laden",
   "nav.address": "Suchen oder Adresse eingeben",
+  "nav.addressWith": "Mit {engine} suchen oder Adresse eingeben",
   "nav.pin": "Anheften",
   "nav.pinTitle": "Diese Seite als neuen Tab der Liste anheften",
 
@@ -113,6 +114,10 @@
   "settings.browseStartPlaceholder": "Keine",
   "settings.browseStartDesc": "Die Seite, die der Tab Surfen anfangs öffnet. Leer: keine Seite, du gibst eine Adresse ein.",
   "settings.browseStartInvalid": "Ungültige Adresse.",
+  "settings.search": "Suchmaschine:",
+  "settings.searchCustom": "Benutzerdefiniert",
+  "settings.searchCustomDesc": "Adresse der Suche, mit %s anstelle des Suchbegriffs.",
+  "settings.searchCustomInvalid": "Ungültige Adresse: Sie muss %s enthalten.",
   "settings.appearance": "Darstellung",
   "settings.accent": "Akzentfarbe:",
   "accent.amber": "Bernstein",
