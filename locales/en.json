@@ -21,6 +21,7 @@
   "nav.addressWith": "Search with {engine} or type an address",
   "nav.pin": "Pin",
   "nav.pinTitle": "Pin this page as a new tab of the list",
+  "nav.pinConfirm": "Pin \"{name}\" as a new tab of the list \"{list}\"?",
   "nav.pinned": "Already in the list: {name}",
 
   "browse.empty": "Search or type an address in the bar above. You can set a start page in the Settings.",

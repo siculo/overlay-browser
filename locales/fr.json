@@ -21,6 +21,7 @@
   "nav.addressWith": "Recherchez avec {engine} ou saisissez une adresse",
   "nav.pin": "Épingler",
   "nav.pinTitle": "Épingler cette page comme nouvel onglet de la liste",
+  "nav.pinConfirm": "Épingler « {name} » comme nouvel onglet de la liste « {list} » ?",
   "nav.pinned": "Déjà dans la liste : {name}",
 
   "browse.empty": "Recherchez ou saisissez une adresse dans la barre ci-dessus. Vous pouvez définir une page d'accueil dans les Paramètres.",

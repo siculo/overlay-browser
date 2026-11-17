@@ -862,11 +862,21 @@
   // the new tab goes at the end and the free browsing tab starts again from
   // its start page (or empty); from a site's tab it goes right after it, and
   // that tab starts again from its site's address when it is opened.
-  function pinPage() {
+  // After a confirmation (the page may change meanwhile: it is read again).
+  async function pinPage() {
     const from = active;
     const wv = webviews.get(from);
-    let url = null, title = null;
-    try { url = normalizeUrl(wv.getURL()); title = wv.getTitle() || null; } catch { /* not ready yet */ }
+    const page = () => {
+      try { return { url: normalizeUrl(wv.getURL()), title: wv.getTitle() || null }; } catch { return { url: null, title: null }; }
+    };
+    let { url, title } = page();
+    if (!url || pageMatch(url)) return;
+    const ok = await openDialog({
+      message: t('nav.pinConfirm', { name: title || url, list: listName(currentList()) }),
+      okLabel: t('nav.pin'),
+    });
+    if (!ok || active !== from || webviews.get(from) !== wv) return;
+    ({ url, title } = page());
     if (!url || pageMatch(url)) return;
     const site = { id: crypto.randomUUID(), url, title };
     const l = materialize(currentList());
@@ -1230,14 +1240,18 @@
     render();
   }
 
+  // If the tab removed was the active one, the next tab is opened, else the
+  // previous one, else the free browsing tab.
   function removeSite(id) {
     const l = listOfSite(id);
+    const at = l.sites.findIndex((s) => s.id === id);
+    const neighbour = l.sites[at + 1] ?? l.sites[at - 1] ?? null;
     l.sites = l.sites.filter((s) => s.id !== id);
     if (l.activeTab === id) l.activeTab = null;
     closeWebview(id);
     if (editing === id) editing = null;
     save();
-    if (active === id) activate(null);
+    if (active === id) activate(neighbour?.id ?? BROWSE);
     render();
   }
 

@@ -21,6 +21,7 @@
   "nav.addressWith": "Pesquise com {engine} ou digite um endereço",
   "nav.pin": "Fixar",
   "nav.pinTitle": "Fixar esta página como nova aba da lista",
+  "nav.pinConfirm": "Fixar \"{name}\" como nova aba da lista \"{list}\"?",
   "nav.pinned": "Já está na lista: {name}",
 
   "browse.empty": "Pesquise ou digite um endereço na barra acima. Você pode definir uma página inicial nas Configurações.",
