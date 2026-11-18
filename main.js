@@ -808,6 +808,19 @@ ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL));
 ipcMain.on('log:action', (_e, msg) => {
   if (typeof msg === 'string' && msg) log(`ui: ${msg.slice(0, 300)}`);
 });
+// Empties overlay.log. The next line writes the session line and the
+// settings again (see writeLog), so the log never starts without them.
+ipcMain.handle('log:clear', () => {
+  try {
+    fs.writeFileSync(logFile(), '');
+  } catch (err) {
+    logError(`log: cannot empty the file: ${err}`);
+    return false;
+  }
+  sessionLogged = false;
+  log('ui: log emptied');
+  return true;
+});
 ipcMain.handle('log:show', () => {
   try { fs.appendFileSync(logFile(), ''); } catch { /* shown anyway */ }
   shell.showItemInFolder(logFile());

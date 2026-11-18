@@ -371,7 +371,9 @@
     </label>
     <div class="setting" id="show-log-setting">
       <button id="show-log" data-i18n="settings.showLog"></button>
+      <button id="clear-log" data-i18n="settings.clearLog"></button>
     </div>
+    <div class="hint" id="log-hint"></div>
 
   </div>
 
@@ -2073,6 +2075,13 @@
 
   const OPTIONS = { hideOnBlur: $('opt-hide-on-blur'), verboseLog: $('opt-verbose-log') };
   $('show-log').onclick = () => window.overlay.showLog();
+  $('clear-log').onclick = async () => {
+    const ok = await openDialog({ message: t('settings.clearLogConfirm'), okLabel: t('settings.clearLog'), danger: true });
+    if (!ok) return;
+    const done = await window.overlay.clearLog();
+    $('log-hint').textContent = t(done ? 'settings.logCleared' : 'settings.logClearError');
+    $('log-hint').classList.toggle('err', !done);
+  };
 
   function initOptions(settings) {
     for (const [key, input] of Object.entries(OPTIONS)) {

@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('overlay', {
   memory: () => ipcRenderer.invoke('memory:get'),
   openRepo: () => ipcRenderer.invoke('repo:open'),
   showLog: () => ipcRenderer.invoke('log:show'),
+  clearLog: () => ipcRenderer.invoke('log:clear'),
   logAction: (msg) => ipcRenderer.send('log:action', msg),
   onHome: (callback) => ipcRenderer.on('nav:home', () => callback()),
   onSettings: (callback) => ipcRenderer.on('nav:settings', () => callback()),
