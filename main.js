@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS = {
   searchEngine: 'google', // search engine of the free browsing tab, one of SEARCH_ENGINES
   searchCustom: '',     // address of the 'custom' search engine, with %s in place of the text; '' = none
   fixedTabs: 'labels',  // fixed tabs (Home, Browse, Settings): 'labels' (icon and name) or 'icons' (icon only)
+  verboseLog: false,    // overlay.log: also what happens (shows, focus...), not only errors and crashes
 };
 const UNLOAD_RANGE = { min: 5, max: 60 };
 // Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
@@ -326,7 +327,7 @@ function presetUrls() {
       for (const s of data.sites ?? []) urls.add(urlKey(s?.url));
     }
   } catch (err) {
-    log(`presets: cannot read the predefined lists: ${err}`);
+    logError(`presets: cannot read the predefined lists: ${err}`);
   }
   return urls;
 }
@@ -348,7 +349,7 @@ async function findPreset(exe) {
     if (!sites.length) return null;
     return { name: typeof data.name === 'string' && data.name.trim() ? data.name.trim() : null, sites };
   } catch (err) {
-    log(`presets: cannot read ${file ?? 'index.json'}: ${err}`);
+    logError(`presets: cannot read ${file ?? 'index.json'}: ${err}`);
     return null;
   }
 }
@@ -367,16 +368,29 @@ let shortcut = null;   // currently registered shortcut
 
 function platformCall(name) {
   try {
-    platform[name](win);
+    return platform[name](win);
   } catch (err) {
-    log(`platform ${platform.id}: ERROR in ${name}: ${err?.stack || err}`);
+    logError(`platform ${platform.id}: ERROR in ${name}: ${err?.stack || err}`);
   }
 }
 
 let shownAt = 0;   // when the overlay was last shown (for the log of hideOnBlur)
 
-function showWindow() {
+// true/false if the overlay is the foreground window, '?' if the platform
+// cannot tell. Only for the log.
+function foregroundState() {
+  try {
+    const owns = platform.ownsForeground(win);
+    return owns === null ? '?' : String(owns);
+  } catch (err) {
+    return `error (${err})`;
+  }
+}
+
+// `reason`: what asked to show/hide (shortcut source, tray, blur...), for the log.
+function showWindow(reason = 'other') {
   shownAt = Date.now();
+  log(`show (${reason}): start, foreground=${foregroundState()}`);
   platformCall('beforeShow');
   if (win.isMinimized()) win.restore();
   win.show();
@@ -385,6 +399,15 @@ function showWindow() {
   platformCall('afterShow');
   win.webContents.send('win:visible', true);
   detectForegroundApp();
+  log(`show (${reason}): done in ${Date.now() - shownAt} ms, visible=${win.isVisible()} ` +
+    `focused=${win.isFocused()} foreground=${foregroundState()}`);
+  // A game can take the foreground back right after: checked again shortly after.
+  const at = shownAt;
+  setTimeout(() => {
+    if (at !== shownAt || win.isDestroyed()) return;
+    log(`show (${reason}): after 500 ms visible=${win.isVisible()} focused=${win.isFocused()} ` +
+      `foreground=${foregroundState()}`);
+  }, 500);
 }
 
 // ---------- application the overlay was opened over ----------
@@ -401,7 +424,7 @@ function detectForegroundApp() {
   try {
     detected = platform.foregroundApp();
   } catch (err) {
-    log(`platform ${platform.id}: ERROR in foregroundApp: ${err?.stack || err}`);
+    logError(`platform ${platform.id}: ERROR in foregroundApp: ${err?.stack || err}`);
   }
   // Our own windows do not count (e.g. a dialog of the overlay).
   if (detected?.pid === process.pid) detected = null;
@@ -417,7 +440,8 @@ function detectForegroundApp() {
 // overlay: a login left halfway is found again at the next show.
 let hiddenPopups = [];
 
-function hideWindow() {
+function hideWindow(reason = 'other') {
+  log(`hide (${reason}): ${Date.now() - shownAt} ms after show`);
   platformCall('beforeHide');
   hiddenPopups = win.getChildWindows().filter((w) => w.isVisible());
   for (const w of hiddenPopups) w.hide();
@@ -425,9 +449,9 @@ function hideWindow() {
   win.webContents.send('win:visible', false);
 }
 
-function toggleWindow() {
-  if (win.isVisible() && !win.isMinimized()) hideWindow();
-  else showWindow();
+function toggleWindow(reason = 'other') {
+  if (win.isVisible() && !win.isMinimized()) hideWindow(reason);
+  else showWindow(reason);
 }
 
 // When the overlay loses focus (click on another window, Alt+Tab...) it
@@ -462,7 +486,7 @@ function hideOnBlur(blurred) {
   try {
     owns = platform.ownsForeground(win);
   } catch (err) {
-    log(`platform ${platform.id}: ERROR in ownsForeground: ${err?.stack || err}`);
+    logError(`platform ${platform.id}: ERROR in ownsForeground: ${err?.stack || err}`);
   }
   if (owns) {
     log(`focus: blur ignored, the overlay is still in the foreground (${Date.now() - shownAt} ms after show)`);
@@ -472,17 +496,23 @@ function hideOnBlur(blurred) {
   }
   lastBlurHide = Date.now();
   log(`focus: hidden on blur (${lastBlurHide - shownAt} ms after show)`);
-  hideWindow();
+  hideWindow('blur');
 }
 
 // The shortcut is intercepted in two ways (see below): when both work, two
 // events arrive for the same key press, and only the first must count.
 let lastShortcutToggle = 0;
-function toggleFromShortcut() {
+// `source`: 'hook' or 'globalShortcut'. The log shows which of the two
+// works in the foreground app (in game, usually only the hook).
+function toggleFromShortcut(source) {
   const now = Date.now();
-  if (now - lastShortcutToggle < 300) return;
+  if (now - lastShortcutToggle < 300) {
+    log(`shortcut: ${source} ignored, same key press (${now - lastShortcutToggle} ms after the first)`);
+    return;
+  }
   lastShortcutToggle = now;
-  toggleWindow();
+  log(`shortcut: ${source}`);
+  toggleWindow(`shortcut ${source}`);
 }
 
 // ---------- low-level keyboard hook ----------
@@ -529,22 +559,73 @@ let hookCombo = null;        // combination the hook looks for
 let hookSuspended = false;   // true while the user records a new combination
 let hookKeyDown = false;     // avoids repeating the toggle while the key is held down
 
-// Diagnostic log in userData/overlay.log: startup, shortcut registration
-// and hook errors. Never records the keys pressed.
+// Diagnostic log in userData/overlay.log. Never records the keys pressed.
+// Two levels:
+// - logError: errors and crashes, always;
+// - log: what happens (startup, shows and hides, focus, shortcut source,
+//   foreground app...), only with the verbose log (settings.verboseLog).
+// Before the first line of a session the session line (version, platform)
+// and the current settings are written, so that an error is never without
+// its context.
+//
+// Only what happens in the app: never the addresses of the pages or
+// anything else about the browsing (sites are named by their position in
+// their list, lists by their application).
 const logFile = () => path.join(app.getPath('userData'), 'overlay.log');
-function log(msg) {
+let sessionLogged = false;
+
+function writeLog(msg) {
+  if (!sessionLogged) {
+    sessionLogged = true;
+    const startedAt = new Date(Date.now() - process.uptime() * 1000).toISOString();
+    writeLog(`session (started ${startedAt}, version ${app.getVersion()}, ${app.isPackaged ? 'packaged' : 'development'}, ` +
+      `language ${prefs ? currentLanguage() : '?'}, ` +
+      `system languages ${app.getPreferredSystemLanguages().join(',') || 'none'})`);
+    writeLog(`platform ${platform.id}: ${Object.entries(platform.features).map(([k, v]) => `${k}=${v}`).join(' ')} ` +
+      `opacity=${platform.opacity}`);
+    if (prefs) writeLog(`settings: ${settingsForLog()}`);
+  }
   const line = `${new Date().toISOString()} ${msg}\n`;
   try {
     if (fs.statSync(logFile()).size > 512 * 1024) fs.writeFileSync(logFile(), '');
   } catch { /* file not created yet */ }
   try { fs.appendFileSync(logFile(), line); } catch { /* ignored */ }
 }
+// Settings that are addresses (start page, custom search engine) are
+// written only as set or empty.
+const ADDRESS_SETTINGS = new Set(['browseStart', 'searchCustom']);
+const settingForLog = (key, value) => (ADDRESS_SETTINGS.has(key) ? (value ? 'set' : 'empty') : JSON.stringify(value));
+function settingsForLog() {
+  const sites = prefs.lists.reduce((n, l) => n + (Array.isArray(l.sites) ? l.sites.length : 0), 0);
+  return [`shortcut=${prefs.shortcut}`,
+    ...Object.entries(prefs.settings).map(([k, v]) => `${k}=${settingForLog(k, v)}`),
+    `lists=${prefs.lists.length}`, `sites=${sites}`, `listChosenByHand=${!!prefs.pinnedList}`].join(' ');
+}
+// Which page a webContents is, for the log (without its address).
+function contentsKind(contents) {
+  if (win && !win.isDestroyed() && contents === win.webContents) return 'overlay page';
+  return contents.getType() === 'webview' ? 'site page' : 'popup';
+}
+// A setting change; the sliders (opacity, unload delay) change at every step:
+// only the value they stop on is written.
+const settingLogTimers = new Map();
+function logSetting(key, value) {
+  clearTimeout(settingLogTimers.get(key));
+  settingLogTimers.set(key, setTimeout(() => {
+    settingLogTimers.delete(key);
+    log(`ui: setting ${key}=${settingForLog(key, value)}`);
+  }, 1000));
+}
+const verboseLog = () => !!prefs?.settings?.verboseLog;
+function log(msg) { if (verboseLog()) writeLog(msg); }
+function logError(msg) { writeLog(msg); }
 
 function setHookCombo(accelerator) {
   if (!uiohook) return;
   hookCombo = accelerator ? parseAccelerator(accelerator) : null;
   hookKeyDown = false;
-  log(`hook: combination ${accelerator || 'none'} -> ${hookCombo ? 'ok' : 'not recognized'}`);
+  if (accelerator && !hookCombo) logError(`hook: ERROR combination ${accelerator} not recognized`);
+  else log(`hook: combination ${accelerator || 'none'} -> ok`);
 }
 
 function startKeyboardHook() {
@@ -556,10 +637,16 @@ function startKeyboardHook() {
   uIOhook.on('keydown', (e) => {
     const c = hookCombo;
     if (!c || hookSuspended || e.keycode !== c.keycode) return;
-    if (e.ctrlKey !== c.ctrl || e.altKey !== c.alt || e.shiftKey !== c.shift || e.metaKey !== c.meta) return;
+    // Only the shortcut's key is logged, with the modifiers seen by the
+    // hook, to tell why the combination was not recognized.
+    if (e.ctrlKey !== c.ctrl || e.altKey !== c.alt || e.shiftKey !== c.shift || e.metaKey !== c.meta) {
+      log(`hook: shortcut key with other modifiers (ctrl=${e.ctrlKey} alt=${e.altKey} ` +
+        `shift=${e.shiftKey} meta=${e.metaKey}), ignored`);
+      return;
+    }
     if (hookKeyDown) return;
     hookKeyDown = true;
-    toggleFromShortcut();
+    toggleFromShortcut('hook');
   });
   uIOhook.on('keyup', (e) => {
     if (hookCombo && e.keycode === hookCombo.keycode) hookKeyDown = false;
@@ -568,7 +655,7 @@ function startKeyboardHook() {
     uIOhook.start();
     log('hook: started');
   } catch (err) {
-    log(`hook: ERROR on start: ${err}`);
+    logError(`hook: ERROR on start: ${err}`);
   }
 }
 
@@ -580,9 +667,9 @@ function updateTray() {
   if (!tray) return;
   tray.setToolTip(shortcut ? `Overlay browser (${shortcut})` : 'Overlay browser');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: t(win.isVisible() ? 'tray.hide' : 'tray.show'), accelerator: shortcut || undefined, click: toggleWindow },
-    { label: t('tray.home'), click: () => { showWindow(); win.webContents.send('nav:home'); } },
-    { label: t('tray.settings'), click: () => { showWindow(); win.webContents.send('nav:settings'); } },
+    { label: t(win.isVisible() ? 'tray.hide' : 'tray.show'), accelerator: shortcut || undefined, click: () => toggleWindow('tray menu') },
+    { label: t('tray.home'), click: () => { showWindow('tray menu'); win.webContents.send('nav:home'); } },
+    { label: t('tray.settings'), click: () => { showWindow('tray menu'); win.webContents.send('nav:settings'); } },
     { type: 'separator' },
     { label: t('tray.quit'), click: () => app.quit() },
   ]));
@@ -594,7 +681,7 @@ function createTray() {
     // Clicking the icon while the overlay is open, the window first loses
     // focus and hides (see 'blur'): the click must not reopen it right after.
     if (!win.isVisible() && Date.now() - lastBlurHide < 500) return;
-    toggleWindow();
+    toggleWindow('tray icon');
   });
   // Menu items depend on the window state and on the shortcut.
   win.on('show', updateTray);
@@ -606,7 +693,7 @@ function createTray() {
 // combination is already used by another application.
 function tryRegister(accelerator) {
   try {
-    return globalShortcut.register(accelerator, toggleFromShortcut);
+    return globalShortcut.register(accelerator, () => toggleFromShortcut('globalShortcut'));
   } catch {
     return false;
   }
@@ -614,6 +701,11 @@ function tryRegister(accelerator) {
 
 function setShortcut(accelerator) {
   const previous = shortcut;
+  // Setting a combination ends its capture (see 'shortcut:suspend'): the
+  // hook must work again, otherwise it would stay off until restart while
+  // globalShortcut, registered again here, hides the problem outside games.
+  if (hookSuspended) log('hook: resumed after recording the combination');
+  hookSuspended = false;
   globalShortcut.unregisterAll();
   if (tryRegister(accelerator)) {
     shortcut = accelerator;
@@ -621,9 +713,11 @@ function setShortcut(accelerator) {
     prefs.shortcut = accelerator;
     savePrefs();
     updateTray();
+    log(`ui: shortcut changed to ${accelerator}`);
     return { ok: true, shortcut };
   }
   if (previous) tryRegister(previous);
+  log(`ui: shortcut ${accelerator} cannot be registered (used by another application?), kept ${previous || 'none'}`);
   return { ok: false, shortcut: previous, error: t('shortcut.error', { accelerator }) };
 }
 
@@ -659,7 +753,8 @@ app.on('web-contents-created', (_e, contents) => {
     popup.on('closed', () => {
       if (!win.isDestroyed() && win.isVisible() && !overlayFocused()) win.focus();
     });
-    log(`popup opened from ${contents.getURL()}`);
+    popup.on('closed', () => log('popup closed'));
+    log('popup opened by a site page');
   });
 });
 
@@ -687,7 +782,15 @@ ipcMain.handle('state:load', () => ({
 }));
 ipcMain.handle('settings:set', (_e, key, value) => {
   if (!(key in DEFAULT_SETTINGS) || !isValidSetting(key, value)) return;
+  if (key === 'verboseLog' && !value) log('verbose log off');
+  if (prefs.settings[key] !== value) logSetting(key, value);
   prefs.settings[key] = value;
+  if (key === 'verboseLog' && value) {
+    // Turned on while running: the current state, otherwise known only from startup.
+    log('verbose log on');
+    log(`globalShortcut: ${shortcut ? `registered ${shortcut}` : 'none'}; hook: ` +
+      `${!uiohook ? 'not available' : hookCombo ? 'combination ok' : 'no combination'}${hookSuspended ? ', suspended' : ''}`);
+  }
   savePrefs();
   if (key === 'opacity') applyOpacity();
 });
@@ -699,6 +802,29 @@ ipcMain.handle('settings:set', (_e, key, value) => {
 // Project page, linked next to the version on the Settings page.
 const REPO_URL = 'https://github.com/siculo/overlay-browser';
 ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL));
+// Shows overlay.log in the file manager (created empty if missing), e.g. to send it.
+// User actions in the page (tabs, sites, lists...), see logAction in
+// index.html. Only with the verbose log.
+ipcMain.on('log:action', (_e, msg) => {
+  if (typeof msg === 'string' && msg) log(`ui: ${msg.slice(0, 300)}`);
+});
+// Empties overlay.log. The next line writes the session line and the
+// settings again (see writeLog), so the log never starts without them.
+ipcMain.handle('log:clear', () => {
+  try {
+    fs.writeFileSync(logFile(), '');
+  } catch (err) {
+    logError(`log: cannot empty the file: ${err}`);
+    return false;
+  }
+  sessionLogged = false;
+  log('ui: log emptied');
+  return true;
+});
+ipcMain.handle('log:show', () => {
+  try { fs.appendFileSync(logFile(), ''); } catch { /* shown anyway */ }
+  shell.showItemInFolder(logFile());
+});
 ipcMain.handle('memory:get', () => {
   const metrics = app.getAppMetrics();
   const { kind, bytes } = platform.memoryUsage(metrics);
@@ -719,9 +845,28 @@ ipcMain.handle('memory:get', () => {
     })),
   };
 });
+// Memory of the app for the log: total (measured as on the Settings page,
+// see memoryUsage in platform/index.js), processes and open site pages.
+function memoryForLog() {
+  try {
+    const metrics = app.getAppMetrics();
+    const { kind, bytes } = platform.memoryUsage(metrics);
+    const total = metrics.reduce((n, m) => n + (bytes.get(m.pid) ?? 0), 0);
+    const pages = webContents.getAllWebContents().filter((wc) => wc.getType() === 'webview').length;
+    return `${Math.round(total / 1048576)} MB (${kind}), ${metrics.length} processes, ${pages} site pages open`;
+  } catch (err) {
+    return `not measurable (${err})`;
+  }
+}
+// Pages loaded and closed (see logMemory in index.html), with the memory
+// after the change. Only with the verbose log: measuring has a cost.
+ipcMain.on('log:memory', (_e, msg) => {
+  if (verboseLog() && typeof msg === 'string' && msg) log(`memory: ${msg.slice(0, 300)}; ${memoryForLog()}`);
+});
 // Changes the language and returns the new messages for the page.
 ipcMain.handle('language:set', (_e, language) => {
   if (!isLanguageSetting(language)) return i18nState();
+  log(`ui: setting language=${JSON.stringify(language)}`);
   prefs.settings.language = language;
   savePrefs();
   updateTray();
@@ -753,6 +898,10 @@ ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
 
 let bookmarkSources = [];
 
+// Number of bookmarks in a tree (see bookmarks.js), for the log.
+const countBookmarks = (nodes) => (nodes ?? []).reduce((n, b) => n + (b.children ? countBookmarks(b.children) : 1), 0);
+const sourceName = (s) => (s.profile ? `${s.browser} (${s.profile})` : s.browser);
+
 // { sources: [{ id, browser, profile }], denied: [browser] }: denied are the
 // browsers whose data the system does not let the app read.
 ipcMain.handle('bookmarks:sources', () => {
@@ -760,9 +909,11 @@ ipcMain.handle('bookmarks:sources', () => {
   try {
     ({ sources: bookmarkSources, denied } = bookmarks.listSources(platform.bookmarkStores()));
   } catch (err) {
-    log(`bookmarks: cannot list the sources: ${err?.stack || err}`);
+    logError(`bookmarks: cannot list the sources: ${err?.stack || err}`);
     bookmarkSources = [];
   }
+  log(`bookmarks: ${bookmarkSources.length} sources found` +
+    `${bookmarkSources.length ? `: ${bookmarkSources.map(sourceName).join(', ')}` : ''}`);
   if (denied.length) log(`bookmarks: no access to the data of ${denied.join(', ')}`);
   return { sources: bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile })), denied };
 });
@@ -770,9 +921,11 @@ ipcMain.handle('bookmarks:read', (_e, id) => {
   const source = bookmarkSources.find((s) => s.id === id);
   if (!source) return { error: true };
   try {
-    return { tree: bookmarks.readSource(source) };
+    const tree = bookmarks.readSource(source);
+    log(`bookmarks: read ${sourceName(source)}, ${countBookmarks(tree)} bookmarks`);
+    return { tree };
   } catch (err) {
-    log(`bookmarks: cannot read ${source.browser} (${source.file}): ${err?.stack || err}`);
+    logError(`bookmarks: cannot read ${source.browser} (${source.file}): ${err?.stack || err}`);
     return { error: true, denied: bookmarks.isDenied(err) };
   }
 });
@@ -799,12 +952,17 @@ ipcMain.handle('bookmarks:file', async () => {
       { name: t('bookmarks.allFiles'), extensions: ['*'] },
     ],
   }));
-  if (result.canceled || !result.filePaths[0]) return null;
+  if (result.canceled || !result.filePaths[0]) {
+    log('bookmarks: file choice cancelled');
+    return null;
+  }
   const file = result.filePaths[0];
   try {
-    return { name: path.basename(file), tree: bookmarks.readHtmlFile(file) };
+    const tree = bookmarks.readHtmlFile(file);
+    log(`bookmarks: read file ${path.basename(file)}, ${countBookmarks(tree)} bookmarks`);
+    return { name: path.basename(file), tree };
   } catch (err) {
-    log(`bookmarks: cannot read ${file}: ${err?.stack || err}`);
+    logError(`bookmarks: cannot read ${file}: ${err?.stack || err}`);
     return { name: path.basename(file), error: true };
   }
 });
@@ -824,10 +982,11 @@ ipcMain.handle('bookmarks:export', async (_e, folders) => {
   if (result.canceled || !result.filePath) return null;
   try {
     fs.writeFileSync(result.filePath, html);
-    log(`bookmarks: exported to ${result.filePath}`);
+    const count = folders.reduce((n, f) => n + (Array.isArray(f?.sites) ? f.sites.length : 0), 0);
+    log(`ui: bookmarks exported (${folders.length} lists, ${count} bookmarks) to ${result.filePath}`);
     return { ok: true };
   } catch (err) {
-    log(`bookmarks: cannot write ${result.filePath}: ${err?.stack || err}`);
+    logError(`bookmarks: cannot write ${result.filePath}: ${err?.stack || err}`);
     return { error: true };
   }
 });
@@ -835,6 +994,7 @@ ipcMain.handle('shortcut:set', (_e, accelerator) => setShortcut(String(accelerat
 // While the user records a new combination, the current one must be
 // suspended, otherwise pressing it would hide the window instead of capturing it.
 ipcMain.handle('shortcut:suspend', (_e, suspended) => {
+  log(`ui: shortcut recording ${suspended ? 'started' : 'cancelled'}`);
   hookSuspended = !!suspended;
   globalShortcut.unregisterAll();
   if (!suspended && shortcut) tryRegister(shortcut);
@@ -847,16 +1007,13 @@ ipcMain.handle('shortcut:suspend', (_e, suspended) => {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => { if (win) showWindow(); });
+  app.on('second-instance', () => { if (win) showWindow('second instance'); });
   app.whenReady().then(start);
 }
 
 function start() {
   prefs = loadPrefs();
-  log(`startup (version ${app.getVersion()}, ${app.isPackaged ? 'packaged' : 'development'}, ` +
-    `language ${currentLanguage()}, system languages ${app.getPreferredSystemLanguages().join(',') || 'none'})`);
-  log(`platform ${platform.id}: ${Object.entries(platform.features).map(([k, v]) => `${k}=${v}`).join(' ')} ` +
-    `opacity=${platform.opacity}`);
+  log('verbose log on');   // with the verbose log, the session line is written at startup
 
   win = new BrowserWindow({
     ...initialBounds(),
@@ -880,13 +1037,31 @@ function start() {
 
   if (tryRegister(prefs.shortcut)) shortcut = prefs.shortcut;
   else if (tryRegister(DEFAULT_SHORTCUT)) shortcut = DEFAULT_SHORTCUT;
-  log(`globalShortcut: ${shortcut ? `registered ${shortcut}` : `cannot register ${prefs.shortcut}`}`);
+  if (shortcut) log(`globalShortcut: registered ${shortcut}`);
+  else logError(`globalShortcut: ERROR cannot register ${prefs.shortcut} nor ${DEFAULT_SHORTCUT}`);
   // The hook uses the chosen combination anyway, even if globalShortcut
   // could not register it (e.g. already used by another application).
   setHookCombo(shortcut || prefs.shortcut);
   startKeyboardHook();
   createTray();
 }
+// Errors and crashes, so that an overlay that disappears leaves a trace.
+process.on('uncaughtException', (err) => logError(`ERROR uncaught: ${err?.stack || err}`));
+process.on('unhandledRejection', (err) => logError(`ERROR unhandled rejection: ${err?.stack || err}`));
+// A process that ends normally ('clean-exit') is not an error.
+const goneLog = (details) => (details.reason === 'clean-exit' ? log : logError);
+app.on('render-process-gone', (_e, contents, details) => {
+  goneLog(details)(`${contentsKind(contents)} process gone (${details.reason}, exit code ${details.exitCode})`);
+});
+app.on('child-process-gone', (_e, details) => {
+  goneLog(details)(`${details.type} process gone (${details.reason}, exit code ${details.exitCode})`);
+});
+app.on('web-contents-created', (_e, contents) => {
+  contents.on('unresponsive', () => logError(`${contentsKind(contents)} not responding`));
+  contents.on('responsive', () => logError(`${contentsKind(contents)} responding again`));
+});
+app.on('before-quit', () => log('quit'));
+
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   try { uiohook?.uIOhook.stop(); } catch { /* already stopped */ }

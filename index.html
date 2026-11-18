@@ -174,6 +174,7 @@
   .setting.check { align-items: flex-start; cursor: pointer; max-width: 720px; }
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
   .setting .desc { display: block; font-size: 13px; color: #999; margin-top: 2px; }
+  #show-log-setting { margin-top: 14px; }
   /* Content of the Home (notices and lists) and of the Settings, at most
      720px wide, centered in the page */
   #home > *, #settings > * { margin-inline: auto; }
@@ -362,6 +363,18 @@
     <div class="hint" id="memory-kind"></div>
     <table id="memory-table"></table>
 
+    <h2 data-i18n="settings.diagnostics"></h2>
+    <label class="setting check">
+      <input type="checkbox" id="opt-verbose-log">
+      <span><span data-i18n="settings.verboseLog"></span>
+        <span class="desc" data-i18n="settings.verboseLogDesc"></span></span>
+    </label>
+    <div class="setting" id="show-log-setting">
+      <button id="show-log" data-i18n="settings.showLog"></button>
+      <button id="clear-log" data-i18n="settings.clearLog"></button>
+    </div>
+    <div class="hint" id="log-hint"></div>
+
   </div>
 
   <div id="views" hidden><div id="browse-empty" data-i18n="browse.empty" hidden></div></div>
@@ -479,6 +492,23 @@
   const currentList = () => pinnedList() || contextList();
   const listOfSite = (id) => lists.find((l) => l.sites.some((s) => s.id === id));
   const findSite = (id) => listOfSite(id)?.sites.find((s) => s.id === id);
+
+  // ---------- log of the user's actions ----------
+  //
+  // Written by main.js in overlay.log with the verbose log only. Nothing
+  // about the browsing: never addresses or page titles; a list is named by
+  // its application, a site by its position in its list.
+  const logAction = (msg) => window.overlay.logAction(msg);
+  // The same, followed by the memory used by the app after the event.
+  const logMemory = (msg) => window.overlay.logMemory(msg);
+  const listRef = (l) => (!l ? 'no list' : !l.match ? 'general list'
+    : l.match.exe ? `list of ${l.match.exe}` : 'list of a window');
+  function siteRef(id) {
+    const l = listOfSite(id);
+    if (!l) return 'site';
+    return `site ${l.sites.findIndex((s) => s.id === id) + 1}/${l.sites.length} of ${listRef(l)}`;
+  }
+  const tabRef = (id) => (id === null ? 'Home' : id === SETTINGS ? 'Settings' : id === BROWSE ? 'Browse' : siteRef(id));
   const save = () => window.overlay.saveLists(lists);
 
   // Lists created before the application's name was detected are named
@@ -502,6 +532,7 @@
   }
 
   function setPinned(id) {
+    logAction(id ? `list chosen by hand: ${listRef(lists.find((l) => l.id === id))}` : 'list chosen by hand restored');
     pinnedId = id;
     window.overlay.pinList(id);
   }
@@ -580,6 +611,11 @@
       // The id is looked up at every event: a page of the free browsing tab
       // or of a site becomes another site's when it is pinned (see pinPage).
       const idOf = () => { for (const [k, v] of webviews) if (v === wv) return k; return null; };
+      // First load of the page: its process now exists and is counted.
+      const createdAt = Date.now();
+      wv.addEventListener('did-finish-load', () => {
+        if (webviews.get(idOf()) === wv) logMemory(`page loaded in ${Date.now() - createdAt} ms: ${tabRef(idOf())}`);
+      }, { once: true });
       wv.addEventListener('page-title-updated', (e) => {
         const s = findSite(idOf());
         if (s && !s.title && e.title) { s.title = e.title; save(); render(); }
@@ -603,6 +639,7 @@
 
   function activate(id) {
     if (id !== SETTINGS) cancelCapture();
+    if (id !== active) logAction(`tab ${tabRef(id)}`);
     // The list's last tab: a site, the Home or the Settings page.
     const cur = currentList();
     const tab = id ?? HOME;
@@ -635,6 +672,7 @@
     else if (last === SETTINGS || last === BROWSE) id = last;
     else if (cur.sites.some((s) => s.id === last)) id = last;
     else id = cur.sites[0]?.id ?? null;
+    logAction(`current list: ${listRef(cur)}${pinnedId ? ' (chosen by hand)' : ''}, ${cur.sites.length} sites`);
     activate(id);
     render();
     sweepPages();
@@ -671,6 +709,7 @@
   function unloadPage(id) {
     let url = null;
     try { url = webviews.get(id)?.getURL(); } catch { /* not ready yet */ }
+    logAction(`page closed after ${unloadAfter} min without use: ${tabRef(id)}`);
     closeWebview(id);
     if (url && /^https?:/i.test(url)) lastUrls.set(id, url);
   }
@@ -678,9 +717,12 @@
   function sweepPages() {
     markIdle();
     const now = Date.now();
+    let closed = 0;
     for (const [id, since] of [...idleSince]) {
-      if (now - since >= unloadDelay()) unloadPage(id);
+      if (now - since >= unloadDelay()) { unloadPage(id); closed++; }
     }
+    // Measured a little later: the pages' processes take a moment to end.
+    if (closed) setTimeout(() => logMemory(`${closed} pages closed after ${unloadAfter} min without use`), 2000);
   }
   // The time also runs while the overlay is hidden (timers of a hidden
   // window may be slowed down to once a minute: the delay is approximate).
@@ -887,6 +929,7 @@
     lastUrls.delete(from);
     webviews.set(site.id, wv);
     save();
+    logAction(`page pinned as ${siteRef(site.id)} (from ${from === BROWSE ? 'Browse' : 'a site tab'})`);
     activate(site.id);
     render();
     if (!title) resolveTitle(site);
@@ -1003,6 +1046,7 @@
     if (sorted.length !== l.sites.length || sorted.some((s) => !s)) return;
     if (sorted.every((s, i) => s === l.sites[i])) return;
     l.sites.splice(0, l.sites.length, ...sorted);
+    logAction(`sites reordered in ${listRef(l)}`);
     save();
   }
 
@@ -1192,6 +1236,7 @@
     if (!url) return null;
     const site = { id: crypto.randomUUID(), url, title: null };
     materialize(l).sites.push(site);
+    logAction(`site added: ${siteRef(site.id)}`);
     save();
     render();
     resolveTitle(site);
@@ -1209,6 +1254,8 @@
       have.add(url);
       added.push({ id: crypto.randomUUID(), url, title: e.title || null });
     }
+    logAction(`sites added to ${listRef(l)}: ${added.length}` +
+      `${entries.length > added.length ? ` (${entries.length - added.length} already there or invalid)` : ''}`);
     if (!added.length) return added;
     materialize(l).sites.push(...added);
     save();
@@ -1229,6 +1276,7 @@
     drafts.delete('edit:' + id);
     showError();
     if (url !== site.url) {
+      logAction(`site address changed: ${siteRef(id)}`);
       site.url = url;
       site.title = null;
       lastUrls.delete(id);
@@ -1246,6 +1294,7 @@
     const l = listOfSite(id);
     const at = l.sites.findIndex((s) => s.id === id);
     const neighbour = l.sites[at + 1] ?? l.sites[at - 1] ?? null;
+    logAction(`site removed: ${siteRef(id)}`);
     l.sites = l.sites.filter((s) => s.id !== id);
     if (l.activeTab === id) l.activeTab = null;
     closeWebview(id);
@@ -1274,6 +1323,7 @@
     });
     if (!ok || !lists.includes(l)) return;
     const wasCurrent = currentList() === l;
+    logAction(`list removed: ${listRef(l)} (${l.sites.length} sites)`);
     lists = lists.filter((x) => x !== l);
     for (const site of l.sites) closeWebview(site.id);
     expanded.delete(l.id);
@@ -1389,6 +1439,7 @@
     }
     presetsApplied.add(p.exe);
     window.overlay.presetApplied(p.exe);
+    logAction(`predefined list applied: ${listRef(l)} (${l.sites.length} sites)`);
     preset = null;
     save();
     showCurrentList();
@@ -1397,7 +1448,7 @@
 
   $('preset-use').onclick = () => { if (preset) applyPreset(preset); };
   $('preset-dismiss').onclick = () => {
-    if (preset) dismissedPresets.add(preset.exe);
+    if (preset) { dismissedPresets.add(preset.exe); logAction(`predefined list dismissed: ${preset.exe}`); }
     preset = null;
     renderPreset();
   };
@@ -1795,8 +1846,8 @@
     updateAddOk();
     setTimeout(() => (tab === 'url' ? addInput : $('bm-search')).focus());
   }
-  $('add-tab-url').onclick = () => showAddTab('url');
-  $('add-tab-bm').onclick = () => showAddTab('bm');
+  $('add-tab-url').onclick = () => { if (addTab !== 'url') logAction('add dialog: Address tab'); showAddTab('url'); };
+  $('add-tab-bm').onclick = () => { if (addTab !== 'bm') logAction('add dialog: Bookmarks tab'); showAddTab('bm'); };
 
   function openAddDialog(tab, { home = false } = {}) {
     closeDialog?.(null);   // one dialog at a time
@@ -1814,10 +1865,19 @@
     renderSourceSelect();
     addDialog.hidden = false;
     showAddTab(tab);
+    logAction(`add dialog opened (${home ? 'Import bookmarks on the Home' : '"+" in the bar'}, ` +
+      `${tab === 'url' ? 'Address' : 'Bookmarks'} tab)`);
 
     return new Promise((resolve) => {
       closeDialog = (result) => {
         closeDialog = null;
+        if (!result) logAction('add dialog cancelled');
+        else if (result.url) logAction('add dialog: address confirmed');
+        else {
+          const source = bm.source === FILE_SOURCE ? 'file'
+            : bm.sources?.find((s) => s.id === bm.source)?.browser ?? 'unknown source';
+          logAction(`add dialog: ${result.bookmarks.length} bookmarks from ${source} confirmed for ${listRef(result.list)}`);
+        }
         addDialog.hidden = true;
         addForm.onsubmit = null;
         bm.request++;
@@ -2023,7 +2083,15 @@
   // immediately. To add an option: an entry in OPTIONS and its default in
   // main.js (DEFAULT_SETTINGS).
 
-  const OPTIONS = { hideOnBlur: $('opt-hide-on-blur') };
+  const OPTIONS = { hideOnBlur: $('opt-hide-on-blur'), verboseLog: $('opt-verbose-log') };
+  $('show-log').onclick = () => window.overlay.showLog();
+  $('clear-log').onclick = async () => {
+    const ok = await openDialog({ message: t('settings.clearLogConfirm'), okLabel: t('settings.clearLog'), danger: true });
+    if (!ok) return;
+    const done = await window.overlay.clearLog();
+    $('log-hint').textContent = t(done ? 'settings.logCleared' : 'settings.logClearError');
+    $('log-hint').classList.toggle('err', !done);
+  };
 
   function initOptions(settings) {
     for (const [key, input] of Object.entries(OPTIONS)) {
