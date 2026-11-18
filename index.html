@@ -499,6 +499,8 @@
   // about the browsing: never addresses or page titles; a list is named by
   // its application, a site by its position in its list.
   const logAction = (msg) => window.overlay.logAction(msg);
+  // The same, followed by the memory used by the app after the event.
+  const logMemory = (msg) => window.overlay.logMemory(msg);
   const listRef = (l) => (!l ? 'no list' : !l.match ? 'general list'
     : l.match.exe ? `list of ${l.match.exe}` : 'list of a window');
   function siteRef(id) {
@@ -609,6 +611,11 @@
       // The id is looked up at every event: a page of the free browsing tab
       // or of a site becomes another site's when it is pinned (see pinPage).
       const idOf = () => { for (const [k, v] of webviews) if (v === wv) return k; return null; };
+      // First load of the page: its process now exists and is counted.
+      const createdAt = Date.now();
+      wv.addEventListener('did-finish-load', () => {
+        if (webviews.get(idOf()) === wv) logMemory(`page loaded in ${Date.now() - createdAt} ms: ${tabRef(idOf())}`);
+      }, { once: true });
       wv.addEventListener('page-title-updated', (e) => {
         const s = findSite(idOf());
         if (s && !s.title && e.title) { s.title = e.title; save(); render(); }
@@ -710,9 +717,12 @@
   function sweepPages() {
     markIdle();
     const now = Date.now();
+    let closed = 0;
     for (const [id, since] of [...idleSince]) {
-      if (now - since >= unloadDelay()) unloadPage(id);
+      if (now - since >= unloadDelay()) { unloadPage(id); closed++; }
     }
+    // Measured a little later: the pages' processes take a moment to end.
+    if (closed) setTimeout(() => logMemory(`${closed} pages closed after ${unloadAfter} min without use`), 2000);
   }
   // The time also runs while the overlay is hidden (timers of a hidden
   // window may be slowed down to once a minute: the delay is approximate).

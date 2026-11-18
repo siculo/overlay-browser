@@ -845,6 +845,24 @@ ipcMain.handle('memory:get', () => {
     })),
   };
 });
+// Memory of the app for the log: total (measured as on the Settings page,
+// see memoryUsage in platform/index.js), processes and open site pages.
+function memoryForLog() {
+  try {
+    const metrics = app.getAppMetrics();
+    const { kind, bytes } = platform.memoryUsage(metrics);
+    const total = metrics.reduce((n, m) => n + (bytes.get(m.pid) ?? 0), 0);
+    const pages = webContents.getAllWebContents().filter((wc) => wc.getType() === 'webview').length;
+    return `${Math.round(total / 1048576)} MB (${kind}), ${metrics.length} processes, ${pages} site pages open`;
+  } catch (err) {
+    return `not measurable (${err})`;
+  }
+}
+// Pages loaded and closed (see logMemory in index.html), with the memory
+// after the change. Only with the verbose log: measuring has a cost.
+ipcMain.on('log:memory', (_e, msg) => {
+  if (verboseLog() && typeof msg === 'string' && msg) log(`memory: ${msg.slice(0, 300)}; ${memoryForLog()}`);
+});
 // Changes the language and returns the new messages for the page.
 ipcMain.handle('language:set', (_e, language) => {
   if (!isLanguageSetting(language)) return i18nState();

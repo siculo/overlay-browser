@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('overlay', {
   showLog: () => ipcRenderer.invoke('log:show'),
   clearLog: () => ipcRenderer.invoke('log:clear'),
   logAction: (msg) => ipcRenderer.send('log:action', msg),
+  logMemory: (msg) => ipcRenderer.send('log:memory', msg),
   onHome: (callback) => ipcRenderer.on('nav:home', () => callback()),
   onSettings: (callback) => ipcRenderer.on('nav:settings', () => callback()),
   onForegroundApp: (callback) => ipcRenderer.on('app:foreground', (_e, app) => callback(app)),
