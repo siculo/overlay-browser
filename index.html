@@ -1242,7 +1242,7 @@
       have.add(url);
       added.push({ id: crypto.randomUUID(), url, title: e.title || null });
     }
-    logAction(`${added.length} sites added to ${listRef(l)}` +
+    logAction(`sites added to ${listRef(l)}: ${added.length}` +
       `${entries.length > added.length ? ` (${entries.length - added.length} already there or invalid)` : ''}`);
     if (!added.length) return added;
     materialize(l).sites.push(...added);
@@ -1834,8 +1834,8 @@
     updateAddOk();
     setTimeout(() => (tab === 'url' ? addInput : $('bm-search')).focus());
   }
-  $('add-tab-url').onclick = () => showAddTab('url');
-  $('add-tab-bm').onclick = () => showAddTab('bm');
+  $('add-tab-url').onclick = () => { if (addTab !== 'url') logAction('add dialog: Address tab'); showAddTab('url'); };
+  $('add-tab-bm').onclick = () => { if (addTab !== 'bm') logAction('add dialog: Bookmarks tab'); showAddTab('bm'); };
 
   function openAddDialog(tab, { home = false } = {}) {
     closeDialog?.(null);   // one dialog at a time
@@ -1853,10 +1853,19 @@
     renderSourceSelect();
     addDialog.hidden = false;
     showAddTab(tab);
+    logAction(`add dialog opened (${home ? 'Import bookmarks on the Home' : '"+" in the bar'}, ` +
+      `${tab === 'url' ? 'Address' : 'Bookmarks'} tab)`);
 
     return new Promise((resolve) => {
       closeDialog = (result) => {
         closeDialog = null;
+        if (!result) logAction('add dialog cancelled');
+        else if (result.url) logAction('add dialog: address confirmed');
+        else {
+          const source = bm.source === FILE_SOURCE ? 'file'
+            : bm.sources?.find((s) => s.id === bm.source)?.browser ?? 'unknown source';
+          logAction(`add dialog: ${result.bookmarks.length} bookmarks from ${source} confirmed for ${listRef(result.list)}`);
+        }
         addDialog.hidden = true;
         addForm.onsubmit = null;
         bm.request++;

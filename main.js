@@ -867,6 +867,10 @@ ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
 
 let bookmarkSources = [];
 
+// Number of bookmarks in a tree (see bookmarks.js), for the log.
+const countBookmarks = (nodes) => (nodes ?? []).reduce((n, b) => n + (b.children ? countBookmarks(b.children) : 1), 0);
+const sourceName = (s) => (s.profile ? `${s.browser} (${s.profile})` : s.browser);
+
 // { sources: [{ id, browser, profile }], denied: [browser] }: denied are the
 // browsers whose data the system does not let the app read.
 ipcMain.handle('bookmarks:sources', () => {
@@ -877,6 +881,8 @@ ipcMain.handle('bookmarks:sources', () => {
     logError(`bookmarks: cannot list the sources: ${err?.stack || err}`);
     bookmarkSources = [];
   }
+  log(`bookmarks: ${bookmarkSources.length} sources found` +
+    `${bookmarkSources.length ? `: ${bookmarkSources.map(sourceName).join(', ')}` : ''}`);
   if (denied.length) log(`bookmarks: no access to the data of ${denied.join(', ')}`);
   return { sources: bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile })), denied };
 });
@@ -884,7 +890,9 @@ ipcMain.handle('bookmarks:read', (_e, id) => {
   const source = bookmarkSources.find((s) => s.id === id);
   if (!source) return { error: true };
   try {
-    return { tree: bookmarks.readSource(source) };
+    const tree = bookmarks.readSource(source);
+    log(`bookmarks: read ${sourceName(source)}, ${countBookmarks(tree)} bookmarks`);
+    return { tree };
   } catch (err) {
     logError(`bookmarks: cannot read ${source.browser} (${source.file}): ${err?.stack || err}`);
     return { error: true, denied: bookmarks.isDenied(err) };
@@ -913,10 +921,15 @@ ipcMain.handle('bookmarks:file', async () => {
       { name: t('bookmarks.allFiles'), extensions: ['*'] },
     ],
   }));
-  if (result.canceled || !result.filePaths[0]) return null;
+  if (result.canceled || !result.filePaths[0]) {
+    log('bookmarks: file choice cancelled');
+    return null;
+  }
   const file = result.filePaths[0];
   try {
-    return { name: path.basename(file), tree: bookmarks.readHtmlFile(file) };
+    const tree = bookmarks.readHtmlFile(file);
+    log(`bookmarks: read file ${path.basename(file)}, ${countBookmarks(tree)} bookmarks`);
+    return { name: path.basename(file), tree };
   } catch (err) {
     logError(`bookmarks: cannot read ${file}: ${err?.stack || err}`);
     return { name: path.basename(file), error: true };
