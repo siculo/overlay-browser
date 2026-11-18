@@ -51,9 +51,10 @@ Su macOS c'è **`Overlay Browser-x.y.z-arm64.dmg`** (Apple Silicon) oppure **`-x
 
 ### Siti
 
-- La barra in alto ha il pulsante **Home** e un pulsante per ogni sito. Se i pulsanti non ci stanno, usa le frecce ◀ ▶ o la rotella del mouse sopra la barra.
+- La barra in alto ha i tab fissi **Home**, **Naviga** e **Impostazioni**, un tab per ogni sito e il pulsante **+** per aggiungere un sito. Se i tab non ci stanno, usa le frecce ◀ ▶ o la rotella del mouse sopra la barra. I tab si riordinano trascinandoli. Nelle Impostazioni (*Aspetto*) puoi scegliere se i tab fissi mostrano icona e nome o solo l'icona.
 - Ogni sito funziona come una scheda: cambiando sito e tornando indietro ritrovi la pagina esattamente dove l'avevi lasciata.
-- Alla riapertura dell'app viene mostrato l'ultimo sito che stavi guardando.
+- Le pagine che non stai guardando vengono chiuse dopo un po' per liberare memoria (di default 30 minuti, da 5 a 60 nelle Impostazioni): riaprendo il tab si ricarica l'ultimo indirizzo visitato.
+- Alla riapertura dell'overlay viene mostrato l'ultimo tab che stavi guardando.
 
 Dalla **Home** puoi gestire l'elenco:
 
@@ -62,9 +63,20 @@ Dalla **Home** puoi gestire l'elenco:
 - **Rimuovi**: toglie il sito dall'elenco.
 - Clicca sul nome di un sito per aprirlo.
 
+### Navigazione libera
+
+Il tab **Naviga** apre qualsiasi pagina senza aggiungerla all'elenco. Nel suo campo indirizzo scrivi un indirizzo (basta anche `example.com`) oppure un testo qualsiasi per cercarlo, di default con Google: il motore di ricerca (Google, Bing, DuckDuckGo, Brave Search, Ecosia, Startpage, oppure un indirizzo di ricerca personalizzato con `%s` al posto del testo cercato) e una pagina iniziale si scelgono nelle Impostazioni.
+
+**Fissa**, nella barra di navigazione del tab Naviga e dei tab dei siti, trasforma la pagina aperta, con la sua cronologia, in un nuovo tab della lista. Se la pagina è già uno dei tab della lista, quel tab viene evidenziato.
+
+### Bookmark
+
+- **Importa**: *Importa bookmark…*, nella sezione *Bookmark* in fondo alla Home, oppure la scheda *Bookmark* della finestra del **+**, aggiunge siti dai bookmark di un browser (Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Firefox, LibreWolf e altri browser simili; Firefox può restare aperto) oppure da un file HTML di bookmark esportato da qualsiasi browser. Scegli bookmark e cartelle con le caselle, o trovali con la ricerca; i siti già presenti nella lista vengono saltati. Su macOS i bookmark si importano solo da file: esportali prima dal browser.
+- **Esporta**: *Esporta bookmark…* salva i siti delle liste in un file HTML di bookmark, con una cartella per lista, che qualsiasi browser può importare.
+
 ### Cambiare il tasto
 
-Apri le **Impostazioni** con il pulsante ⚙ in alto a destra (o dal menu dell'icona), sezione *Tastiera*:
+Apri il tab **Impostazioni** (o *Impostazioni* dal menu dell'icona), sezione *Tastiera*:
 
 1. clicca **Cambia**;
 2. premi la combinazione che preferisci, ad esempio `Ctrl+Shift+O` (Esc per annullare).

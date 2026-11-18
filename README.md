@@ -51,9 +51,10 @@ On macOS there is **`Overlay Browser-x.y.z-arm64.dmg`** (Apple Silicon) or **`-x
 
 ### Sites
 
-- The top bar has the **Home** button and one button per site. If the buttons don't fit, use the ◀ ▶ arrows or the mouse wheel over the bar.
+- The top bar has the fixed tabs **Home**, **Browse** and **Settings**, one tab per site, and the **+** button to add a site. If the tabs don't fit, use the ◀ ▶ arrows or the mouse wheel over the bar. Tabs can be reordered by dragging them. In the Settings (*Appearance*) you can choose whether the fixed tabs show their icon and name or the icon only.
 - Each site works like a tab: when you switch to another site and come back, you'll find the page exactly where you left it.
-- When the app is reopened, the last site you were viewing is shown.
+- Pages you are not looking at are closed after a while to free memory (30 minutes by default, from 5 to 60 in the Settings): opening the tab again reloads the last address visited.
+- When the overlay is reopened, the last tab you were viewing is shown.
 
 From the **Home** page you can manage the list:
 
@@ -62,9 +63,20 @@ From the **Home** page you can manage the list:
 - **Remove**: removes the site from the list.
 - Click a site's name to open it.
 
+### Free browsing
+
+The **Browse** tab opens any page without adding it to the list. In its address field type an address (`example.com` is enough) or any text to search for it, with Google by default: the search engine (Google, Bing, DuckDuckGo, Brave Search, Ecosia, Startpage, or a custom search address with `%s` in place of the searched text) and a start page can be chosen in the Settings.
+
+**Pin**, in the navigation bar of the Browse tab and of the sites' tabs, turns the open page, with its history, into a new tab of the list. If the page is already one of the list's tabs, that tab is highlighted.
+
+### Bookmarks
+
+- **Import**: *Import bookmarks…*, in the *Bookmarks* section at the end of the Home, or the *Bookmarks* tab of the **+** dialog, adds sites from a browser's bookmarks (Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Firefox, LibreWolf and other similar browsers; Firefox can stay open) or from an HTML bookmark file exported by any browser. Choose bookmarks and folders with the checkboxes, or find them with the search; sites already in the list are skipped. On macOS bookmarks can only be imported from a file: export them from the browser first.
+- **Export**: *Export bookmarks…* saves the sites of the lists to an HTML bookmark file, with one folder per list, that any browser can import.
+
 ### Changing the key
 
-Open the **Settings** with the ⚙ button at the top right (or from the icon menu), *Keyboard* section:
+Open the **Settings** tab (or *Settings* from the icon menu), *Keyboard* section:
 
 1. click **Change**;
 2. press the combination you prefer, for example `Ctrl+Shift+O` (Esc to cancel).
