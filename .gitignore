@@ -21,6 +21,7 @@ npm-debug.log*
 .idea/dataSources.local.xml
 .idea/compiler.xml
 .idea/misc.xml
+.idea/codeStyles/codeStyleConfig.xml
 
 # Configurazione locale di Codex
 .codex/
