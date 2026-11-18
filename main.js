@@ -649,6 +649,11 @@ function tryRegister(accelerator) {
 
 function setShortcut(accelerator) {
   const previous = shortcut;
+  // Setting a combination ends its capture (see 'shortcut:suspend'): the
+  // hook must work again, otherwise it would stay off until restart while
+  // globalShortcut, registered again here, hides the problem outside games.
+  if (hookSuspended) log('hook: resumed after recording the combination');
+  hookSuspended = false;
   globalShortcut.unregisterAll();
   if (tryRegister(accelerator)) {
     shortcut = accelerator;
