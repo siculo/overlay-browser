@@ -19,7 +19,7 @@ Electron app for Windows, Linux (X11) and macOS: an overlay browser, always on t
 ## Branches and releases
 
 - `release/<major.minor>` (now `release/1.0`): fixes and small polish for the version being released. Release tags (`v1.0.0-beta.2`, `v1.0.0`, `v1.0.1`…) are created here; the release workflow runs on any `v*` tag, whatever the branch.
-- `main`: development of the next version (now 1.1: e.g. bookmark import/export). New features go on `feature/<name>` branches from `main`, merged back into `main`.
-- A fix for the released version is always made on the release branch, then the release branch is merged into `main` (`git merge release/1.0`); never merge `main` into a release branch or cherry-pick features into it.
+- `main`: development of the next version (now 1.1; bookmark import/export, unloading of unused pages and the Browse tab, first planned for 1.1, were moved into 1.0 during its beta). New features go on `feature/<name>` branches from `main`, merged back into `main`.
+- A fix for the released version is always made on the release branch, then the release branch is merged into `main` (`git merge release/1.0`); never merge `main` into a release branch or cherry-pick features into it. Only exception: while a version is still in beta (no stable tag yet), if the user decides that the features on `main` go into it, the release branch is moved forward to `main` (`git checkout release/1.0 && git merge --ff-only main`), only when the release branch has no commits missing from `main` (merge it into `main` first); then a new beta is tagged.
 - Before working, check which branch is checked out and whether the change is a fix (release branch) or a feature (`main`/feature branch); ask if unclear.
 - When the next version is ready for beta, create `release/<next>` from `main`.
