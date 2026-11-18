@@ -367,7 +367,7 @@ let shortcut = null;   // currently registered shortcut
 
 function platformCall(name) {
   try {
-    platform[name](win);
+    return platform[name](win);
   } catch (err) {
     log(`platform ${platform.id}: ERROR in ${name}: ${err?.stack || err}`);
   }
@@ -375,8 +375,21 @@ function platformCall(name) {
 
 let shownAt = 0;   // when the overlay was last shown (for the log of hideOnBlur)
 
-function showWindow() {
+// true/false if the overlay is the foreground window, '?' if the platform
+// cannot tell. Only for the log.
+function foregroundState() {
+  try {
+    const owns = platform.ownsForeground(win);
+    return owns === null ? '?' : String(owns);
+  } catch (err) {
+    return `error (${err})`;
+  }
+}
+
+// `reason`: what asked to show/hide (shortcut source, tray, blur...), for the log.
+function showWindow(reason = 'other') {
   shownAt = Date.now();
+  log(`show (${reason}): start, foreground=${foregroundState()}`);
   platformCall('beforeShow');
   if (win.isMinimized()) win.restore();
   win.show();
@@ -385,6 +398,15 @@ function showWindow() {
   platformCall('afterShow');
   win.webContents.send('win:visible', true);
   detectForegroundApp();
+  log(`show (${reason}): done in ${Date.now() - shownAt} ms, visible=${win.isVisible()} ` +
+    `focused=${win.isFocused()} foreground=${foregroundState()}`);
+  // A game can take the foreground back right after: checked again shortly after.
+  const at = shownAt;
+  setTimeout(() => {
+    if (at !== shownAt || win.isDestroyed()) return;
+    log(`show (${reason}): after 500 ms visible=${win.isVisible()} focused=${win.isFocused()} ` +
+      `foreground=${foregroundState()}`);
+  }, 500);
 }
 
 // ---------- application the overlay was opened over ----------
@@ -417,7 +439,8 @@ function detectForegroundApp() {
 // overlay: a login left halfway is found again at the next show.
 let hiddenPopups = [];
 
-function hideWindow() {
+function hideWindow(reason = 'other') {
+  log(`hide (${reason}): ${Date.now() - shownAt} ms after show`);
   platformCall('beforeHide');
   hiddenPopups = win.getChildWindows().filter((w) => w.isVisible());
   for (const w of hiddenPopups) w.hide();
@@ -425,9 +448,9 @@ function hideWindow() {
   win.webContents.send('win:visible', false);
 }
 
-function toggleWindow() {
-  if (win.isVisible() && !win.isMinimized()) hideWindow();
-  else showWindow();
+function toggleWindow(reason = 'other') {
+  if (win.isVisible() && !win.isMinimized()) hideWindow(reason);
+  else showWindow(reason);
 }
 
 // When the overlay loses focus (click on another window, Alt+Tab...) it
@@ -472,17 +495,23 @@ function hideOnBlur(blurred) {
   }
   lastBlurHide = Date.now();
   log(`focus: hidden on blur (${lastBlurHide - shownAt} ms after show)`);
-  hideWindow();
+  hideWindow('blur');
 }
 
 // The shortcut is intercepted in two ways (see below): when both work, two
 // events arrive for the same key press, and only the first must count.
 let lastShortcutToggle = 0;
-function toggleFromShortcut() {
+// `source`: 'hook' or 'globalShortcut'. The log shows which of the two
+// works in the foreground app (in game, usually only the hook).
+function toggleFromShortcut(source) {
   const now = Date.now();
-  if (now - lastShortcutToggle < 300) return;
+  if (now - lastShortcutToggle < 300) {
+    log(`shortcut: ${source} ignored, same key press (${now - lastShortcutToggle} ms after the first)`);
+    return;
+  }
   lastShortcutToggle = now;
-  toggleWindow();
+  log(`shortcut: ${source}`);
+  toggleWindow(`shortcut ${source}`);
 }
 
 // ---------- low-level keyboard hook ----------
@@ -556,10 +585,16 @@ function startKeyboardHook() {
   uIOhook.on('keydown', (e) => {
     const c = hookCombo;
     if (!c || hookSuspended || e.keycode !== c.keycode) return;
-    if (e.ctrlKey !== c.ctrl || e.altKey !== c.alt || e.shiftKey !== c.shift || e.metaKey !== c.meta) return;
+    // Only the shortcut's key is logged, with the modifiers seen by the
+    // hook, to tell why the combination was not recognized.
+    if (e.ctrlKey !== c.ctrl || e.altKey !== c.alt || e.shiftKey !== c.shift || e.metaKey !== c.meta) {
+      log(`hook: shortcut key with other modifiers (ctrl=${e.ctrlKey} alt=${e.altKey} ` +
+        `shift=${e.shiftKey} meta=${e.metaKey}), ignored`);
+      return;
+    }
     if (hookKeyDown) return;
     hookKeyDown = true;
-    toggleFromShortcut();
+    toggleFromShortcut('hook');
   });
   uIOhook.on('keyup', (e) => {
     if (hookCombo && e.keycode === hookCombo.keycode) hookKeyDown = false;
@@ -580,9 +615,9 @@ function updateTray() {
   if (!tray) return;
   tray.setToolTip(shortcut ? `Overlay browser (${shortcut})` : 'Overlay browser');
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: t(win.isVisible() ? 'tray.hide' : 'tray.show'), accelerator: shortcut || undefined, click: toggleWindow },
-    { label: t('tray.home'), click: () => { showWindow(); win.webContents.send('nav:home'); } },
-    { label: t('tray.settings'), click: () => { showWindow(); win.webContents.send('nav:settings'); } },
+    { label: t(win.isVisible() ? 'tray.hide' : 'tray.show'), accelerator: shortcut || undefined, click: () => toggleWindow('tray menu') },
+    { label: t('tray.home'), click: () => { showWindow('tray menu'); win.webContents.send('nav:home'); } },
+    { label: t('tray.settings'), click: () => { showWindow('tray menu'); win.webContents.send('nav:settings'); } },
     { type: 'separator' },
     { label: t('tray.quit'), click: () => app.quit() },
   ]));
@@ -594,7 +629,7 @@ function createTray() {
     // Clicking the icon while the overlay is open, the window first loses
     // focus and hides (see 'blur'): the click must not reopen it right after.
     if (!win.isVisible() && Date.now() - lastBlurHide < 500) return;
-    toggleWindow();
+    toggleWindow('tray icon');
   });
   // Menu items depend on the window state and on the shortcut.
   win.on('show', updateTray);
@@ -606,7 +641,7 @@ function createTray() {
 // combination is already used by another application.
 function tryRegister(accelerator) {
   try {
-    return globalShortcut.register(accelerator, toggleFromShortcut);
+    return globalShortcut.register(accelerator, () => toggleFromShortcut('globalShortcut'));
   } catch {
     return false;
   }
@@ -847,7 +882,7 @@ ipcMain.handle('shortcut:suspend', (_e, suspended) => {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => { if (win) showWindow(); });
+  app.on('second-instance', () => { if (win) showWindow('second instance'); });
   app.whenReady().then(start);
 }
 
@@ -887,6 +922,21 @@ function start() {
   startKeyboardHook();
   createTray();
 }
+// Errors and crashes, so that an overlay that disappears leaves a trace.
+process.on('uncaughtException', (err) => log(`ERROR uncaught: ${err?.stack || err}`));
+process.on('unhandledRejection', (err) => log(`ERROR unhandled rejection: ${err?.stack || err}`));
+app.on('render-process-gone', (_e, contents, details) => {
+  log(`ERROR page process gone (${details.reason}, exit code ${details.exitCode}): ${contents.getURL()}`);
+});
+app.on('child-process-gone', (_e, details) => {
+  log(`ERROR ${details.type} process gone (${details.reason}, exit code ${details.exitCode})`);
+});
+app.on('web-contents-created', (_e, contents) => {
+  contents.on('unresponsive', () => log(`page not responding: ${contents.getURL()}`));
+  contents.on('responsive', () => log(`page responding again: ${contents.getURL()}`));
+});
+app.on('before-quit', () => log('quit'));
+
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
   try { uiohook?.uIOhook.stop(); } catch { /* already stopped */ }

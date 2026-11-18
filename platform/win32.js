@@ -167,9 +167,9 @@ function beforeShow() {
   if (fg && processOf(fg) !== process.pid) previousForeground = fg;
 }
 
+// Errors are thrown to main.js, which logs them; the focus is set anyway.
 function afterShow(win) {
-  try { forceForeground(hwndOf(win)); } catch (err) { console.error(err); }
-  win.focus();
+  try { forceForeground(hwndOf(win)); } finally { win.focus(); }
 }
 
 function beforeHide(win) {
@@ -178,7 +178,7 @@ function beforeHide(win) {
   // includes its site popups: any window of our process.
   if (ownsForeground() && previousForeground && win32.IsWindow(previousForeground) &&
       !sameHwnd(previousForeground, hwndOf(win))) {
-    try { win32.SetForegroundWindow(previousForeground); } catch (err) { console.error(err); }
+    win32.SetForegroundWindow(previousForeground);   // errors logged by main.js
   }
 }
 
