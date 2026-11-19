@@ -687,6 +687,10 @@
     markIdle();
     renderTabs();
     updateNav(true);
+    // A bar button clicked earlier (Home, Browse, Settings) would keep the
+    // focus, and its focus ring would show on a tab no longer active when
+    // the tab changes by itself (overlay shown over another application).
+    if (document.activeElement?.closest('#bar')) document.activeElement.blur();
     // Free browsing tab with no page: the address is typed right away.
     if (id === BROWSE && !webviews.has(BROWSE)) navUrl.focus();
   }
