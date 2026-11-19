@@ -242,11 +242,16 @@
   #opt-opacity-value { min-width: 3em; font-variant-numeric: tabular-nums; }
   #opacity-setting, #browse-start-setting, #search-setting, #fixed-tabs-setting, #check-updates-setting { margin-top: 14px; }
   /* Memory: total, then one row per process (pages, interface, GPU...) */
-  #memory-total { margin-top: 18px; font-size: 16px; }
+  #memory-head { margin-top: 18px; justify-content: space-between; }
+  #memory-total { font-size: 16px; }
+  #memory-close-all { font-size: 13px; padding: 2px 10px; }
   #opt-unload-value { min-width: 4em; font-variant-numeric: tabular-nums; }
   #memory-table { width: 100%; margin-top: 10px; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
   #memory-table td { padding: 5px 0; border-bottom: 1px solid #2a2a2a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #memory-table td.size { width: 7em; text-align: right; font-variant-numeric: tabular-nums; color: #bbb; }
+  /* Close button of the pages' rows */
+  #memory-table td.action { width: 6.5em; padding: 3px 0 3px 10px; text-align: right; }
+  #memory-table td.action button { font-size: 12px; padding: 1px 8px; }
   /* Accent color: one round swatch per predefined color, the chosen one ringed */
   #accents { display: flex; flex-wrap: wrap; gap: 8px; }
   #accents button { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid transparent; background: var(--swatch); box-shadow: inset 0 0 0 2px var(--sheet); }
@@ -383,7 +388,10 @@
       <output id="opt-unload-value" for="opt-unload"></output>
     </div>
     <div class="hint" data-i18n="settings.unloadAfterDesc"></div>
-    <div id="memory-total"></div>
+    <div class="setting" id="memory-head">
+      <div id="memory-total"></div>
+      <button id="memory-close-all" data-i18n="memory.closeAll" data-i18n-title="memory.closeAllTitle"></button>
+    </div>
     <div class="hint" id="memory-kind"></div>
     <table id="memory-table"></table>
 
@@ -729,13 +737,27 @@
     }
   }
 
-  // Closes the page of a site, remembering where it was.
-  function unloadPage(id) {
+  // Closes the page of a site, remembering where it was. `byHand`: from the
+  // Settings page (see closePages) instead of after the delay.
+  function unloadPage(id, byHand = false) {
     let url = null;
     try { url = webviews.get(id)?.getURL(); } catch { /* not ready yet */ }
-    logAction(`page closed after ${unloadAfter} min without use: ${tabRef(id)}`);
+    logAction(byHand ? `page closed by hand: ${tabRef(id)}` : `page closed after ${unloadAfter} min without use: ${tabRef(id)}`);
     closeWebview(id);
     if (url && /^https?:/i.test(url)) lastUrls.set(id, url);
+  }
+
+  // Closes pages by hand (Settings page, memory section): like after the
+  // delay, their tab loads again the last page visited. On the Settings
+  // page no page is in use, so any of them can be closed.
+  function closePages(ids) {
+    ids = ids.filter((id) => webviews.has(id) && !inUse(id));
+    if (!ids.length) return;
+    for (const id of ids) unloadPage(id, true);
+    renderMemory();
+    setTimeout(() => logMemory(`${ids.length} pages closed by hand`), 2000);
+    // The processes take a moment to end: measured again a little later.
+    setTimeout(updateMemory, 800);
   }
 
   function sweepPages() {
@@ -2329,6 +2351,7 @@
   // How it is measured depends on the platform (memoryUsage in platform/).
 
   const memoryTotal = $('memory-total'), memoryKind = $('memory-kind'), memoryTable = $('memory-table');
+  const closeAllPagesBtn = $('memory-close-all');
   let memoryTimer = null;
   let memory = null;   // last measurement from main.js
 
@@ -2338,23 +2361,31 @@
     return mb >= 1024 ? `${fmt(mb / 1024, 2)} GB` : `${fmt(mb, 0)} MB`;
   }
 
-  // What a process hosts: the overlay's page, open sites, or else its type;
-  // null for the minor ones (added up in a single row).
+  // What a process hosts: the overlay's page, open sites (`pages`: their
+  // ids), or else its type; null for the minor ones (added up in a single row).
   function memoryLabel(p, siteOfContents) {
-    if (p.ui) return t('memory.ui');
+    if (p.ui) return { label: t('memory.ui') };
     const ids = p.contents.map((id) => siteOfContents.get(id)).filter((id) => id === BROWSE || findSite(id));
     if (ids.length) {
-      return ids.map((id) => {
+      const label = ids.map((id) => {
         const min = minutesToUnload(id);
         const s = findSite(id);
         const label = s ? `${siteName(s)} · ${listName(listOfSite(id))}` : t('bar.browse');
         return min === null ? label : `${label} ${t('memory.unloadIn', { count: min })}`;
       }).join(', ');
+      return { label, pages: ids };
     }
-    if (p.type === 'Browser') return t('memory.main');
-    if (p.type === 'GPU') return t('memory.gpu');
+    if (p.type === 'Browser') return { label: t('memory.main') };
+    if (p.type === 'GPU') return { label: t('memory.gpu') };
     return null;
   }
+
+  // The table is rebuilt at every measurement: not while a button is being
+  // pressed, or the click would be lost.
+  let memoryPressed = false;
+  memoryTable.addEventListener('pointerdown', () => { memoryPressed = true; });
+  window.addEventListener('pointerup', () => { memoryPressed = false; }, true);
+  window.addEventListener('pointercancel', () => { memoryPressed = false; }, true);
 
   function renderMemory() {
     if (!memory) return;
@@ -2366,22 +2397,39 @@
     let total = 0, other = 0;
     for (const p of memory.processes) {
       total += p.bytes;
-      const label = memoryLabel(p, siteOfContents);
-      if (label) rows.push({ label, bytes: p.bytes });
+      const row = memoryLabel(p, siteOfContents);
+      // A page just closed whose process has not ended yet: no longer listed.
+      if (row?.pages) row.pages = row.pages.filter((id) => webviews.has(id));
+      if (row) rows.push({ ...row, bytes: p.bytes });
       else other += p.bytes;
     }
     rows.sort((a, b) => b.bytes - a.bytes);
     if (other) rows.push({ label: t('memory.other'), bytes: other });
     memoryTotal.textContent = t('memory.total', { size: formatBytes(total) });
     memoryKind.textContent = t('memory.kind.' + memory.kind);
-    memoryTable.replaceChildren(...rows.map(({ label, bytes }) => {
+    closeAllPagesBtn.disabled = ![...webviews.keys()].some((id) => !inUse(id));
+    if (memoryPressed) return;
+    memoryTable.replaceChildren(...rows.map(({ label, bytes, pages }) => {
       const tr = el('tr');
       const name = el('td', null, label);
       name.title = label;
-      tr.append(name, el('td', 'size', formatBytes(bytes)));
+      const action = el('td', 'action');
+      // Pages sharing a process are closed together: the memory is freed
+      // only when all of them are.
+      const closable = pages?.filter((id) => !inUse(id)) ?? [];
+      if (closable.length) {
+        const b = el('button', null, t('memory.close'));
+        b.type = 'button';
+        b.title = t(closable.length > 1 ? 'memory.closeShared' : 'memory.closeTitle');
+        b.onclick = () => closePages(closable);
+        action.append(b);
+      }
+      tr.append(name, el('td', 'size', formatBytes(bytes)), action);
       return tr;
     }));
   }
+
+  closeAllPagesBtn.onclick = () => closePages([...webviews.keys()]);
 
   async function updateMemory() {
     if (document.visibilityState !== 'visible') return;
