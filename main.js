@@ -31,7 +31,8 @@ const DEFAULT_SETTINGS = {
   searchEngine: 'google', // search engine of the free browsing tab, one of SEARCH_ENGINES
   searchCustom: '',     // address of the 'custom' search engine, with %s in place of the text; '' = none
   fixedTabs: 'labels',  // fixed tabs (Home, Browse, Settings): 'labels' (icon and name) or 'icons' (icon only)
-  verboseLog: false,    // overlay.log: also what happens (shows, focus...), not only errors and crashes
+  checkUpdates: true,   // look for a newer version on GitHub (see 'new versions'); not in the Store version
+  verboseLog: false,   // overlay.log: also what happens (shows, focus...), not only errors and crashes
 };
 const UNLOAD_RANGE = { min: 5, max: 60 };
 // Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
@@ -111,6 +112,8 @@ function loadPrefs() {
     window: loaded.window ?? null,
     shortcut: typeof loaded.shortcut === 'string' && loaded.shortcut ? loaded.shortcut : DEFAULT_SHORTCUT,
     settings: loadSettings(loaded.settings),
+    // Newer version whose notice the user closed: not shown again for it.
+    updateDismissed: typeof loaded.updateDismissed === 'string' ? loaded.updateDismissed : null,
   };
 }
 
@@ -779,6 +782,8 @@ ipcMain.handle('state:load', () => ({
   },
   unloadRange: UNLOAD_RANGE,
   version: app.getVersion(),   // shown on the Settings page
+  updates: UPDATES_ENABLED,    // false: no check for new versions, the option is hidden
+  update: updateState(),       // newer version to tell about, or null
 }));
 ipcMain.handle('settings:set', (_e, key, value) => {
   if (!(key in DEFAULT_SETTINGS) || !isValidSetting(key, value)) return;
@@ -793,6 +798,7 @@ ipcMain.handle('settings:set', (_e, key, value) => {
   }
   savePrefs();
   if (key === 'opacity') applyOpacity();
+  if (key === 'checkUpdates') { if (value) checkForUpdate(); else setAvailableUpdate(null); }
 });
 // Memory used by the app, process by process (measured by the platform
 // module, see memoryUsage in platform/index.js). For each process: its type
@@ -802,6 +808,107 @@ ipcMain.handle('settings:set', (_e, key, value) => {
 // Project page, linked next to the version on the Settings page.
 const REPO_URL = 'https://github.com/siculo/overlay-browser';
 ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL));
+
+// ---------- new versions ----------
+//
+// The GitHub releases are checked shortly after startup and then every few
+// hours (settings.checkUpdates); a newer version is shown by the page on the
+// Settings page, next to the app version, and as a strip below the
+// navigation bar until the user closes it (then not again for that version,
+// prefs.updateDismissed). Prereleases count
+// only for who uses a prerelease: a beta is told about newer betas and the
+// stable version, a stable version only about stable ones. Not in the
+// Microsoft Store version, which the Store updates. The request carries
+// nothing about the user.
+
+const RELEASES_API = 'https://api.github.com/repos/siculo/overlay-browser/releases?per_page=30';
+const RELEASE_PAGE = `${REPO_URL}/releases/`;
+const UPDATES_ENABLED = !process.windowsStore;
+const UPDATE_INTERVAL = 6 * 3600000;
+let availableUpdate = null;   // { version, url } of the newest release newer than this one
+let lastUpdateCheck = 0;
+
+// 'v1.0.0-beta.5' -> { core: [1, 0, 0], pre: ['beta', 5] }; null if not a version.
+function parseVersion(text) {
+  const m = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+.*)?$/.exec(String(text).trim());
+  if (!m) return null;
+  const pre = m[4] ? m[4].split('.').map((id) => (/^\d+$/.test(id) ? Number(id) : id)) : [];
+  return { core: [Number(m[1]), Number(m[2]), Number(m[3])], pre };
+}
+
+// Semantic versioning order: > 0 if a is newer than b.
+function compareVersions(a, b) {
+  for (let i = 0; i < 3; i++) if (a.core[i] !== b.core[i]) return a.core[i] - b.core[i];
+  // Same numbers: the version without prerelease is the newer one.
+  if (!a.pre.length || !b.pre.length) return b.pre.length - a.pre.length;
+  for (let i = 0; i < Math.min(a.pre.length, b.pre.length); i++) {
+    const x = a.pre[i], y = b.pre[i];
+    if (x === y) continue;
+    if (typeof x === 'number' && typeof y === 'number') return x - y;
+    if (typeof x === 'number') return -1;   // numbers come before names
+    if (typeof y === 'number') return 1;
+    return x < y ? -1 : 1;
+  }
+  return a.pre.length - b.pre.length;
+}
+
+// The newer version for the page, or null; `dismissed`: the user closed its
+// strip (it is then shown on the Settings page only).
+const updateState = () => (availableUpdate && { ...availableUpdate, dismissed: availableUpdate.version === prefs?.updateDismissed });
+
+function setAvailableUpdate(update) {
+  availableUpdate = update;
+  if (win && !win.isDestroyed()) win.webContents.send('update:available', updateState());
+}
+
+async function checkForUpdate() {
+  if (!UPDATES_ENABLED || !prefs.settings.checkUpdates) return;
+  lastUpdateCheck = Date.now();
+  const current = parseVersion(app.getVersion());
+  if (!current) return;
+  try {
+    const res = await net.fetch(RELEASES_API, {
+      headers: { Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) { log(`update: check failed (HTTP ${res.status})`); return; }
+    const releases = await res.json();
+    let best = null;
+    for (const r of Array.isArray(releases) ? releases : []) {
+      const v = parseVersion(r?.tag_name);
+      if (!v || r.draft || (r.prerelease && !current.pre.length)) continue;
+      if (compareVersions(v, current) <= 0 || (best && compareVersions(v, best.v) <= 0)) continue;
+      const url = typeof r.html_url === 'string' && r.html_url.startsWith(RELEASE_PAGE) ? r.html_url : RELEASE_PAGE;
+      best = { v, version: r.tag_name.replace(/^v/, ''), url };
+    }
+    if (!prefs.settings.checkUpdates) return;   // turned off while checking
+    log(`update: checked, ${best ? `newer version ${best.version}${best.version === prefs.updateDismissed ? ' (notice closed)' : ''}` : 'no newer version'}`);
+    setAvailableUpdate(best && { version: best.version, url: best.url });
+  } catch (err) {
+    log(`update: check failed (${err?.name === 'TimeoutError' ? 'timeout' : err?.message || err})`);
+  }
+}
+
+// First check a little after startup, then every UPDATE_INTERVAL; looked at
+// every 10 minutes, so that a computer that slept checks soon after waking.
+function startUpdateChecks() {
+  if (!UPDATES_ENABLED) return;
+  setTimeout(checkForUpdate, 10000);
+  setInterval(() => { if (Date.now() - lastUpdateCheck >= UPDATE_INTERVAL) checkForUpdate(); }, 600000);
+}
+
+ipcMain.handle('update:open', () => {
+  if (!availableUpdate) return;
+  log(`ui: update ${availableUpdate.version} opened`);
+  shell.openExternal(availableUpdate.url);
+});
+ipcMain.handle('update:dismiss', () => {
+  if (!availableUpdate) return;
+  log(`ui: update ${availableUpdate.version} notice closed`);
+  prefs.updateDismissed = availableUpdate.version;
+  savePrefs();
+  setAvailableUpdate(availableUpdate);
+});
 // Shows overlay.log in the file manager (created empty if missing), e.g. to send it.
 // User actions in the page (tabs, sites, lists...), see logAction in
 // index.html. Only with the verbose log.
@@ -1044,6 +1151,7 @@ function start() {
   setHookCombo(shortcut || prefs.shortcut);
   startKeyboardHook();
   createTray();
+  startUpdateChecks();
 }
 // Errors and crashes, so that an overlay that disappears leaves a trace.
 process.on('uncaughtException', (err) => logError(`ERROR uncaught: ${err?.stack || err}`));

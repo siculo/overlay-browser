@@ -104,6 +104,11 @@
   "dialog.ok": "ОК",
   "dialog.cancel": "Отмена",
 
+  "update.available": "Доступна новая версия Overlay Browser: {version}",
+  "update.download": "Скачать",
+  "update.dismiss": "Закрыть (новая версия останется указанной в настройках)",
+  "update.settings": "Доступна версия {version}",
+
   "settings.title": "Настройки",
   "settings.keyboard": "Клавиатура",
   "settings.toggle": "Показать/скрыть оверлей:",
@@ -112,6 +117,8 @@
   "settings.behavior": "Поведение",
   "settings.hideOnBlur": "Скрывать оверлей при потере фокуса",
   "settings.hideOnBlurDesc": "Например, при щелчке по игре или по другому окну.",
+  "settings.checkUpdates": "Проверять новые версии",
+  "settings.checkUpdatesDesc": "При запуске и затем каждые 6 часов ищет на GitHub более новую версию приложения и сообщает о ней полосой под панелью навигации. Если вы используете бету, то и о более новых бетах.",
   "settings.browseStart": "Начальная страница свободного просмотра:",
   "settings.browseStartPlaceholder": "Нет",
   "settings.browseStartDesc": "Страница, которую вкладка «Обзор» открывает сначала. Пусто: нет страницы, нужно ввести адрес.",

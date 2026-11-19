@@ -104,6 +104,11 @@
   "dialog.ok": "OK",
   "dialog.cancel": "Annulla",
 
+  "update.available": "È disponibile una nuova versione di Overlay Browser: {version}",
+  "update.download": "Scarica",
+  "update.dismiss": "Chiudi (la nuova versione resta indicata nelle Impostazioni)",
+  "update.settings": "Disponibile la versione {version}",
+
   "settings.title": "Impostazioni",
   "settings.keyboard": "Tastiera",
   "settings.toggle": "Mostra/nascondi overlay:",
@@ -112,6 +117,8 @@
   "settings.behavior": "Comportamento",
   "settings.hideOnBlur": "Nascondi l'overlay quando perde il focus",
   "settings.hideOnBlurDesc": "Ad esempio cliccando sul gioco o su un'altra finestra.",
+  "settings.checkUpdates": "Controlla se ci sono nuove versioni",
+  "settings.checkUpdatesDesc": "Cerca su GitHub una versione più recente dell’app all’avvio e poi ogni 6 ore, e la segnala con una striscia sotto la barra di navigazione. Se usi una beta, anche le beta più recenti.",
   "settings.browseStart": "Pagina iniziale della navigazione libera:",
   "settings.browseStartPlaceholder": "Nessuna",
   "settings.browseStartDesc": "La pagina che il tab Naviga apre all'inizio. Vuota: nessuna pagina, si digita un indirizzo.",
