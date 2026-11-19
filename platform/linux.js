@@ -26,6 +26,7 @@
 
 const fs = require('fs');
 const generic = require('./generic');
+const { isRuntime, hostedApp } = require('./hosted');
 
 const CLIENT_MESSAGE = 33;
 const SUBSTRUCTURE_NOTIFY_MASK = 1 << 19;
@@ -145,7 +146,9 @@ function processInfo(pid) {
   }
   const env = read('environ').split('\0');
   const appId = env.find((v) => v.startsWith('SteamAppId='))?.slice('SteamAppId='.length);
-  return { path, steamAppId: appId && appId !== '0' ? appId : null };
+  // A runtime (Java): the application from its command line.
+  const args = path && isRuntime(baseName(path)) ? read('cmdline').split('\0').filter(Boolean) : [];
+  return { path, args: args.length ? args : null, steamAppId: appId && appId !== '0' ? appId : null };
 }
 
 function foregroundApp() {
@@ -161,12 +164,15 @@ function foregroundApp() {
     };
   });
   if (!props.title && !props.wmClass.length && !props.pid) return null;   // window closed meanwhile
-  const proc = props.pid ? processInfo(props.pid) : { path: null, steamAppId: null };
+  const proc = props.pid ? processInfo(props.pid) : { path: null, args: null, steamAppId: null };
+  const exe = proc.path ? baseName(proc.path) : null;
+  const hosted = hostedApp(exe, proc.args, props.title);
   const fromClass = props.wmClass.map((c) => c.match(/^steam_app_(\d+)$/)?.[1]).find(Boolean);
   return {
     pid: props.pid,
-    exe: proc.path ? baseName(proc.path) : null,
+    exe: hosted?.exe ?? exe,
     path: proc.path,
+    ...(hosted ? { name: hosted.name } : {}),
     title: props.title,
     steamAppId: fromClass ?? proc.steamAppId,
   };

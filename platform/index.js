@@ -36,7 +36,9 @@
 //                      was last shown (read by beforeShow), or null:
 //                        { pid, exe, path, name, title, steamAppId }
 //                      exe/path: executable (for Windows games run with
-//                      Wine/Proton, the game's .exe, not Wine's); name:
+//                      Wine/Proton, the game's .exe, not Wine's; for
+//                      apps run by Java, the app's key from hosted.js,
+//                      e.g. 'minecraft', with its path java's); name:
 //                      application name (e.g. "IntelliJ IDEA"), used to name
 //                      its site list; title: window title (which for many
 //                      apps is the document's or project's name);

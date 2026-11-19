@@ -431,7 +431,7 @@ function detectForegroundApp() {
   }
   // Our own windows do not count (e.g. a dialog of the overlay).
   if (detected?.pid === process.pid) detected = null;
-  const key = (a) => a && `${a.path}|${a.steamAppId}`;
+  const key = (a) => a && `${a.path}|${a.exe}|${a.steamAppId}`;
   if (key(detected) !== key(foregroundApp)) {
     log(`foreground app: ${detected ? `${detected.exe ?? '?'}${detected.steamAppId ? ` (Steam ${detected.steamAppId})` : ''}` : 'none'}`);
   }

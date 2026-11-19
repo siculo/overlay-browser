@@ -3,6 +3,7 @@
 
 const { screen } = require('electron');
 const generic = require('./generic');
+const { isRuntime, hostedApp } = require('./hosted');
 
 // ---------- Win32 API ----------
 //
@@ -24,6 +25,7 @@ const win32 = (() => {
     const user32 = koffi.load('user32.dll');
     const kernel32 = koffi.load('kernel32.dll');
     const version = koffi.load('version.dll');
+    const ntdll = koffi.load('ntdll.dll');
     koffi.pointer('HWND', koffi.opaque());
     koffi.struct('RECT', { left: 'long', top: 'long', right: 'long', bottom: 'long' });
     return {
@@ -41,6 +43,7 @@ const win32 = (() => {
       OpenProcess: kernel32.func('void * __stdcall OpenProcess(uint32_t, bool, uint32_t)'),
       QueryFullProcessImageNameW: kernel32.func('bool __stdcall QueryFullProcessImageNameW(void *, uint32_t, _Out_ uint8_t *, _Inout_ uint32_t *)'),
       CloseHandle: kernel32.func('bool __stdcall CloseHandle(void *)'),
+      NtQueryInformationProcess: ntdll.func('int32_t __stdcall NtQueryInformationProcess(void *, int, _Out_ uint8_t *, uint32_t, _Out_ uint32_t *)'),
       GetFileVersionInfoSizeW: version.func('uint32_t __stdcall GetFileVersionInfoSizeW(str16, _Out_ uint32_t *)'),
       GetFileVersionInfoW: version.func('bool __stdcall GetFileVersionInfoW(str16, uint32_t, uint32_t, _Out_ uint8_t *)'),
       VerQueryValueW: version.func('bool __stdcall VerQueryValueW(const uint8_t *, str16, _Out_ void **, _Out_ uint32_t *)'),
@@ -86,6 +89,60 @@ function imagePathOf(pid) {
   } finally {
     win32.CloseHandle(handle);
   }
+}
+
+// Command line of a process (Windows 8.1 and later: allowed with the limited
+// query right), null if not accessible. The result is a UNICODE_STRING
+// (length in bytes, maximum length, pointer: two pointers' size) followed by
+// the text it points to.
+const PROCESS_COMMAND_LINE_INFORMATION = 60;
+function commandLineOf(pid) {
+  const handle = win32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
+  if (!handle) return null;
+  try {
+    const header = 2 * win32.koffi.sizeof('void *');
+    const buf = Buffer.alloc(header + 65536);   // command lines: at most 32767 characters
+    if (win32.NtQueryInformationProcess(handle, PROCESS_COMMAND_LINE_INFORMATION, buf, buf.length, [0]) !== 0) return null;
+    return buf.toString('utf16le', header, header + buf.readUInt16LE(0));
+  } finally {
+    win32.CloseHandle(handle);
+  }
+}
+
+// Splits a command line into arguments as the C runtime does (the rules of
+// CommandLineToArgvW): spaces and tabs separate arguments outside quotes;
+// 2n backslashes before a quote give n backslashes and the quote toggles
+// quoting, 2n+1 give n backslashes and a literal quote; "" inside quotes is
+// a literal quote; other backslashes are literal. (The program name, first,
+// follows simpler rules, the same for a path without quotes inside.)
+function splitCommandLine(line) {
+  const args = [];
+  let arg = '', inArg = false, quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '\\') {
+      let n = 0;
+      while (line[i] === '\\') { n++; i++; }
+      if (line[i] === '"') {
+        arg += '\\'.repeat(n >> 1);
+        if (n % 2) arg += '"'; else i--;   // even: the quote is read next, as a quote
+      } else {
+        arg += '\\'.repeat(n);
+        i--;
+      }
+      inArg = true;
+    } else if (c === '"') {
+      if (quoted && line[i + 1] === '"') { arg += '"'; i++; } else quoted = !quoted;
+      inArg = true;
+    } else if ((c === ' ' || c === '\t') && !quoted) {
+      if (inArg) args.push(arg);
+      arg = ''; inArg = false;
+    } else {
+      arg += c; inArg = true;
+    }
+  }
+  if (inArg) args.push(arg);
+  return args;
 }
 
 // Strings of an executable's version information ({ ProductName, ... }), in
@@ -187,12 +244,20 @@ function foregroundApp() {
   if (!hwnd || !win32.IsWindow(hwnd) || SHELL_CLASSES.includes(classNameOf(hwnd))) return null;
   const pid = processOf(hwnd);
   const path = imagePathOf(pid);
+  const exe = path ? path.slice(path.lastIndexOf('\\') + 1) : null;
+  const title = windowTextOf(hwnd) || null;
+  // A runtime (Java): the application from its command line, read only then.
+  let hosted = null;
+  if (isRuntime(exe)) {
+    const line = commandLineOf(pid);
+    hosted = hostedApp(exe, line ? splitCommandLine(line) : null, title);
+  }
   return {
     pid,
-    exe: path ? path.slice(path.lastIndexOf('\\') + 1) : null,
+    exe: hosted?.exe ?? exe,
     path,
-    name: path ? appNameOf(path) : null,
-    title: windowTextOf(hwnd) || null,
+    name: hosted ? hosted.name : path ? appNameOf(path) : null,
+    title,
     steamAppId: null,   // not readable from another process on Windows
   };
 }

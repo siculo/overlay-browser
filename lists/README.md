@@ -22,7 +22,9 @@ Maps executables to list files:
 - `exe`: executable names that identify the game: lowercase, without the
   `.exe` extension (`StarCitizen.exe` → `starcitizen`). List every name
   the game may have, e.g. the Windows executable and the native Linux one.
-  The overlay shows the detected executable on its Home.
+  The overlay shows the detected executable on its Home. Applications run
+  by Java have the key given by `platform/hosted.js` instead of `javaw`
+  (`minecraft` for Minecraft Java Edition).
 
 ## List file
 

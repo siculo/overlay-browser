@@ -20,6 +20,7 @@
 
 const { app, Menu, nativeImage } = require('electron');
 const generic = require('./generic');
+const { hostedApp } = require('./hosted');
 
 // ---------- Objective-C runtime ----------
 
@@ -87,7 +88,14 @@ function beforeShow() {
 function foregroundApp() {
   if (!previousApp || !isRunning(previousApp.pid)) return null;
   // The app's name is also its title (the window title is not read).
-  return { ...previousApp, name: previousApp.title, steamAppId: null };   // AppID not readable from another process
+  // A runtime (Java): the application from its name only (the command line is not read).
+  const hosted = hostedApp(previousApp.exe, null, previousApp.title);
+  return {
+    ...previousApp,
+    exe: hosted?.exe ?? previousApp.exe,
+    name: hosted?.name ?? previousApp.title,
+    steamAppId: null,   // not readable from another process
+  };
 }
 
 // ---------- memory ----------
