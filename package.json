@@ -33,6 +33,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "chrome-hints.js",
       "bookmarks.js",
       "platform/**/*",
       "index.html",

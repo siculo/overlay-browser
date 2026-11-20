@@ -761,6 +761,35 @@ app.on('web-contents-created', (_e, contents) => {
   });
 });
 
+// ---------- Chrome client hints (Google sign-in) ----------
+//
+// Google refuses the sign-in in "embedded browsers" ("This browser or app
+// may not be secure"). Removing Electron from the user agent (see
+// userAgentFallback) is not enough: Electron sends no Sec-CH-UA headers,
+// which Chrome sends with every https request, and in the pages
+// navigator.userAgentData lists Chromium without "Google Chrome" and
+// window.chrome is empty. The site pages and their popups therefore get
+// the Client Hints of Chrome: the headers here, the page side in
+// chrome-hints.js (session preload, run only in http(s) pages).
+const CHROME_MAJOR = process.versions.chrome.split('.')[0];
+const CH_PLATFORM = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' }[process.platform] ?? 'Linux';
+// Same brands and order as Chrome, with the GREASE brand of Chromium.
+const CH_UA = `"Google Chrome";v="${CHROME_MAJOR}", "Chromium";v="${CHROME_MAJOR}", "Not:A-Brand";v="8"`;
+
+function setupClientHints() {
+  const ses = session.defaultSession;
+  ses.registerPreloadScript({ type: 'frame', filePath: path.join(__dirname, 'chrome-hints.js') });
+  ses.webRequest.onBeforeSendHeaders({ urls: ['https://*/*'] }, (details, callback) => {
+    const headers = details.requestHeaders;
+    if (!Object.keys(headers).some((name) => /^sec-ch-ua$/i.test(name))) {
+      headers['sec-ch-ua'] = CH_UA;
+      headers['sec-ch-ua-mobile'] = '?0';
+      headers['sec-ch-ua-platform'] = `"${CH_PLATFORM}"`;
+    }
+    callback({ requestHeaders: headers });
+  });
+}
+
 // ---------- IPC ----------
 
 ipcMain.handle('state:load', () => ({
@@ -1145,6 +1174,7 @@ if (!app.requestSingleInstanceLock()) {
 
 function start() {
   prefs = loadPrefs();
+  setupClientHints();
   log('verbose log on');   // with the verbose log, the session line is written at startup
 
   win = new BrowserWindow({
