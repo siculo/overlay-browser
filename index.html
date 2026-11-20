@@ -855,8 +855,9 @@
     navMore.hidden = !isSite(active);
     navCookies.disabled = !cookieDomain(url);
     navCookies.textContent = cookieDomain(url) ? t('nav.cookiesOf', { domain: cookieDomain(url) }) : t('nav.cookies');
-    // In the free browsing tab, the "site home" button goes to the start page.
-    navSite.disabled = browse && !browseStart;
+    // In the free browsing tab, the "site home" button goes to the start
+    // page, or without one back to the empty page (disabled while on it).
+    navSite.disabled = browse && !browseStart && !wv;
     navReload.disabled = !wv;
     // A page that is already a tab of the list (the tab itself, on its
     // address, or another one) cannot be pinned: another tab is highlighted.
@@ -949,7 +950,15 @@
   navForward.onclick = () => webviews.get(active)?.goForward();
   navReload.onclick = () => webviews.get(active)?.reload();
   navSite.onclick = () => {
-    if (active === BROWSE) { if (browseStart) browseTo(browseStart); return; }
+    if (active === BROWSE) {
+      if (browseStart) { browseTo(browseStart); return; }
+      // No start page: the page is closed (with its history) and the empty
+      // page shows again, with the address field ready.
+      closeWebview(BROWSE);
+      logAction('Browse: back to the empty page');
+      activate(BROWSE);
+      return;
+    }
     const site = findSite(active);
     if (site) webviews.get(active)?.loadURL(site.url);
   };
