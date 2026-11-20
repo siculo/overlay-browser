@@ -23,6 +23,11 @@
   "nav.pinTitle": "Diese Seite als neuen Tab der Liste anheften",
   "nav.pinConfirm": "\"{name}\" als neuen Tab der Liste \"{list}\" anheften?",
   "nav.pinned": "Bereits in der Liste: {name}",
+  "nav.more": "Weitere Aktionen",
+  "nav.cookies": "Cookies löschen",
+  "nav.cookiesOf": "Cookies von {domain} löschen",
+  "nav.cookiesConfirm": "Die Cookies von {domain} und seinen Subdomains löschen? Du wirst auf dieser Website abgemeldet und die Seite wird neu geladen.",
+  "nav.cookiesRemove": "Löschen",
 
   "browse.empty": "Gib oben in der Leiste einen Suchbegriff oder eine Adresse ein. In den Einstellungen kannst du eine Startseite festlegen.",
 

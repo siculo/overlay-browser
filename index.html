@@ -141,10 +141,10 @@
   #nav { display: flex; align-items: center; gap: 4px; padding: 6px; -webkit-app-region: drag; }
   #nav button { -webkit-app-region: no-drag; min-width: 32px; }
   /* Icons of the navigation buttons: Material Icons "keyboard_tab"
-     (mirrored), "arrow_back", "arrow_forward", "refresh" and "push_pin"
-     (Apache 2.0) */
+     (mirrored), "arrow_back", "arrow_forward", "refresh", "push_pin" and
+     "more_horiz" (Apache 2.0) */
   #nav button .icon { flex: none; width: 16px; height: 16px; fill: currentColor; }
-  #nav-site, #nav-back, #nav-forward, #nav-reload, #nav-pin { display: flex; align-items: center; justify-content: center; align-self: stretch; }
+  #nav-site, #nav-back, #nav-forward, #nav-reload, #nav-pin, #nav-more { display: flex; align-items: center; justify-content: center; align-self: stretch; }
   button:disabled { opacity: 0.4; cursor: default; }
   button:disabled:hover { background: #2a2a2a; }
   /* Address field of the free browsing tab */
@@ -154,6 +154,12 @@
   #nav-url[readonly], #nav-url[readonly]:focus { color: #aaa; background: transparent; border-color: transparent; }
   #nav-url.invalid, #opt-browse-start.invalid, #opt-search-custom.invalid { border-color: #c55; }
   #nav-pin { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 6px; }
+  /* Menu of the "..." button, right of the address: further operations on the page */
+  #nav { position: relative; }
+  #nav-menu { position: absolute; top: calc(100% - 2px); right: 6px; z-index: 50; min-width: 200px; max-width: calc(100vw - 32px); padding: 4px; background: #1c1c1c; border: 1px solid #444; border-radius: 6px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); -webkit-app-region: no-drag; }
+  #nav-menu button { display: block; width: 100%; text-align: left; background: none; border: none; padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; }
+  #nav-menu button:hover:not(:disabled) { background: #2a2a2a; }
+  #nav-menu button:disabled:hover { background: none; }
 
   /* New version available: strip below the navigation bar (below the tabs
      where there is no navigation bar), on every tab until closed */
@@ -282,6 +288,10 @@
     <button id="nav-reload" data-i18n-title="nav.reload"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
     <input id="nav-url" type="text" spellcheck="false" hidden>
     <button id="nav-pin" data-i18n-title="nav.pinTitle" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg><span data-i18n="nav.pin"></span></button>
+    <button id="nav-more" data-i18n-title="nav.more" aria-haspopup="menu" aria-expanded="false" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg></button>
+    <div id="nav-menu" role="menu" hidden>
+      <button id="nav-cookies" role="menuitem"></button>
+    </div>
   </div>
 
   <!-- Icons: Material Icons "system_update_alt" and "close" (Apache 2.0) -->
@@ -672,6 +682,7 @@
   function activate(id) {
     if (id !== SETTINGS) cancelCapture();
     if (id !== active) logAction(`tab ${tabRef(id)}`);
+    closeNavMenu();
     // The list's last tab: a site, the Home or the Settings page.
     const cur = currentList();
     const tab = id ?? HOME;
@@ -780,6 +791,7 @@
 
   window.overlay.onVisible((visible) => {
     overlayVisible = visible;
+    if (!visible) closeNavMenu();
     sweepPages();
     // The page of the active tab was closed while the overlay was hidden:
     // it is opened again.
@@ -818,6 +830,7 @@
 
   const navEl = $('nav'), navBack = $('nav-back'), navForward = $('nav-forward');
   const navSite = $('nav-site'), navReload = $('nav-reload'), navUrl = $('nav-url'), navPin = $('nav-pin');
+  const navMore = $('nav-more'), navMenu = $('nav-menu'), navCookies = $('nav-cookies');
   const browseEmpty = $('browse-empty');
   let browseStart = '';   // start page of the free browsing tab (settings.browseStart), '' = none
 
@@ -839,6 +852,9 @@
     navUrl.readOnly = !browse;
     navUrl.placeholder = !browse ? '' : searchName() ? t('nav.addressWith', { engine: searchName() }) : t('nav.address');
     navPin.hidden = !isSite(active);
+    navMore.hidden = !isSite(active);
+    navCookies.disabled = !cookieDomain(url);
+    navCookies.textContent = cookieDomain(url) ? t('nav.cookiesOf', { domain: cookieDomain(url) }) : t('nav.cookies');
     // In the free browsing tab, the "site home" button goes to the start page.
     navSite.disabled = browse && !browseStart;
     navReload.disabled = !wv;
@@ -948,6 +964,56 @@
   navUrl.oninput = () => navUrl.classList.remove('invalid');
   navUrl.onfocus = () => navUrl.select();
   navPin.onclick = pinPage;
+
+  // "..." menu right of the address: further operations on the active page.
+  // Closed by a second click, a click elsewhere (also in the page: the
+  // window loses the focus to the webview), Esc, a tab change and when the
+  // overlay hides.
+  function closeNavMenu() {
+    navMenu.hidden = true;
+    navMore.setAttribute('aria-expanded', 'false');
+  }
+  navMore.onclick = () => {
+    if (!navMenu.hidden) { closeNavMenu(); return; }
+    updateNav();
+    navMenu.hidden = false;
+    navMore.setAttribute('aria-expanded', 'true');
+  };
+  document.addEventListener('mousedown', (e) => {
+    if (!navMenu.hidden && !e.target.closest('#nav-menu, #nav-more')) closeNavMenu();
+  });
+  window.addEventListener('blur', closeNavMenu);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !navMenu.hidden) { e.preventDefault(); closeNavMenu(); navMore.focus(); }
+  });
+
+  // Domain whose cookies are removed for a page: its host without "www.";
+  // main.js removes the cookies of that domain, of its subdomains and of the
+  // parent domains (those the page receives), see cookies:clear.
+  function cookieDomain(url) {
+    try {
+      const u = new URL(url);
+      return /^https?:$/.test(u.protocol) ? u.hostname.replace(/^www\./, '') : '';
+    } catch { return ''; }
+  }
+  navCookies.onclick = async () => {
+    closeNavMenu();
+    const id = active;
+    let url = '';
+    try { url = webviews.get(id)?.getURL() ?? ''; } catch { /* not ready yet */ }
+    const domain = cookieDomain(url);
+    if (!domain) return;
+    const ok = await openDialog({
+      message: t('nav.cookiesConfirm', { domain }),
+      okLabel: t('nav.cookiesRemove'),
+      danger: true,
+    });
+    if (!ok) { logAction(`cookie removal cancelled: ${tabRef(id)}`); return; }
+    const count = await window.overlay.clearCookies(domain);
+    logAction(`cookies removed: ${tabRef(id)}, ${count} cookies`);
+    // The page reloads, so it no longer uses what it had from them (e.g. the login).
+    webviews.get(id)?.reload();
+  };
 
   // Pins the page of the active tab: it becomes a new tab (site) of the
   // current list, keeping its page and history. From the free browsing tab

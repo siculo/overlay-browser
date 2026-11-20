@@ -23,6 +23,11 @@
   "nav.pinTitle": "Fissa questa pagina come nuovo tab della lista",
   "nav.pinConfirm": "Fissare \"{name}\" come nuovo tab della lista \"{list}\"?",
   "nav.pinned": "Già nella lista: {name}",
+  "nav.more": "Altre operazioni",
+  "nav.cookies": "Elimina i cookie",
+  "nav.cookiesOf": "Elimina i cookie di {domain}",
+  "nav.cookiesConfirm": "Eliminare i cookie di {domain} e dei suoi sottodomini? Uscirai dagli account di questo sito e la pagina verrà ricaricata.",
+  "nav.cookiesRemove": "Elimina",
 
   "browse.empty": "Cerca o digita un indirizzo nella barra qui sopra. Puoi impostare una pagina iniziale nelle Impostazioni.",
 

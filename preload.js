@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('overlay', {
   setSetting: (key, value) => ipcRenderer.invoke('settings:set', key, value),
   setLanguage: (language) => ipcRenderer.invoke('language:set', language),
   memory: () => ipcRenderer.invoke('memory:get'),
+  clearCookies: (domain) => ipcRenderer.invoke('cookies:clear', domain),
   openRepo: () => ipcRenderer.invoke('repo:open'),
   openUpdate: () => ipcRenderer.invoke('update:open'),
   dismissUpdate: () => ipcRenderer.invoke('update:dismiss'),

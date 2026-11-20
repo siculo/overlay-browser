@@ -23,6 +23,11 @@
   "nav.pinTitle": "Pin this page as a new tab of the list",
   "nav.pinConfirm": "Pin \"{name}\" as a new tab of the list \"{list}\"?",
   "nav.pinned": "Already in the list: {name}",
+  "nav.more": "More actions",
+  "nav.cookies": "Delete cookies",
+  "nav.cookiesOf": "Delete cookies for {domain}",
+  "nav.cookiesConfirm": "Delete the cookies of {domain} and its subdomains? You will be signed out of this site and the page will reload.",
+  "nav.cookiesRemove": "Delete",
 
   "browse.empty": "Search or type an address in the bar above. You can set a start page in the Settings.",
 

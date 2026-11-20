@@ -23,6 +23,11 @@
   "nav.pinTitle": "Épingler cette page comme nouvel onglet de la liste",
   "nav.pinConfirm": "Épingler « {name} » comme nouvel onglet de la liste « {list} » ?",
   "nav.pinned": "Déjà dans la liste : {name}",
+  "nav.more": "Autres actions",
+  "nav.cookies": "Supprimer les cookies",
+  "nav.cookiesOf": "Supprimer les cookies de {domain}",
+  "nav.cookiesConfirm": "Supprimer les cookies de {domain} et de ses sous-domaines ? Vous serez déconnecté de ce site et la page sera rechargée.",
+  "nav.cookiesRemove": "Supprimer",
 
   "browse.empty": "Recherchez ou saisissez une adresse dans la barre ci-dessus. Vous pouvez définir une page d'accueil dans les Paramètres.",
 

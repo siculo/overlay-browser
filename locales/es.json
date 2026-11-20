@@ -23,6 +23,11 @@
   "nav.pinTitle": "Fijar esta página como nueva pestaña de la lista",
   "nav.pinConfirm": "¿Fijar \"{name}\" como nueva pestaña de la lista \"{list}\"?",
   "nav.pinned": "Ya está en la lista: {name}",
+  "nav.more": "Más acciones",
+  "nav.cookies": "Eliminar cookies",
+  "nav.cookiesOf": "Eliminar las cookies de {domain}",
+  "nav.cookiesConfirm": "¿Eliminar las cookies de {domain} y sus subdominios? Se cerrará la sesión en este sitio y la página se volverá a cargar.",
+  "nav.cookiesRemove": "Eliminar",
 
   "browse.empty": "Busca o escribe una dirección en la barra de arriba. Puedes definir una página de inicio en los Ajustes.",
 

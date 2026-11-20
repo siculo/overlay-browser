@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, screen, shell, Tray, webContents } = require('electron');
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, screen, session, shell, Tray, webContents } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
@@ -931,6 +931,31 @@ ipcMain.handle('log:clear', () => {
 ipcMain.handle('log:show', () => {
   try { fs.appendFileSync(logFile(), ''); } catch { /* shown anyway */ }
   shell.showItemInFolder(logFile());
+});
+// Removes the cookies of a domain (the host of the active page without
+// "www.", see cookieDomain in index.html) from the session shared by all the
+// site pages and their popups: those of the domain, of its subdomains and
+// of its parent domains (sent to the page as well, e.g. ".example.com" for
+// "wiki.example.com"). Returns how many were removed.
+const DOMAIN_RE = /^(?=.{1,253}$)[a-z0-9-]+(\.[a-z0-9-]+)*$|^\[[0-9a-f:.]+\]$/i;
+ipcMain.handle('cookies:clear', async (_e, domain) => {
+  if (typeof domain !== 'string' || !DOMAIN_RE.test(domain)) return 0;
+  domain = domain.toLowerCase();
+  const related = (d) => d === domain || d.endsWith(`.${domain}`) || domain.endsWith(`.${d}`);
+  const cookies = session.defaultSession.cookies;
+  let removed = 0;
+  try {
+    for (const c of await cookies.get({})) {
+      const d = (c.domain ?? '').replace(/^\./, '').toLowerCase();
+      if (!d || !related(d)) continue;
+      await cookies.remove(`${c.secure ? 'https' : 'http'}://${d}${c.path ?? '/'}`, c.name);
+      removed++;
+    }
+    await cookies.flushStore();
+  } catch (err) {
+    logError(`cookies: cannot remove: ${err}`);
+  }
+  return removed;
 });
 ipcMain.handle('memory:get', () => {
   const metrics = app.getAppMetrics();

@@ -23,6 +23,11 @@
   "nav.pinTitle": "Fixar esta página como nova aba da lista",
   "nav.pinConfirm": "Fixar \"{name}\" como nova aba da lista \"{list}\"?",
   "nav.pinned": "Já está na lista: {name}",
+  "nav.more": "Mais ações",
+  "nav.cookies": "Excluir cookies",
+  "nav.cookiesOf": "Excluir os cookies de {domain}",
+  "nav.cookiesConfirm": "Excluir os cookies de {domain} e de seus subdomínios? Você sairá da sua conta neste site e a página será recarregada.",
+  "nav.cookiesRemove": "Excluir",
 
   "browse.empty": "Pesquise ou digite um endereço na barra acima. Você pode definir uma página inicial nas Configurações.",
 
