@@ -173,7 +173,14 @@
 
   /* Free browsing tab with no page open */
   #browse-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; color: #888; text-align: center; }
-  #opt-browse-start, #opt-search-custom { flex: 1; min-width: 0; max-width: 420px; }
+  #opt-search-custom { flex: 1; min-width: 0; max-width: 420px; }
+  /* Field with a button that empties it, inside on the right (shown when
+     the field is not empty); icon: Material Icons "close" (Apache 2.0) */
+  .clearable { position: relative; flex: 1; min-width: 0; max-width: 420px; display: flex; }
+  .clearable input { flex: 1; min-width: 0; padding-right: 28px; }
+  .clearable .clear { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; padding: 2px; background: none; border: none; color: #888; }
+  .clearable .clear:hover { background: #2a2a2a; color: #fff; }
+  .clearable .clear .icon { width: 16px; height: 16px; fill: currentColor; }
 
   /* Home */
   #home, .page { flex: 1; overflow-y: auto; padding: 24px; }
@@ -354,7 +361,10 @@
 
     <div class="setting" id="browse-start-setting">
       <label for="opt-browse-start" data-i18n="settings.browseStart"></label>
-      <input id="opt-browse-start" type="text" spellcheck="false" data-i18n-placeholder="settings.browseStartPlaceholder">
+      <span class="clearable">
+        <input id="opt-browse-start" type="text" spellcheck="false" data-i18n-placeholder="settings.browseStartPlaceholder">
+        <button type="button" class="clear" id="browse-start-clear" data-i18n-title="settings.browseStartClear" hidden><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button>
+      </span>
     </div>
     <div class="hint" id="browse-start-hint" data-i18n="settings.browseStartDesc"></div>
     <div class="setting" id="search-setting">
@@ -2253,10 +2263,21 @@
   // or a valid address, otherwise the field is marked and nothing is saved.
 
   const browseStartInput = $('opt-browse-start'), browseStartHint = $('browse-start-hint');
+  const browseStartClear = $('browse-start-clear');
 
   function initBrowseStart(value) {
     browseStart = value;
     browseStartInput.value = value;
+    // The "x" empties the field and saves it right away (no start page).
+    const showClear = () => { browseStartClear.hidden = !browseStartInput.value; };
+    showClear();
+    browseStartInput.oninput = showClear;
+    browseStartClear.onclick = () => {
+      browseStartInput.value = '';
+      showClear();
+      commit();
+      browseStartInput.focus();
+    };
     const commit = () => {
       const raw = browseStartInput.value.trim();
       const url = raw ? normalizeUrl(raw) : '';
@@ -2266,6 +2287,7 @@
       browseStartHint.textContent = t(invalid ? 'settings.browseStartInvalid' : 'settings.browseStartDesc');
       if (invalid) return;
       browseStartInput.value = url;
+      showClear();
       if (url === browseStart) return;
       browseStart = url;
       window.overlay.setSetting('browseStart', url);

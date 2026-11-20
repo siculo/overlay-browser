@@ -126,6 +126,7 @@
   "settings.checkUpdatesDesc": "Busca en GitHub una versión más reciente de la app al iniciar y luego cada 6 horas, y la indica con una franja debajo de la barra de navegación. Si usas una beta, también las betas más recientes.",
   "settings.browseStart": "Página de inicio de la navegación libre:",
   "settings.browseStartPlaceholder": "Ninguna",
+  "settings.browseStartClear": "Vaciar (sin página inicial)",
   "settings.browseStartDesc": "La página que abre al principio la pestaña Navegar. Vacía: ninguna página, se escribe una dirección.",
   "settings.browseStartInvalid": "Dirección no válida.",
   "settings.search": "Motor de búsqueda:",

@@ -126,6 +126,7 @@
   "settings.checkUpdatesDesc": "Cherche sur GitHub une version plus récente de l’application au démarrage puis toutes les 6 heures, et la signale par une bande sous la barre de navigation. Si vous utilisez une bêta, aussi les bêtas plus récentes.",
   "settings.browseStart": "Page d'accueil de la navigation libre :",
   "settings.browseStartPlaceholder": "Aucune",
+  "settings.browseStartClear": "Vider (aucune page d'accueil)",
   "settings.browseStartDesc": "La page que l'onglet Naviguer ouvre au départ. Vide : aucune page, on saisit une adresse.",
   "settings.browseStartInvalid": "Adresse non valide.",
   "settings.search": "Moteur de recherche :",

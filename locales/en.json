@@ -126,6 +126,7 @@
   "settings.checkUpdatesDesc": "Looks on GitHub for a newer version of the app at startup and then every 6 hours, and tells you with a strip below the navigation bar. If you use a beta, newer betas too.",
   "settings.browseStart": "Free browsing start page:",
   "settings.browseStartPlaceholder": "None",
+  "settings.browseStartClear": "Clear (no start page)",
   "settings.browseStartDesc": "The page the Browse tab opens at first. Empty: no page, you type an address.",
   "settings.browseStartInvalid": "Invalid address.",
   "settings.search": "Search engine:",

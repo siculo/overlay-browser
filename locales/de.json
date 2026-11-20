@@ -126,6 +126,7 @@
   "settings.checkUpdatesDesc": "Sucht beim Start und danach alle 6 Stunden auf GitHub nach einer neueren Version der App und zeigt sie mit einem Streifen unter der Navigationsleiste an. Wenn du eine Beta verwendest, auch neuere Betas.",
   "settings.browseStart": "Startseite für freies Surfen:",
   "settings.browseStartPlaceholder": "Keine",
+  "settings.browseStartClear": "Leeren (keine Startseite)",
   "settings.browseStartDesc": "Die Seite, die der Tab Surfen anfangs öffnet. Leer: keine Seite, du gibst eine Adresse ein.",
   "settings.browseStartInvalid": "Ungültige Adresse.",
   "settings.search": "Suchmaschine:",
