@@ -27,8 +27,9 @@
 //   configureApp(app)  called at load time, before the app is ready
 //                      (command line switches and the like)
 //   init(win)          called once the window has been created
-//   trayImage(image)   image of the notification area icon, from the app's
-//                      icon (e.g. resized for the macOS menu bar)
+//   trayImage(small, large)
+//                      image of the notification area icon, from the app's
+//                      16 px (simplified drawing) and 32 px icons
 //   beforeShow(win)    called before the window is shown
 //   afterShow(win)     called after win.show(), to bring it to the foreground
 //   beforeHide(win)    called before the window is hidden

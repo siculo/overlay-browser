@@ -2,6 +2,8 @@
 // dedicated module, and as the base the other modules extend.
 // See index.js for the interface.
 
+const { nativeImage } = require('electron');
+
 module.exports = {
   id: 'generic',
   features: {
@@ -16,7 +18,14 @@ module.exports = {
   defaultShortcut: 'Super+F10',
   configureApp() {},
   init() {},
-  trayImage(image) { return image; },
+  // The 16 px icon (simplified drawing) at normal density, the 32 px one at
+  // high density: the system picks the representation for its scale.
+  trayImage(small, large) {
+    const tray = nativeImage.createEmpty();
+    tray.addRepresentation({ scaleFactor: 1, buffer: small.toPNG() });
+    tray.addRepresentation({ scaleFactor: 2, buffer: large.toPNG() });
+    return tray;
+  },
   beforeShow() {},
   afterShow(win) { win.focus(); },
   beforeHide() {},

@@ -18,7 +18,7 @@
 // - Memory is the physical footprint of each process (proc_pid_rusage), the
 //   value shown by Activity Monitor.
 
-const { app, Menu, nativeImage } = require('electron');
+const { app, Menu } = require('electron');
 const generic = require('./generic');
 const { hostedApp } = require('./hosted');
 
@@ -147,14 +147,6 @@ module.exports = {
     // do not work in text fields. No Window menu: Cmd+W would close the
     // overlay, and with it the app.
     Menu.setApplicationMenu(Menu.buildFromTemplate([{ role: 'appMenu' }, { role: 'editMenu' }]));
-  },
-  // The 32 px icon would be 32 points tall in the menu bar: 16 points,
-  // with the original as the Retina representation.
-  trayImage(image) {
-    const tray = nativeImage.createEmpty();
-    tray.addRepresentation({ scaleFactor: 1, dataURL: image.resize({ width: 16, height: 16, quality: 'best' }).toDataURL() });
-    tray.addRepresentation({ scaleFactor: 2, dataURL: image.toDataURL() });
-    return tray;
   },
   // The panel becomes the key window when shown, without activating the app.
   afterShow() {},

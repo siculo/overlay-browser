@@ -687,6 +687,8 @@ function startKeyboardHook() {
 // ---------- notification area icon ----------
 
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
+// Simplified drawing, legible at 16 px.
+const ICON_16_PATH = path.join(__dirname, 'assets', 'icon-16.png');
 
 function updateTray() {
   if (!tray) return;
@@ -701,7 +703,7 @@ function updateTray() {
 }
 
 function createTray() {
-  tray = new Tray(platform.trayImage(nativeImage.createFromPath(ICON_PATH)));
+  tray = new Tray(platform.trayImage(nativeImage.createFromPath(ICON_16_PATH), nativeImage.createFromPath(ICON_PATH)));
   tray.on('click', () => {
     // Clicking the icon while the overlay is open, the window first loses
     // focus and hides (see 'blur'): the click must not reopen it right after.

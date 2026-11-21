@@ -287,6 +287,9 @@ module.exports = {
   configureApp(app) {
     app.commandLine.appendSwitch('ozone-platform', 'x11');
   },
+  // The notification area scales the icon to its own size (usually 22-24 px):
+  // the 32 px one, rather than enlarging the 16 px one.
+  trayImage(small, large) { return large; },
   memoryUsage,
   bookmarkStores,
   ...(x11 ? { beforeShow, afterShow, beforeHide, foregroundApp } : {}),
