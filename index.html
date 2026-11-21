@@ -60,8 +60,12 @@
 
   /* Tab: label with ellipsis + close button, shaped like a tab whose active
      one is attached to the sheet below. Thin separators between inactive
-     tabs, hidden next to the active and the hovered one. */
-  .tab { position: relative; flex: none; display: flex; align-items: center; gap: 6px; height: 32px; max-width: 200px; padding: 0 6px 0 12px; color: #999; border-radius: 8px 8px 0 0; cursor: pointer; user-select: none; }
+     tabs, hidden next to the active and the hovered one.
+     Width: the same for all tabs, whatever their name (300 px); when the bar
+     has no more room they all shrink, down to the width of the favicon and
+     the × (64 px: padding 12 + 16 + gaps 2 × 6 + 18 + 6); beyond that the
+     scroll arrows appear (updateArrows). */
+  .tab { position: relative; flex: 0 1 300px; min-width: 64px; display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 6px 0 12px; color: #999; border-radius: 8px 8px 0 0; cursor: pointer; user-select: none; }
   .tab:not(:first-child)::before { content: ''; position: absolute; left: 0; top: 9px; bottom: 9px; width: 1px; background: #333; }
   .tab.active::before, .tab:hover::before, .tab.active + .tab::before, .tab:hover + .tab::before { display: none; }
   .tab:hover { background: #161616; color: #ddd; }
@@ -73,7 +77,7 @@
      favicons that adapt to it (prefers-color-scheme, e.g. a black icon
      inverted in dark mode, starcitizen.tools) must use their dark version. */
   .tab .favicon { flex: none; width: 16px; height: 16px; object-fit: contain; pointer-events: none; color-scheme: dark; }
-  .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab .label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* The ×: always on the active tab, on the others only on hover
      (Material Icons "close", Apache 2.0) */
   .tab .close { flex: none; display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 4px; color: #aaa; visibility: hidden; }
