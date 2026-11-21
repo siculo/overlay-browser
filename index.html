@@ -69,6 +69,10 @@
   /* The tab whose address is the page shown in another tab (see pageMatch) */
   .tab.match, .tab.match:hover { background: var(--accent-soft); color: var(--accent-text); }
   .tab.match::before, .tab.match + .tab::before { display: none; }
+  /* color-scheme: the bar is dark whatever the system theme; the SVG
+     favicons that adapt to it (prefers-color-scheme, e.g. a black icon
+     inverted in dark mode, starcitizen.tools) must use their dark version. */
+  .tab .favicon { flex: none; width: 16px; height: 16px; object-fit: contain; pointer-events: none; color-scheme: dark; }
   .tab .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* The ×: always on the active tab, on the others only on hover
      (Material Icons "close", Apache 2.0) */
@@ -689,6 +693,22 @@
         save();
         render();
       });
+      // The tab's icon: the page's favicon, with the same rule as the title
+      // (the site's own address; the first one reported if it has none
+      // yet). Downloaded by main.js and kept in the prefs as a data: URL
+      // (`icon`; `iconSrc`: its address), so the tab has it before its page
+      // loads and whatever the site's cross-origin headers (see fetchIcon in
+      // main.js). The last one seen is kept on the webview for pinPage.
+      wv.addEventListener('page-favicon-updated', (e) => {
+        const src = e.favicons?.find((f) => /^(https?|data):/i.test(f)) ?? null;
+        wv.dataset.favicon = src ?? '';
+        const s = findSite(idOf());
+        if (!s || !src || s.iconSrc === src) return;
+        let url = '';
+        try { url = wv.getURL(); } catch { /* not ready yet */ }
+        if (s.icon && !samePage(url, s.url)) return;
+        setSiteIcon(s, src);
+      });
       // History changes on every navigation: update Back/Forward (and the address).
       for (const ev of ['dom-ready', 'did-navigate', 'did-navigate-in-page', 'did-stop-loading']) {
         wv.addEventListener(ev, () => { if (active === idOf()) updateNav(ev !== 'did-stop-loading'); });
@@ -697,6 +717,17 @@
       webviews.set(id, wv);
     }
     return wv;
+  }
+
+  // Gives the site the favicon at `src` (see page-favicon-updated in
+  // getWebview); kept as it was if it cannot be downloaded.
+  async function setSiteIcon(site, src) {
+    const icon = /^data:image\//i.test(src) ? src : await window.overlay.fetchIcon(src);
+    if (!icon || !findSite(site.id)) return;
+    site.icon = icon;
+    site.iconSrc = src;
+    save();
+    renderTabs();
   }
 
   function closeWebview(id) {
@@ -1099,6 +1130,7 @@
     activate(site.id);
     render();
     if (!title) resolveTitle(site);
+    if (wv.dataset.favicon) setSiteIcon(site, wv.dataset.favicon);
   }
 
   // ---------- drag to reorder ----------
@@ -1238,6 +1270,14 @@
       close.innerHTML = CLOSE_ICON;
       close.title = t('site.remove');
       close.onclick = (e) => { e.stopPropagation(); confirmRemove(site.id); };
+      if (site.icon) {
+        const icon = el('img', 'favicon');
+        icon.src = site.icon;
+        icon.alt = '';
+        icon.draggable = false;
+        icon.onerror = () => icon.remove();
+        tab.append(icon);
+      }
       tab.append(el('span', 'label', siteName(site)), close);
       return tab;
     }));
@@ -1445,6 +1485,8 @@
       logAction(`site address changed: ${siteRef(id)}`);
       site.url = url;
       site.title = null;
+      delete site.icon;
+      delete site.iconSrc;
       lastUrls.delete(id);
       const wv = webviews.get(id);
       if (wv) wv.src = url;

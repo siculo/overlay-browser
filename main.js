@@ -304,6 +304,28 @@ async function fetchTitle(url) {
   }
 }
 
+// Downloads a page's favicon (http(s)) and returns it as a data: URL, or
+// null. Done here, not by the overlay page: an <img> in the overlay
+// (file://) is cross-site for the site, and the favicons sent with
+// `Cross-Origin-Resource-Policy: same-site` (e.g. starcitizen.tools) or
+// protected against hotlinking would not load. Same session as the site
+// pages (cookies). Images only, at most ICON_MAX bytes.
+const ICON_MAX = 256 * 1024;
+async function fetchIcon(url) {
+  if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return null;
+  try {
+    const res = await net.fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+    if (!type.startsWith('image/')) return null;
+    const body = Buffer.from(await res.arrayBuffer());
+    if (!body.length || body.length > ICON_MAX) return null;
+    return `data:${type};base64,${body.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
 // ---------- predefined lists ----------
 //
 // Ready-made site lists for known games, shipped with the app in lists/:
@@ -1049,6 +1071,7 @@ ipcMain.handle('presets:applied', (_e, exe) => {
   savePrefs();
 });
 ipcMain.handle('site:title', (_e, url) => fetchTitle(url));
+ipcMain.handle('site:icon', (_e, url) => fetchIcon(url));
 
 // ---------- bookmark import ----------
 //

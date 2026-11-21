@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('overlay', {
   findPreset: (exe) => ipcRenderer.invoke('presets:find', exe),
   presetApplied: (exe) => ipcRenderer.invoke('presets:applied', exe),
   fetchTitle: (url) => ipcRenderer.invoke('site:title', url),
+  fetchIcon: (url) => ipcRenderer.invoke('site:icon', url),
   bookmarkSources: () => ipcRenderer.invoke('bookmarks:sources'),
   readBookmarks: (id) => ipcRenderer.invoke('bookmarks:read', id),
   openBookmarkFile: () => ipcRenderer.invoke('bookmarks:file'),
