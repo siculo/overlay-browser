@@ -13,6 +13,8 @@
   "edit.copy": "Copy",
   "edit.paste": "Paste",
   "edit.selectAll": "Select All",
+  "edit.openLink": "Open link in new tab",
+  "edit.copyLink": "Copy link",
 
   "bar.home": "Home",
   "bar.browse": "Browse",
@@ -77,6 +79,7 @@
   "addDialog.tabUrl": "Address",
   "addDialog.tabBookmarks": "Bookmarks",
   "openDialog.message": "This page wants to open {url} in a new tab, but the list has no tab for that site. Add it to the list?",
+  "openDialog.newTab": "Add {url} as a new tab of the list \"{list}\"?",
 
   "importDialog.message": "Choose the bookmarks to add to a list, from a browser or from a file exported by a browser.",
   "bookmarks.from": "From:",

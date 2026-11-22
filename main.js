@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, screen, session, shell, Tray, webContents } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, screen, session, shell, Tray, webContents } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
@@ -792,7 +792,10 @@ app.on('web-contents-created', (_e, contents) => {
 // Redo, Cut, Copy, Paste, Select All. On text that cannot be edited only
 // Copy and Select All: anywhere in the site pages and their popups; in the
 // overlay page only on a read-only text field (the address of a site's
-// tab) or on a selection, not on its buttons and labels.
+// tab) or on a selection, not on its buttons and labels. On a link of the
+// site pages and their popups, first Open link in new tab (the page asks
+// whether to add it as a new tab of the current list: 'site:openNew') and
+// Copy link.
 // The items act on the page that was clicked (not on the focused window,
 // which for a <webview> is the overlay), enabled as Chromium says
 // (editFlags: nothing to undo, no selection, empty clipboard...).
@@ -826,6 +829,16 @@ app.on('web-contents-created', (_e, contents) => {
           selectAll,
         ]
       : [copy, selectAll];
+    const link = !overlayPage && !params.isEditable ? params.linkURL : '';
+    if (link) {
+      template.unshift(
+        ...(/^https?:/i.test(link)
+          ? [{ label: t('edit.openLink'), click: () => win.webContents.send('site:openNew', link, contents.id) }]
+          : []),
+        { label: t('edit.copyLink'), click: () => clipboard.writeText(link) },
+        { type: 'separator' },
+      );
+    }
     Menu.buildFromTemplate(template).popup({ window, frame: params.frame, sourceType: params.menuSourceType });
   });
 });

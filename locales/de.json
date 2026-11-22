@@ -13,6 +13,8 @@
   "edit.copy": "Kopieren",
   "edit.paste": "Einfügen",
   "edit.selectAll": "Alles auswählen",
+  "edit.openLink": "Link in neuem Tab öffnen",
+  "edit.copyLink": "Link kopieren",
 
   "bar.home": "Startseite",
   "bar.browse": "Surfen",
@@ -77,6 +79,7 @@
   "addDialog.tabUrl": "Adresse",
   "addDialog.tabBookmarks": "Lesezeichen",
   "openDialog.message": "Die Seite möchte {url} in einem neuen Tab öffnen, aber die Liste hat keinen Tab für diese Website. Zur Liste hinzufügen?",
+  "openDialog.newTab": "{url} als neuen Tab der Liste \"{list}\" hinzufügen?",
 
   "importDialog.message": "Wähle die Lesezeichen, die einer Liste hinzugefügt werden sollen, aus einem Browser oder aus einer von einem Browser exportierten Datei.",
   "bookmarks.from": "Aus:",

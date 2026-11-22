@@ -13,6 +13,8 @@
   "edit.copy": "Copiar",
   "edit.paste": "Pegar",
   "edit.selectAll": "Seleccionar todo",
+  "edit.openLink": "Abrir enlace en una pestaña nueva",
+  "edit.copyLink": "Copiar enlace",
 
   "bar.home": "Inicio",
   "bar.browse": "Navegar",
@@ -77,6 +79,7 @@
   "addDialog.tabUrl": "Dirección",
   "addDialog.tabBookmarks": "Marcadores",
   "openDialog.message": "La página quiere abrir {url} en una pestaña nueva, pero la lista no tiene una pestaña para ese sitio. ¿Añadirlo a la lista?",
+  "openDialog.newTab": "¿Añadir {url} como nueva pestaña de la lista \"{list}\"?",
 
   "importDialog.message": "Elige los marcadores que añadir a una lista, desde un navegador o desde un archivo exportado por un navegador.",
   "bookmarks.from": "Desde:",

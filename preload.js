@@ -30,5 +30,6 @@ contextBridge.exposeInMainWorld('overlay', {
   onSettings: (callback) => ipcRenderer.on('nav:settings', () => callback()),
   onForegroundApp: (callback) => ipcRenderer.on('app:foreground', (_e, app) => callback(app)),
   onOpenSite: (callback) => ipcRenderer.on('site:open', (_e, url, contentsId) => callback(url, contentsId)),
+  onOpenSiteNew: (callback) => ipcRenderer.on('site:openNew', (_e, url, contentsId) => callback(url, contentsId)),
   onVisible:(callback) => ipcRenderer.on('win:visible', (_e, visible) => callback(visible)),
 });

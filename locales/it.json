@@ -13,6 +13,8 @@
   "edit.copy": "Copia",
   "edit.paste": "Incolla",
   "edit.selectAll": "Seleziona tutto",
+  "edit.openLink": "Apri link in un nuovo tab",
+  "edit.copyLink": "Copia link",
 
   "bar.home": "Home",
   "bar.browse": "Naviga",
@@ -77,6 +79,7 @@
   "addDialog.tabUrl": "Indirizzo",
   "addDialog.tabBookmarks": "Bookmark",
   "openDialog.message": "La pagina vuole aprire {url} in un nuovo tab, ma la lista non ha un tab per quel sito. Aggiungerlo alla lista?",
+  "openDialog.newTab": "Aggiungere {url} come nuovo tab della lista \"{list}\"?",
 
   "importDialog.message": "Scegli i bookmark da aggiungere a una lista, da un browser o da un file esportato da un browser.",
   "bookmarks.from": "Da:",

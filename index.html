@@ -1615,6 +1615,36 @@
   }
   window.overlay.onOpenSite(openSiteUrl);
 
+  // "Open link in new tab" from the context menu of a link (see main.js):
+  // asks whether to add the link as a new tab of the current list, right
+  // after the tab of the page it comes from (at the end from Browse or a
+  // popup); if a tab of the list already has that address, it is shown.
+  async function openLinkInNewTab(url, contentsId) {
+    url = normalizeUrl(url);
+    if (!url) return;
+    const existing = pageMatch(url);
+    if (existing) { activate(existing.id); return; }
+    const l = currentList();
+    const ok = await openDialog({
+      message: t('openDialog.newTab', { url, list: listName(l) }),
+      okLabel: t('addDialog.ok'),
+    });
+    if (!ok || currentList() !== l) return;
+    const from = l.sites.find((s) => {
+      try { return webviews.get(s.id)?.getWebContentsId() === contentsId; } catch { return false; }
+    });
+    const site = { id: crypto.randomUUID(), url, title: null };
+    materialize(l);
+    const at = from ? l.sites.indexOf(from) : -1;
+    if (at >= 0) l.sites.splice(at + 1, 0, site); else l.sites.push(site);
+    save();
+    logAction(`link opened as ${siteRef(site.id)} (from ${from ? 'a site tab' : 'Browse or a popup'})`);
+    activate(site.id);
+    render();
+    resolveTitle(site);
+  }
+  window.overlay.onOpenSiteNew(openLinkInNewTab);
+
   // ---------- application the overlay was opened over ----------
   //
   // At every show the main process sends the detected application: its list

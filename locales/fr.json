@@ -13,6 +13,8 @@
   "edit.copy": "Copier",
   "edit.paste": "Coller",
   "edit.selectAll": "Tout sélectionner",
+  "edit.openLink": "Ouvrir le lien dans un nouvel onglet",
+  "edit.copyLink": "Copier le lien",
 
   "bar.home": "Accueil",
   "bar.browse": "Naviguer",
@@ -77,6 +79,7 @@
   "addDialog.tabUrl": "Adresse",
   "addDialog.tabBookmarks": "Favoris",
   "openDialog.message": "La page veut ouvrir {url} dans un nouvel onglet, mais la liste n'a pas d'onglet pour ce site. L'ajouter à la liste ?",
+  "openDialog.newTab": "Ajouter {url} comme nouvel onglet de la liste « {list} » ?",
 
   "importDialog.message": "Choisis les favoris à ajouter à une liste, depuis un navigateur ou depuis un fichier exporté par un navigateur.",
   "bookmarks.from": "Depuis :",

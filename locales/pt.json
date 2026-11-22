@@ -13,6 +13,8 @@
   "edit.copy": "Copiar",
   "edit.paste": "Colar",
   "edit.selectAll": "Selecionar tudo",
+  "edit.openLink": "Abrir link em nova aba",
+  "edit.copyLink": "Copiar link",
 
   "bar.home": "Início",
   "bar.browse": "Navegar",
@@ -77,6 +79,7 @@
   "addDialog.tabUrl": "Endereço",
   "addDialog.tabBookmarks": "Favoritos",
   "openDialog.message": "A página quer abrir {url} em uma nova aba, mas a lista não tem uma aba para esse site. Adicioná-lo à lista?",
+  "openDialog.newTab": "Adicionar {url} como nova aba da lista \"{list}\"?",
 
   "importDialog.message": "Escolha os favoritos a adicionar a uma lista, de um navegador ou de um arquivo exportado por um navegador.",
   "bookmarks.from": "De:",
