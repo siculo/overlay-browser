@@ -167,6 +167,7 @@
   "memory.close": "Chiudi",
   "memory.closeTitle": "Chiudi la pagina per liberare memoria: riaprendo il tab si ricarica dall’ultimo indirizzo visitato.",
   "memory.closeShared": "Chiudi queste pagine: condividono lo stesso processo, la memoria si libera solo chiudendole tutte. Riaprendo un tab, la pagina si ricarica dall’ultimo indirizzo visitato.",
+  "memory.closeList": "Chiudi le pagine aperte di questa lista per liberare memoria: riaprendo un tab, la pagina si ricarica dall’ultimo indirizzo visitato.",
   "memory.closeAll": "Chiudi tutte le pagine",
   "memory.closeAllTitle": "Chiude tutte le pagine aperte per liberare memoria: riaprendo un tab, la pagina si ricarica dall’ultimo indirizzo visitato.",
   "memory.total": "Memoria usata: {size}",

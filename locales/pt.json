@@ -167,6 +167,7 @@
   "memory.close": "Fechar",
   "memory.closeTitle": "Fechar a página para liberar memória: ao reabrir a aba, ela é recarregada a partir do último endereço visitado.",
   "memory.closeShared": "Fechar estas páginas: elas compartilham o mesmo processo, a memória só é liberada fechando todas. Ao reabrir uma aba, a página é recarregada a partir do último endereço visitado.",
+  "memory.closeList": "Fechar as páginas abertas desta lista para liberar memória: ao reabrir uma aba, a página é carregada novamente a partir do último endereço visitado.",
   "memory.closeAll": "Fechar todas as páginas",
   "memory.closeAllTitle": "Fecha todas as páginas abertas para liberar memória: ao reabrir uma aba, a página é recarregada a partir do último endereço visitado.",
   "memory.total": "Memória usada: {size}",

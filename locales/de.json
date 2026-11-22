@@ -167,6 +167,7 @@
   "memory.close": "Schließen",
   "memory.closeTitle": "Seite schließen, um Speicher freizugeben: Beim erneuten Öffnen des Tabs wird sie von der zuletzt besuchten Adresse neu geladen.",
   "memory.closeShared": "Diese Seiten schließen: Sie teilen sich denselben Prozess, der Speicher wird erst frei, wenn alle geschlossen sind. Beim erneuten Öffnen eines Tabs wird die Seite von der zuletzt besuchten Adresse neu geladen.",
+  "memory.closeList": "Die geöffneten Seiten dieser Liste schließen, um Speicher freizugeben: Beim erneuten Öffnen eines Tabs wird die Seite von der zuletzt besuchten Adresse neu geladen.",
   "memory.closeAll": "Alle Seiten schließen",
   "memory.closeAllTitle": "Schließt alle geöffneten Seiten, um Speicher freizugeben: Beim erneuten Öffnen eines Tabs wird die Seite von der zuletzt besuchten Adresse neu geladen.",
   "memory.total": "Belegter Speicher: {size}",

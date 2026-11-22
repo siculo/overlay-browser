@@ -167,6 +167,7 @@
   "memory.close": "Close",
   "memory.closeTitle": "Close the page to free memory: reopening the tab loads it again from the last address visited.",
   "memory.closeShared": "Close these pages: they share the same process, the memory is freed only by closing all of them. Reopening a tab loads the page again from the last address visited.",
+  "memory.closeList": "Close the open pages of this list to free memory: reopening a tab loads the page again from the last address visited.",
   "memory.closeAll": "Close all pages",
   "memory.closeAllTitle": "Closes all open pages to free memory: reopening a tab loads the page again from the last address visited.",
   "memory.total": "Memory used: {size}",

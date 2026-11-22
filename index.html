@@ -284,6 +284,16 @@
   /* Close button of the pages' rows */
   #memory-table td.action { width: 6.5em; padding: 3px 0 3px 10px; text-align: right; }
   #memory-table td.action button { font-size: 12px; padding: 1px 8px; }
+  /* The app's own processes first, set apart from the pages */
+  #memory-table tr.own-end td { border-bottom-color: #555; }
+  #memory-table tr.own-end + tr td { padding-top: 12px; }
+  /* Pages grouped by list: the list's row (total), then its pages indented */
+  #memory-table tr.group td { padding-top: 10px; font-weight: 600; }
+  #memory-table tr.group td.size { color: inherit; }
+  #memory-table tr.toggle { cursor: pointer; }
+  #memory-table tr.toggle:hover td:first-child { text-decoration: underline; }
+  #memory-table .twisty { display: inline-block; width: 1.2em; color: #888; font-weight: normal; }
+  #memory-table tr.in-group td:first-child { padding-left: 1.2em; color: #ccc; }
   /* Accent color: one round swatch per predefined color, the chosen one ringed */
   #accents { display: flex; flex-wrap: wrap; gap: 8px; }
   #accents button { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid transparent; background: var(--swatch); box-shadow: inset 0 0 0 2px var(--sheet); }
@@ -2536,6 +2546,9 @@
   const closeAllPagesBtn = $('memory-close-all');
   let memoryTimer = null;
   let memory = null;   // last measurement from main.js
+  // Ids of the lists whose pages are shown in the table (each list's row
+  // opens and closes them, like the lists on the Home page); closed at first.
+  const memoryExpanded = new Set();
 
   function formatBytes(bytes) {
     const mb = bytes / 1048576;
@@ -2544,21 +2557,25 @@
   }
 
   // What a process hosts: the overlay's page, open sites (`pages`: their
-  // ids), or else its type; null for the minor ones (added up in a single row).
+  // ids, `list`: their list when they all belong to the same one), or else
+  // its type; null for the minor ones (added up in a single row).
   function memoryLabel(p, siteOfContents) {
-    if (p.ui) return { label: t('memory.ui') };
+    if (p.ui) return { label: t('memory.ui'), app: true };
     const ids = p.contents.map((id) => siteOfContents.get(id)).filter((id) => id === BROWSE || findSite(id));
     if (ids.length) {
+      const owners = new Set(ids.map((id) => listOfSite(id) ?? null));
+      const list = owners.size === 1 ? [...owners][0] : null;
       const label = ids.map((id) => {
         const min = minutesToUnload(id);
         const s = findSite(id);
-        const label = s ? `${siteName(s)} · ${listName(listOfSite(id))}` : t('bar.browse');
+        // Within its list's group the list is not repeated.
+        const label = !s ? t('bar.browse') : list ? siteName(s) : `${siteName(s)} · ${listName(listOfSite(id))}`;
         return min === null ? label : `${label} ${t('memory.unloadIn', { count: min })}`;
       }).join(', ');
-      return { label, pages: ids };
+      return { label, pages: ids, list };
     }
-    if (p.type === 'Browser') return { label: t('memory.main') };
-    if (p.type === 'GPU') return { label: t('memory.gpu') };
+    if (p.type === 'Browser') return { label: t('memory.main'), app: true };
+    if (p.type === 'GPU') return { label: t('memory.gpu'), app: true };
     return null;
   }
 
@@ -2575,39 +2592,79 @@
     for (const [id, wv] of webviews) {
       try { siteOfContents.set(wv.getWebContentsId(), id); } catch { /* not attached yet */ }
     }
-    const rows = [];
+    // First the app's own processes (interface, main process, GPU, other
+    // processes), sorted by memory; then, set apart, the pages, sorted by
+    // memory: grouped by list (application), one group per list with its
+    // total, and as single rows Browse and the processes shared by pages of
+    // different lists.
+    const own = [], entries = [];
+    const groups = new Map();   // list -> group entry
     let total = 0, other = 0;
     for (const p of memory.processes) {
       total += p.bytes;
       const row = memoryLabel(p, siteOfContents);
+      if (!row) { other += p.bytes; continue; }
       // A page just closed whose process has not ended yet: no longer listed.
-      if (row?.pages) row.pages = row.pages.filter((id) => webviews.has(id));
-      if (row) rows.push({ ...row, bytes: p.bytes });
-      else other += p.bytes;
+      if (row.pages) row.pages = row.pages.filter((id) => webviews.has(id));
+      row.bytes = p.bytes;
+      if (row.app) { own.push(row); continue; }
+      if (!row.list) { entries.push(row); continue; }
+      let g = groups.get(row.list);
+      if (!g) {
+        g = { label: listName(row.list), id: row.list.id, bytes: 0, rows: [] };
+        groups.set(row.list, g);
+        entries.push(g);
+      }
+      g.bytes += row.bytes;
+      g.rows.push(row);
     }
-    rows.sort((a, b) => b.bytes - a.bytes);
-    if (other) rows.push({ label: t('memory.other'), bytes: other });
+    const byBytes = (a, b) => b.bytes - a.bytes;
+    if (other) own.push({ label: t('memory.other'), bytes: other });
+    own.sort(byBytes);
+    entries.sort(byBytes);
+    for (const g of groups.values()) g.rows.sort(byBytes);
     memoryTotal.textContent = t('memory.total', { size: formatBytes(total) });
     memoryKind.textContent = t('memory.kind.' + memory.kind);
     closeAllPagesBtn.disabled = ![...webviews.keys()].some((id) => !inUse(id));
     if (memoryPressed) return;
-    memoryTable.replaceChildren(...rows.map(({ label, bytes, pages }) => {
-      const tr = el('tr');
+
+    const closeButton = (closable, title) => {
+      const b = el('button', null, t('memory.close'));
+      b.type = 'button';
+      b.title = t(title);
+      b.onclick = () => closePages(closable);
+      return b;
+    };
+    const tr = (cls, label, bytes, button) => {
+      const row = el('tr', cls);
       const name = el('td', null, label);
       name.title = label;
       const action = el('td', 'action');
-      // Pages sharing a process are closed together: the memory is freed
-      // only when all of them are.
+      if (button) action.append(button);
+      row.append(name, el('td', 'size', formatBytes(bytes)), action);
+      return row;
+    };
+    // Pages sharing a process are closed together: the memory is freed
+    // only when all of them are.
+    const processRow = ({ label, bytes, pages }, cls) => {
       const closable = pages?.filter((id) => !inUse(id)) ?? [];
-      if (closable.length) {
-        const b = el('button', null, t('memory.close'));
-        b.type = 'button';
-        b.title = t(closable.length > 1 ? 'memory.closeShared' : 'memory.closeTitle');
-        b.onclick = () => closePages(closable);
-        action.append(b);
-      }
-      tr.append(name, el('td', 'size', formatBytes(bytes)), action);
-      return tr;
+      return tr(cls, label, bytes, closable.length &&
+        closeButton(closable, closable.length > 1 ? 'memory.closeShared' : 'memory.closeTitle'));
+    };
+    const ownRows = own.map((r) => processRow(r, null));
+    ownRows.at(-1)?.classList.add('own-end');
+    memoryTable.replaceChildren(...ownRows, ...entries.flatMap((e) => {
+      if (!e.rows) return [processRow(e, null)];
+      const closable = e.rows.flatMap((r) => r.pages).filter((id) => !inUse(id));
+      const open = memoryExpanded.has(e.id);
+      const head = tr('group toggle', e.label, e.bytes, closable.length && closeButton(closable, 'memory.closeList'));
+      head.firstChild.prepend(el('span', 'twisty', open ? '▾' : '▸'));
+      head.onclick = (ev) => {
+        if (ev.target.closest('button')) return;
+        if (!memoryExpanded.delete(e.id)) memoryExpanded.add(e.id);
+        renderMemory();
+      };
+      return open ? [head, ...e.rows.map((r) => processRow(r, 'in-group'))] : [head];
     }));
   }
 

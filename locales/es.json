@@ -167,6 +167,7 @@
   "memory.close": "Cerrar",
   "memory.closeTitle": "Cerrar la página para liberar memoria: al volver a abrir la pestaña se carga de nuevo desde la última dirección visitada.",
   "memory.closeShared": "Cerrar estas páginas: comparten el mismo proceso, la memoria solo se libera cerrándolas todas. Al volver a abrir una pestaña, la página se carga de nuevo desde la última dirección visitada.",
+  "memory.closeList": "Cerrar las páginas abiertas de esta lista para liberar memoria: al volver a abrir una pestaña, la página se carga de nuevo desde la última dirección visitada.",
   "memory.closeAll": "Cerrar todas las páginas",
   "memory.closeAllTitle": "Cierra todas las páginas abiertas para liberar memoria: al volver a abrir una pestaña, la página se carga de nuevo desde la última dirección visitada.",
   "memory.total": "Memoria usada: {size}",
