@@ -787,11 +787,13 @@
   // Home, the Settings page or a site, whose page is opened again if it was
   // closed (see below). If the list has no last tab (or its site was
   // removed), on its first tab; the Home if the list has no sites.
-  function showCurrentList() {
+  // `home`: stays on the Home instead (list chosen or restored from the
+  // Home, where the click was made).
+  function showCurrentList({ home = false } = {}) {
     const cur = currentList();
     const last = cur.activeTab;
     let id;
-    if (last === HOME) id = null;
+    if (home || last === HOME) id = null;
     else if (last === SETTINGS || last === BROWSE) id = last;
     else if (cur.sites.some((s) => s.id === last)) id = last;
     else id = cur.sites[0]?.id ?? null;
@@ -1359,7 +1361,7 @@
     const app = l.match ? (l.match.exe ?? `"${l.match.title}"`) : t('lists.noApp');
     const count = t(l.sites.length === 1 ? 'lists.sites.one' : 'lists.sites.other', { count: l.sites.length });
     head.append(el('span', 'detail', `${app} · ${count}`));
-    if (l.id && !isCurrent) head.append(button(t('lists.use'), () => { setPinned(l.id); showCurrentList(); }));
+    if (l.id && !isCurrent) head.append(button(t('lists.use'), () => { setPinned(l.id); showCurrentList({ home: true }); }));
     if (l.id && l.match) head.append(button(t('lists.remove'), () => confirmRemoveList(l)));
     section.append(head);
     if (!open) return section;
@@ -1628,7 +1630,7 @@
     lookupPreset();
   });
 
-  $('pinned-restore').onclick = () => { setPinned(null); showCurrentList(); };
+  $('pinned-restore').onclick = () => { setPinned(null); showCurrentList({ home: true }); };
 
   // ---------- predefined lists ----------
   //
