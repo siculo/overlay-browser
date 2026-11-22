@@ -795,7 +795,8 @@ app.on('web-contents-created', (_e, contents) => {
 // tab) or on a selection, not on its buttons and labels. On a link of the
 // site pages and their popups, first Open link in new tab (the page asks
 // whether to add it as a new tab of the current list: 'site:openNew') and
-// Copy link.
+// Copy link; on an image, Copy image (after the link items when the image
+// is a link).
 // The items act on the page that was clicked (not on the focused window,
 // which for a <webview> is the overlay), enabled as Chromium says
 // (editFlags: nothing to undo, no selection, empty clipboard...).
@@ -829,7 +830,14 @@ app.on('web-contents-created', (_e, contents) => {
           selectAll,
         ]
       : [copy, selectAll];
-    const link = !overlayPage && !params.isEditable ? params.linkURL : '';
+    const page = !overlayPage && !params.isEditable;
+    if (page && params.mediaType === 'image' && params.hasImageContents) {
+      template.unshift(
+        { label: t('edit.copyImage'), click: () => contents.copyImageAt(params.x, params.y) },
+        { type: 'separator' },
+      );
+    }
+    const link = page ? params.linkURL : '';
     if (link) {
       template.unshift(
         ...(/^https?:/i.test(link)
