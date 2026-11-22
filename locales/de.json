@@ -7,6 +7,13 @@
   "tray.settings": "Einstellungen",
   "tray.quit": "Beenden",
 
+  "edit.undo": "Rückgängig",
+  "edit.redo": "Wiederholen",
+  "edit.cut": "Ausschneiden",
+  "edit.copy": "Kopieren",
+  "edit.paste": "Einfügen",
+  "edit.selectAll": "Alles auswählen",
+
   "bar.home": "Startseite",
   "bar.browse": "Surfen",
   "bar.browseTitle": "Freies Surfen: beliebige Adresse öffnen",

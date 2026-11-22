@@ -7,6 +7,13 @@
   "tray.settings": "Settings",
   "tray.quit": "Quit",
 
+  "edit.undo": "Undo",
+  "edit.redo": "Redo",
+  "edit.cut": "Cut",
+  "edit.copy": "Copy",
+  "edit.paste": "Paste",
+  "edit.selectAll": "Select All",
+
   "bar.home": "Home",
   "bar.browse": "Browse",
   "bar.browseTitle": "Free browsing: open any address",

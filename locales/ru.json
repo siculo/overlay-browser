@@ -7,6 +7,13 @@
   "tray.settings": "Настройки",
   "tray.quit": "Выход",
 
+  "edit.undo": "Отменить",
+  "edit.redo": "Повторить",
+  "edit.cut": "Вырезать",
+  "edit.copy": "Копировать",
+  "edit.paste": "Вставить",
+  "edit.selectAll": "Выделить всё",
+
   "bar.home": "Главная",
   "bar.browse": "Обзор",
   "bar.browseTitle": "Свободный просмотр: открыть любой адрес",

@@ -7,6 +7,13 @@
   "tray.settings": "Impostazioni",
   "tray.quit": "Esci",
 
+  "edit.undo": "Annulla",
+  "edit.redo": "Ripeti",
+  "edit.cut": "Taglia",
+  "edit.copy": "Copia",
+  "edit.paste": "Incolla",
+  "edit.selectAll": "Seleziona tutto",
+
   "bar.home": "Home",
   "bar.browse": "Naviga",
   "bar.browseTitle": "Navigazione libera: apri qualsiasi indirizzo",

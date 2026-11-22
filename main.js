@@ -785,6 +785,51 @@ app.on('web-contents-created', (_e, contents) => {
   });
 });
 
+// ---------- context menu of text ----------
+//
+// Electron shows no context menu: the right click opens the editing menu.
+// In the text fields (overlay page, site pages and their popups): Undo,
+// Redo, Cut, Copy, Paste, Select All. On text that cannot be edited only
+// Copy and Select All: anywhere in the site pages and their popups; in the
+// overlay page only on a read-only text field (the address of a site's
+// tab) or on a selection, not on its buttons and labels.
+// The items act on the page that was clicked (not on the focused window,
+// which for a <webview> is the overlay), enabled as Chromium says
+// (editFlags: nothing to undo, no selection, empty clipboard...).
+// The accelerators are only shown: the keys are handled by the page.
+const REDO_ACCELERATOR = process.platform === 'win32' ? 'Ctrl+Y' : 'CmdOrCtrl+Shift+Z';
+const TEXT_CONTROLS = new Set(['input-text', 'input-url', 'input-search', 'input-email', 'input-telephone', 'input-number', 'text-area']);
+app.on('web-contents-created', (_e, contents) => {
+  contents.on('context-menu', (_event, params) => {
+    const overlayPage = contents === win?.webContents;
+    const readOnlyText = overlayPage
+      ? TEXT_CONTROLS.has(params.formControlType) || params.selectionText !== ''
+      : true;
+    if (!params.isEditable && !readOnlyText) return;
+    const host = contents.hostWebContents || contents;
+    const window = BrowserWindow.fromWebContents(host);
+    if (!window) return;
+    const flags = params.editFlags;
+    const item = (key, action, enabled, accelerator) => ({
+      label: t(`edit.${key}`), enabled, accelerator, registerAccelerator: false, click: () => contents[action](),
+    });
+    const copy = item('copy', 'copy', flags.canCopy, 'CmdOrCtrl+C');
+    const selectAll = item('selectAll', 'selectAll', flags.canSelectAll, 'CmdOrCtrl+A');
+    const template = params.isEditable
+      ? [
+          item('undo', 'undo', flags.canUndo, 'CmdOrCtrl+Z'),
+          item('redo', 'redo', flags.canRedo, REDO_ACCELERATOR),
+          { type: 'separator' },
+          item('cut', 'cut', flags.canCut, 'CmdOrCtrl+X'),
+          copy,
+          item('paste', 'paste', flags.canPaste, 'CmdOrCtrl+V'),
+          selectAll,
+        ]
+      : [copy, selectAll];
+    Menu.buildFromTemplate(template).popup({ window, frame: params.frame, sourceType: params.menuSourceType });
+  });
+});
+
 // ---------- Chrome client hints (Google sign-in) ----------
 //
 // Google refuses the sign-in in "embedded browsers" ("This browser or app
