@@ -2384,6 +2384,8 @@
       input.onchange = () => window.overlay.setSetting(key, input.checked);
     }
   }
+  // Changed elsewhere (hideOnBlur from the tray menu).
+  window.overlay.onSettingChanged((key, value) => { if (OPTIONS[key]) OPTIONS[key].checked = !!value; });
 
   // ---------- new versions ----------
   //

@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('overlay', {
   openRepo: () => ipcRenderer.invoke('repo:open'),
   openUpdate: () => ipcRenderer.invoke('update:open'),
   dismissUpdate: () => ipcRenderer.invoke('update:dismiss'),
+  onSettingChanged: (callback) => ipcRenderer.on('settings:changed', (_e, key, value) => callback(key, value)),
   onUpdate: (callback) => ipcRenderer.on('update:available', (_e, update) => callback(update)),
   showLog: () => ipcRenderer.invoke('log:show'),
   clearLog: () => ipcRenderer.invoke('log:clear'),
