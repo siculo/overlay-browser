@@ -16,6 +16,7 @@ Electron app for Windows, Linux (X11) and macOS: an overlay browser, always on t
 - `locales/*.json`: UI texts, one file per language (code = file name); read by `main.js` and passed to the page. Language: user setting, else first available system language, else English.
 - `preload.js`: IPC bridge between the page and the main process.
 - `chrome-hints.js`: session preload (`registerPreloadScript`) of the site pages, see the Client Hints above.
+- Tests (`test/`, see `test/README.md`): `npm test`; unit tests with `node:test` (`test/unit/`: `bookmarks.js`, `platform/hosted.js`, locales and predefined lists) and UI tests with Playwright on the real app (`test/e2e/`, `helpers.js`); test mode of `main.js` (`OVERLAY_TEST_DIR`: data folder of the test, no keyboard hook nor update checks, `global.overlayTest` to show/hide and set the foreground app); run on Windows, Linux (xvfb) and macOS by `.github/workflows/test.yml` at every push. A change of behavior comes with its test.
 - Build: `npm run dist` (electron-builder, packages for the current OS, unsigned) into `dist/`; `dist:win` (NSIS installer + portable), `dist:store` (unsigned AppX for the Microsoft Store, signed by the Store on submission; tiles in `build/appx/`; built by the manual `store.yml` workflow; the Store version's `userData` is redirected under `%LOCALAPPDATA%\Packages\…`), `dist:linux` (AppImage, built on Linux); `dist:mac` (DMG arm64 + x64, ad-hoc signed, built on macOS; icon `build/icon-mac.png`, 512 px).
 
 ## Branches and releases

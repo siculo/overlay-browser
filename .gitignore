@@ -29,3 +29,7 @@ npm-debug.log*
 # Sistema operativo
 Thumbs.db
 .DS_Store
+
+# Test (Playwright)
+test-results/
+playwright-report/

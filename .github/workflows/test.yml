@@ -1,0 +1,53 @@
+# Unit tests and UI tests (see test/README.md) on Windows, Linux and macOS,
+# at every push and pull request: a change made on one system is checked
+# on the others too.
+name: Test
+
+on:
+  push:
+    branches: [main, 'release/**', 'feature/**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      # Ubuntu 24.04 forbids the unprivileged user namespaces that the
+      # Chromium sandbox of Electron needs (it would not start).
+      - name: Allow the Electron sandbox (Linux)
+        if: runner.os == 'Linux'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      # Linux: no display on the runner, the app runs on a virtual X server.
+      - name: UI tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" npm run test:e2e
+
+      - name: UI tests
+        if: runner.os != 'Linux'
+        run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-results-${{ runner.os }}
+          path: |
+            test-results/
+            playwright-report/

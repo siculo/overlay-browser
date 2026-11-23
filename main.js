@@ -82,9 +82,15 @@ function applyOpacity() {
 
 // ---------- preferences ----------
 
+// Automated UI tests (test/e2e): the data folder given by the test, so
+// that the user's preferences, sessions and log are never touched; no
+// keyboard hook nor update checks, and the application the overlay is
+// opened over is set by the test (see global.overlayTest at the end).
+const TEST_DIR = process.env.OVERLAY_TEST_DIR || null;
+
 // Fixed data folder: without this line the packaged app would use the
 // productName ("Overlay Browser") and would not find the existing preferences.
-app.setPath('userData', path.join(app.getPath('appData'), 'overlay-browser'));
+app.setPath('userData', TEST_DIR ? path.resolve(TEST_DIR) : path.join(app.getPath('appData'), 'overlay-browser'));
 
 // Same user agent as Chrome: without the app and Electron versions that
 // Electron adds, some sites (Google sign-in above all) refuse the login as an
@@ -444,10 +450,10 @@ function showWindow(reason = 'other') {
 let foregroundApp = null;
 
 function detectForegroundApp() {
-  if (!platform.features.appDetect) return;
+  if (!platform.features.appDetect && !TEST_DIR) return;
   let detected = null;
   try {
-    detected = platform.foregroundApp();
+    detected = TEST_DIR ? global.overlayTest.foregroundApp : platform.foregroundApp();
   } catch (err) {
     logError(`platform ${platform.id}: ERROR in foregroundApp: ${err?.stack || err}`);
   }
@@ -951,7 +957,7 @@ ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL));
 
 const RELEASES_API = 'https://api.github.com/repos/siculo/overlay-browser/releases?per_page=30';
 const RELEASE_PAGE = `${REPO_URL}/releases/`;
-const UPDATES_ENABLED = !process.windowsStore;
+const UPDATES_ENABLED = !process.windowsStore && !TEST_DIR;
 const UPDATE_INTERVAL = 6 * 3600000;
 let availableUpdate = null;   // { version, url } of the newest release newer than this one
 let lastUpdateCheck = 0;
@@ -1304,7 +1310,7 @@ function start() {
   // The hook uses the chosen combination anyway, even if globalShortcut
   // could not register it (e.g. already used by another application).
   setHookCombo(shortcut || prefs.shortcut);
-  startKeyboardHook();
+  if (!TEST_DIR) startKeyboardHook();
   createTray();
   startUpdateChecks();
 }
@@ -1330,3 +1336,15 @@ app.on('will-quit', () => {
   try { uiohook?.uIOhook.stop(); } catch { /* already stopped */ }
 });
 app.on('window-all-closed', () => app.quit());
+
+// What the UI tests reach through the main process (electronApp.evaluate):
+// showing and hiding as the shortcut does, and the application to report
+// as the one the overlay is opened over ({ exe, name, title }, null = none).
+if (TEST_DIR) {
+  global.overlayTest = {
+    foregroundApp: null,
+    show: () => showWindow('test'),
+    hide: () => hideWindow('test'),
+    prefs: () => prefs,
+  };
+}
