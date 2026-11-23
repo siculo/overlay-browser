@@ -8,7 +8,10 @@ test('starts, shows the Home and the version at its top', async () => {
     await expect(page.locator('#home')).toBeVisible();
     await expect(page.locator('#home-btn')).toHaveClass(/active/);
     const version = require('../../package.json').version;
-    await expect(page.locator('#home #app-version')).toContainText(`Overlay Browser ${version}`);
+    await expect(page.locator('#home #app-name')).toHaveText('overlay browser');
+    await expect(page.locator('#home #app-logo')).toHaveJSProperty('complete', true);
+    expect(await page.locator('#home #app-logo').evaluate((img) => img.naturalWidth)).toBeGreaterThan(0);
+    await expect(page.locator('#home #app-version')).toContainText(version);
     await expect(page.locator('#home #app-repo')).toBeVisible();
     await expect(page.locator('#home #app-update')).toBeHidden();
   } finally {

@@ -50,6 +50,7 @@
   "home.exportBookmarks": "Export bookmarks…",
   "home.bookmarks": "Bookmarks",
   "home.bookmarksDesc": "Import the browsers' bookmarks into the lists, or export the lists to a bookmark file to open in a browser.",
+  "home.version": "Version {version}",
   "home.empty": "No sites. Add one below.",
 
   "lists.general": "General",

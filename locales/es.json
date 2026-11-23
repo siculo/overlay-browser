@@ -50,6 +50,7 @@
   "home.exportBookmarks": "Exportar marcadores…",
   "home.bookmarks": "Marcadores",
   "home.bookmarksDesc": "Importa a las listas los marcadores de los navegadores, o exporta las listas a un archivo de marcadores para abrir en un navegador.",
+  "home.version": "Versión {version}",
   "home.empty": "No hay sitios. Añade uno abajo.",
 
   "lists.general": "General",

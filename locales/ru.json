@@ -50,6 +50,7 @@
   "home.exportBookmarks": "Экспорт закладок…",
   "home.bookmarks": "Закладки",
   "home.bookmarksDesc": "Импортируйте закладки браузеров в списки или экспортируйте списки в файл закладок для браузера.",
+  "home.version": "Версия {version}",
   "home.empty": "Сайтов нет. Добавьте сайт ниже.",
 
   "lists.general": "Общий",

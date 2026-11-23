@@ -209,9 +209,15 @@
   .page h1 { margin: 0 0 16px; font-weight: 500; font-size: 22px; }
   .page h2 { margin: 40px 0 14px; font-weight: 500; font-size: 16px; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; }
   .page h1 + h2 { margin-top: 8px; }
-  /* Head of the Home: app name and version, newer version, project link */
-  #home-info { max-width: 720px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #333; font-size: 13px; color: #999; }
-  #app-version { color: #ccc; font-weight: 500; font-variant-numeric: tabular-nums; user-select: text; }
+  /* Head of the Home: logo and app name, below it the version, the newer
+     version and the project link */
+  #home-info { display: flex; align-items: center; gap: 14px; max-width: 720px; margin-bottom: 48px; padding-bottom: 20px; border-bottom: 1px solid #333; }
+  #app-logo { flex: none; height: 44px; }
+  /* name and version 3 px above the logo's center, to line up with it */
+  #home-info > div { position: relative; top: -3px; }
+  #app-name { font-size: 28px; font-weight: 500; line-height: 1.2; }
+  #app-meta { margin-top: 2px; font-size: 13px; color: #999; }
+  #app-version { font-variant-numeric: tabular-nums; user-select: text; }
   #app-repo, #app-update-link { color: var(--accent-text); text-decoration: none; }
   #app-repo:hover, #app-update-link:hover { text-decoration: underline; }
   #app-update-link { font-weight: 500; }
@@ -340,7 +346,13 @@
   </div>
 
   <div id="home">
-    <div id="home-info"><span id="app-version"></span><span id="app-update" hidden> · <a href="#" id="app-update-link"></a></span> · <a href="#" id="app-repo">GitHub</a></div>
+    <div id="home-info">
+      <img id="app-logo" src="assets/logo.png" alt="">
+      <div>
+        <div id="app-name">overlay browser</div>
+        <div id="app-meta"><span id="app-version"></span><span id="app-update" hidden> · <a href="#" id="app-update-link"></a></span> · <a href="#" id="app-repo">GitHub</a></div>
+      </div>
+    </div>
     <div class="notice" id="pinned" hidden>
       <span id="pinned-label"></span>
       <span class="name" id="pinned-name"></span>
@@ -2767,7 +2779,7 @@
     initBrowseStart(state.settings.browseStart);
     initSearch(state.settings);
     initFixedTabs(state.settings.fixedTabs);
-    $('app-version').textContent = `Overlay Browser ${state.version}`;
+    $('app-version').textContent = t('home.version', { version: state.version });
     $('app-repo').onclick = (e) => { e.preventDefault(); window.overlay.openRepo(); };
     $('check-updates-setting').hidden = !state.updates;
     update = state.update;
