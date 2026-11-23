@@ -95,6 +95,9 @@ test('"Use" and "Back to" keep the Home shown; a list opened by the application 
   await o.show({ exe: 'game', name: 'Game' });
   await expect(tabs(page)).toHaveText(['Game']);
   await expect(tabs(page).first()).toHaveClass(/active/);
+  // The page's favicon arriving redraws the Home: a click on "Use" just
+  // then would land on a button already replaced.
+  await expect(tabs(page).first().locator('img.favicon')).toBeVisible();
 
   await page.locator('#home-btn').click();
   await page.locator('#lists section.list:not(.current)', { hasText: 'General' }).locator('.list-head button', { hasText: 'Use' }).click();

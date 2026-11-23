@@ -92,6 +92,8 @@ test('tabs have the same width, which does not change with the title', async () 
   const { page } = o;
   const widths = () => tabs(page).evaluateAll((ts) => ts.map((t) => Math.round(t.getBoundingClientRect().width)));
   await expect(tabs(page)).toHaveCount(3);
+  // Laid out (the tabs can be measured before the window is).
+  await expect.poll(async () => Math.min(...await widths())).toBeGreaterThan(0);
   const before = await widths();
   expect(new Set(before).size).toBe(1);
   await o.inSite(sites[1].url, (d) => { d.title = 'X'; });
