@@ -779,7 +779,7 @@ app.on('web-contents-created', (_e, contents) => {
   });
   contents.on('did-create-window', (popup) => {
     popup.removeMenu();
-    popup.setAlwaysOnTop(true, 'screen-saver');
+    popup.setAlwaysOnTop(true, ...platform.topLevel);
     popup.on('blur', () => onOverlayBlur(popup));
     // When the popup closes (e.g. at the end of a login) the overlay takes
     // the focus back, otherwise it would not notice the next blur.
@@ -1291,7 +1291,7 @@ function start() {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
-  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setAlwaysOnTop(true, ...platform.topLevel);
   win.loadFile('index.html');
   win.on('blur', () => onOverlayBlur(win));
   trackBounds(win);

@@ -23,6 +23,8 @@
 //                        'css'     transparent window + CSS opacity on the page
 //                        'none'    not available
 //   windowOptions      extra BrowserWindow options for the overlay window
+//   topLevel           always-on-top level of the overlay and its popups:
+//                      [level, relativeLevel] for win.setAlwaysOnTop
 //   defaultShortcut    accelerator used when the user has not chosen one
 //   configureApp(app)  called at load time, before the app is ready
 //                      (command line switches and the like)

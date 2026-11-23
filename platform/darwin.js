@@ -15,6 +15,8 @@
 //   (NSWorkspace, through the Objective-C runtime with koffi). Window titles
 //   would require the Screen Recording permission: the app's name is used
 //   as title instead.
+// - The overlay stays just below the menus (topLevel), not at the
+//   screen saver level: the menus of the menu bar open over it.
 // - Memory is the physical footprint of each process (proc_pid_rusage), the
 //   value shown by Activity Monitor.
 
@@ -137,6 +139,10 @@ module.exports = {
   features: { ...generic.features, focusRestore: true, appDetect: !!objc },
   opacity: 'native',
   windowOptions: { type: 'panel' },
+  // Just below the menus (NSPopUpMenuWindowLevel, 101), so that the menus of
+  // the menu bar and the context menus of other apps open over the overlay;
+  // still above the menu bar (24) and the Dock (20).
+  topLevel: ['pop-up-menu', -1],
   // F1–F12 are media keys by default (F10 mutes the volume).
   defaultShortcut: 'Command+Shift+Space',
   configureApp() {

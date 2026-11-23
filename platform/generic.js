@@ -14,6 +14,7 @@ module.exports = {
   },
   opacity: 'none',
   windowOptions: {},
+  topLevel: ['screen-saver', 0],
   // A bare F10 is too easy to press by mistake, and often bound in games.
   defaultShortcut: 'Super+F10',
   configureApp() {},
