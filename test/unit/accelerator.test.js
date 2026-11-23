@@ -3,10 +3,14 @@ const assert = require('node:assert/strict');
 const { ACCEL_KEYS, keyName, parseAccelerator } = require('../../accelerator');
 const platform = require('../../platform');
 
-// uiohook-napi connects to the display when loaded: without one (Linux
-// runner without xvfb) the tests that need its key codes are skipped.
-let UiohookKey = null, noHook = false;
-try { ({ UiohookKey } = require('uiohook-napi')); } catch (err) { noHook = `uiohook-napi not loaded: ${err.message}`; }
+// uiohook-napi connects to the display when loaded, and without one on
+// Linux it ends the process: then the tests that need its key codes are
+// skipped (the workflow runs the unit tests under xvfb).
+let UiohookKey = null;
+let noHook = process.platform === 'linux' && !process.env.DISPLAY ? 'no display for uiohook-napi' : false;
+if (!noHook) {
+  try { ({ UiohookKey } = require('uiohook-napi')); } catch (err) { noHook = `uiohook-napi not loaded: ${err.message}`; }
+}
 
 test('every key name exists in uiohook-napi', { skip: noHook }, () => {
   for (const name of new Set(Object.values(ACCEL_KEYS))) assert.ok(name in UiohookKey, name);

@@ -66,7 +66,9 @@ test('context menu of the overlay page: only on text fields and selections', asy
   await expect.poll(() => lastMenuLabels(app)).toEqual(['Undo', 'Redo', '-', 'Cut', 'Copy', 'Paste', 'Select All']);
   await page.locator('#add-cancel').click();
   const count = await app.evaluate(() => global.testMenus.length);
-  await page.locator('#home-btn').click({ button: 'right' });
+  // A button without text: on macOS a right click selects the word under
+  // the pointer, and a selection has its menu.
+  await page.locator('#add-tab').click({ button: 'right' });
   await page.waitForTimeout(300);
   expect(await app.evaluate(() => global.testMenus.length)).toBe(count);
 });

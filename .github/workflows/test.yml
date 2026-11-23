@@ -26,16 +26,22 @@ jobs:
 
       - run: npm ci
 
-      - name: Unit tests
-        run: npm run test:unit
-
       # Ubuntu 24.04 forbids the unprivileged user namespaces that the
       # Chromium sandbox of Electron needs (it would not start).
       - name: Allow the Electron sandbox (Linux)
         if: runner.os == 'Linux'
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
-      # Linux: no display on the runner, the app runs on a virtual X server.
+      # Linux: no display on the runner, the tests run on a virtual X
+      # server (uiohook-napi, loaded by a unit test, needs one too).
+      - name: Unit tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm run test:unit
+
+      - name: Unit tests
+        if: runner.os != 'Linux'
+        run: npm run test:unit
+
       - name: UI tests (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" npm run test:e2e
