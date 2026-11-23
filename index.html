@@ -191,7 +191,10 @@
   #update-close .icon { fill: currentColor; }
 
   /* Free browsing tab with no page open */
-  #browse-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; color: #888; text-align: center; }
+  #browse-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; color: #888; text-align: center; }
+  #browse-empty p { margin: 0; }
+  #browse-suggest { color: var(--accent-text); text-decoration: none; }
+  #browse-suggest:hover { text-decoration: underline; }
   #opt-search-custom { flex: 1; min-width: 0; max-width: 420px; }
   /* Field with a button that empties it, inside on the right (shown when
      the field is not empty); icon: Material Icons "close" (Apache 2.0) */
@@ -458,7 +461,7 @@
 
   </div>
 
-  <div id="views" hidden><div id="browse-empty" data-i18n="browse.empty" hidden></div></div>
+  <div id="views" hidden><div id="browse-empty" hidden><p data-i18n="browse.empty"></p><p id="browse-example" hidden><span data-i18n="browse.example"></span> <a href="#" id="browse-suggest"></a></p><p data-i18n="browse.startHint"></p></div></div>
 
   <div id="dialog" class="modal" hidden>
     <form class="box" id="dialog-form">
@@ -771,6 +774,7 @@
     views.hidden = !isSite(id);
     for (const [wid, wv] of webviews) wv.style.display = wid === id ? 'flex' : 'none';
     browseEmpty.hidden = !(id === BROWSE && !webviews.has(BROWSE));
+    if (!browseEmpty.hidden) renderBrowseSuggest();
     markIdle();
     renderTabs();
     updateNav(true);
@@ -1037,6 +1041,26 @@
     if (wv) { try { wv.loadURL(url); } catch { wv.src = url; } } else getWebview(BROWSE, url);
     activate(BROWSE);
   }
+
+  // Empty page of the free browsing tab: the name of the current list's
+  // application as an example ("Try for example: <name>"), searched with the chosen engine when
+  // clicked. None for the general list.
+  const browseSuggest = $('browse-suggest');
+  function renderBrowseSuggest() {
+    const cur = currentList();
+    const name = cur.match ? listName(cur) : null;
+    $('browse-example').hidden = !name;
+    browseSuggest.textContent = name ?? '';
+    browseSuggest.title = name ? t('browse.suggestTitle', { name }) : '';
+  }
+  browseSuggest.onclick = (e) => {
+    e.preventDefault();
+    const text = browseSuggest.textContent;
+    if (!text) return;
+    logAction('Browse: search suggestion');
+    browseTo(searchTemplate().replaceAll('%s', encodeURIComponent(text)));
+    webviews.get(BROWSE)?.focus();
+  };
 
   navBack.onclick = () => webviews.get(active)?.goBack();
   navForward.onclick = () => webviews.get(active)?.goForward();
