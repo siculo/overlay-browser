@@ -123,6 +123,8 @@ test('closing the active tab opens the next one, else the previous one, else Bro
   const close = async (name) => {
     await tabs(page).filter({ hasText: name }).locator('.close').click();
     await page.locator('#dialog-ok').click();
+    await expect(page.locator('#dialog')).toBeHidden();
+    await expect(tabs(page).filter({ hasText: name })).toHaveCount(0);
   };
   await expect(tabs(page).nth(1)).toHaveClass(/active/);
   await close('B');

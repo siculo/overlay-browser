@@ -95,15 +95,16 @@ test('tabs have the same width, which does not change with the title', async () 
   const sites = ['A', 'A much longer name of a site', 'C'].map((n) => site(server.url('/' + n.replaceAll(' ', '-')), n));
   o = await launch({ prefs: { lists: [list(null, sites, { activeTab: sites[1].id })] } });
   const { page } = o;
-  const widths = () => tabs(page).evaluateAll((ts) => ts.map((t) => Math.round(t.getBoundingClientRect().width)));
-  await expect(tabs(page)).toHaveCount(3);
-  // Laid out (the tabs can be measured before the window is).
-  await expect.poll(async () => Math.min(...await widths())).toBeGreaterThan(0);
-  const before = await widths();
-  expect(new Set(before).size).toBe(1);
+  const widths = () => page.locator('#tabs').evaluate((bar) =>
+    Array.from(bar.querySelectorAll('.tab'), (tab) => Math.round(tab.getBoundingClientRect().width)));
+  let before;
+  await expect.poll(async () => {
+    before = await widths();
+    return before.length === 3 && before[0] > 0 && before.every((w) => w === before[0]);
+  }, { message: 'three tabs laid out at the same positive width' }).toBe(true);
   await o.inSite(sites[1].url, (d) => { d.title = 'X'; });
   await expect(tabs(page).nth(1)).toHaveText('X');
-  expect(await widths()).toEqual(before);
+  await expect.poll(widths).toEqual(before);
 });
 
 test('with many tabs they shrink and the scroll arrows appear', async () => {
@@ -112,9 +113,10 @@ test('with many tabs they shrink and the scroll arrows appear', async () => {
   const { page } = o;
   await expect(page.locator('#right')).toBeVisible();
   await expect(page.locator('#left')).toBeDisabled();
-  const w = await tabs(page).first().evaluate((t) => t.getBoundingClientRect().width);
-  expect(w).toBeGreaterThanOrEqual(63);
-  expect(w).toBeLessThan(300);
+  await expect.poll(() => page.locator('#tabs').evaluate((bar) => {
+    const width = bar.querySelector('.tab')?.getBoundingClientRect().width;
+    return width >= 63 && width < 300;
+  }), { message: 'tabs shrink to fit within their allowed width' }).toBe(true);
   await page.locator('#right').click();
   await expect(page.locator('#left')).toBeEnabled();
 });
