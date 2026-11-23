@@ -6,6 +6,7 @@ const bookmarks = require('./bookmarks');
 const { OPACITY_RANGE, UNLOAD_RANGE, isValidSetting, loadSettings } = require('./settings');
 const { newestRelease } = require('./versions');
 const { parseAccelerator } = require('./accelerator');
+const { contextMenuItems } = require('./context-menu');
 
 platform.configureApp(app);
 
@@ -722,52 +723,22 @@ app.on('web-contents-created', (_e, contents) => {
 // which for a <webview> is the overlay), enabled as Chromium says
 // (editFlags: nothing to undo, no selection, empty clipboard...).
 // The accelerators are only shown: the keys are handled by the page.
-const REDO_ACCELERATOR = process.platform === 'win32' ? 'Ctrl+Y' : 'CmdOrCtrl+Shift+Z';
-const TEXT_CONTROLS = new Set(['input-text', 'input-url', 'input-search', 'input-email', 'input-telephone', 'input-number', 'text-area']);
+// Which items: context-menu.js.
 app.on('web-contents-created', (_e, contents) => {
   contents.on('context-menu', (_event, params) => {
-    const overlayPage = contents === win?.webContents;
-    const readOnlyText = overlayPage
-      ? TEXT_CONTROLS.has(params.formControlType) || params.selectionText !== ''
-      : true;
-    if (!params.isEditable && !readOnlyText) return;
+    const items = contextMenuItems(params, { overlayPage: contents === win?.webContents, platform: process.platform });
+    if (!items) return;
     const host = contents.hostWebContents || contents;
     const window = BrowserWindow.fromWebContents(host);
     if (!window) return;
-    const flags = params.editFlags;
-    const item = (key, action, enabled, accelerator) => ({
-      label: t(`edit.${key}`), enabled, accelerator, registerAccelerator: false, click: () => contents[action](),
+    const template = items.map((i) => {
+      if (i.type) return i;
+      const label = t(`edit.${i.key}`);
+      if (i.action) return { label, enabled: i.enabled, accelerator: i.accelerator, registerAccelerator: false, click: () => contents[i.action]() };
+      if (i.key === 'copyImage') return { label, click: () => contents.copyImageAt(params.x, params.y) };
+      if (i.key === 'openLink') return { label, click: () => win.webContents.send('site:openNew', i.url, contents.id) };
+      return { label, click: () => clipboard.writeText(i.url) };   // copyLink
     });
-    const copy = item('copy', 'copy', flags.canCopy, 'CmdOrCtrl+C');
-    const selectAll = item('selectAll', 'selectAll', flags.canSelectAll, 'CmdOrCtrl+A');
-    const template = params.isEditable
-      ? [
-          item('undo', 'undo', flags.canUndo, 'CmdOrCtrl+Z'),
-          item('redo', 'redo', flags.canRedo, REDO_ACCELERATOR),
-          { type: 'separator' },
-          item('cut', 'cut', flags.canCut, 'CmdOrCtrl+X'),
-          copy,
-          item('paste', 'paste', flags.canPaste, 'CmdOrCtrl+V'),
-          selectAll,
-        ]
-      : [copy, selectAll];
-    const page = !overlayPage && !params.isEditable;
-    if (page && params.mediaType === 'image' && params.hasImageContents) {
-      template.unshift(
-        { label: t('edit.copyImage'), click: () => contents.copyImageAt(params.x, params.y) },
-        { type: 'separator' },
-      );
-    }
-    const link = page ? params.linkURL : '';
-    if (link) {
-      template.unshift(
-        ...(/^https?:/i.test(link)
-          ? [{ label: t('edit.openLink'), click: () => win.webContents.send('site:openNew', link, contents.id) }]
-          : []),
-        { label: t('edit.copyLink'), click: () => clipboard.writeText(link) },
-        { type: 'separator' },
-      );
-    }
     Menu.buildFromTemplate(template).popup({ window, frame: params.frame, sourceType: params.menuSourceType });
   });
 });
@@ -1221,5 +1192,9 @@ if (TEST_DIR) {
     show: () => showWindow('test'),
     hide: () => hideWindow('test'),
     prefs: () => prefs,
+    // The keyboard hook's state (the hook itself is not started in tests).
+    hook: () => ({ suspended: hookSuspended, combo: hookCombo }),
+    // A message to the page, as main.js sends it.
+    send: (channel, ...args) => win.webContents.send(channel, ...args),
   };
 }

@@ -42,6 +42,7 @@
       "settings.js",
       "versions.js",
       "accelerator.js",
+      "context-menu.js",
       "platform/**/*",
       "index.html",
       "locales/**/*",

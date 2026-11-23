@@ -48,3 +48,33 @@ test('invalid values in the preferences file fall back to the defaults', async (
   });
   await expect(o.page.locator('#home')).toBeVisible();
 });
+
+test('after recording a new shortcut the keyboard hook works again', async () => {
+  o = await launch();
+  const { page } = o;
+  await page.locator('#settings-btn').click();
+  await page.locator('#shortcut-change').click();
+  await expect.poll(async () => (await o.test('hook')).suspended).toBe(true);
+  // A key without modifiers other than F keys is refused: still recording.
+  await page.keyboard.press('KeyQ');
+  await expect(page.locator('#shortcut-hint')).not.toBeEmpty();
+  await page.keyboard.press('Control+Alt+Shift+F9');
+  await expect(page.locator('#shortcut-change')).toBeEnabled();
+  // Whether or not another application holds the combination, the hook
+  // is no longer suspended (it stayed off until restart, 0aa4e43).
+  const hook = await o.test('hook');
+  expect(hook.suspended).toBe(false);
+  expect(hook.combo).toBeTruthy();
+});
+
+test('Esc cancels the recording of the shortcut and resumes the hook', async () => {
+  o = await launch();
+  const { page } = o;
+  await page.locator('#settings-btn').click();
+  const before = await page.locator('#shortcut').textContent();
+  await page.locator('#shortcut-change').click();
+  await expect.poll(async () => (await o.test('hook')).suspended).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#shortcut')).toHaveText(before);
+  expect((await o.test('hook')).suspended).toBe(false);
+});

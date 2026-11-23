@@ -19,11 +19,12 @@ function testPrefs({ settings, ...rest } = {}) {
 }
 
 // Starts the app. `dir`: data folder to reuse (to restart the app on the
-// same preferences), otherwise a new one with `prefs`.
-async function launch({ prefs, dir, foregroundApp = null, show = true } = {}) {
+// same preferences), otherwise a new one with `prefs` (`prefsText`: the
+// file's content as it is).
+async function launch({ prefs, prefsText, dir, foregroundApp = null, show = true } = {}) {
   if (!dir) {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'overlay-e2e-'));
-    fs.writeFileSync(path.join(dir, 'prefs.json'), JSON.stringify(testPrefs(prefs)));
+    fs.writeFileSync(path.join(dir, 'prefs.json'), prefsText ?? JSON.stringify(testPrefs(prefs)));
   }
   const env = { ...process.env, OVERLAY_TEST_DIR: dir };
   delete env.ELECTRON_RUN_AS_NODE;
@@ -43,6 +44,14 @@ async function launch({ prefs, dir, foregroundApp = null, show = true } = {}) {
       await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible())).toBe(true);
     },
     hide: () => app.evaluate(() => global.overlayTest.hide()),
+    // State of the main process exposed by main.js in test mode.
+    test: (name, ...args) => app.evaluate((_e, { name, args }) => global.overlayTest[name](...args), { name, args }),
+    // The webContents id of a site's webview (see inSite), for messages
+    // that name the page they come from (site:open, site:openNew).
+    async contentsId(urlPrefix) {
+      return app.evaluate(({ webContents }, prefix) => webContents.getAllWebContents()
+        .find((w) => w.getType() === 'webview' && w.getURL().startsWith(prefix))?.id ?? null, urlPrefix);
+    },
     // The preferences as saved on disk.
     savedPrefs: () => JSON.parse(fs.readFileSync(path.join(dir, 'prefs.json'), 'utf8')),
     // Runs `fn(document)` in the page of a site's webview (the one whose
@@ -60,7 +69,12 @@ async function launch({ prefs, dir, foregroundApp = null, show = true } = {}) {
       }, { prefix: urlPrefix, code: fn.toString() });
     },
     async close({ keepDir = false } = {}) {
-      await app.close();
+      // Quits as the tray's Quit does (Playwright's close() may wait
+      // seconds for the windows), then makes sure the process is gone.
+      const closed = app.waitForEvent('close', { timeout: 10000 }).catch(() => {});
+      await app.evaluate(({ app: a }) => { setTimeout(() => a.quit(), 0); }).catch(() => {});
+      await closed;
+      await app.close().catch(() => {});
       if (!keepDir) fs.rmSync(dir, { recursive: true, force: true });
       expect(pageErrors, 'errors in the overlay page').toEqual([]);
     },
@@ -71,8 +85,8 @@ async function launch({ prefs, dir, foregroundApp = null, show = true } = {}) {
 
 // Local web server: GET /<name> returns a page titled <name>, with links
 // and scripts given by the query: ?blank=/<other> adds a target=_blank
-// link (#blank), ?open=/<other> a button that calls window.open (#open).
-// /icon.png is a favicon.
+// link (#blank), ?open=/<other> a button that calls window.open (#open),
+// ?delay=<ms> answers that late. /icon.png is a favicon.
 const ICON = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64');
 
@@ -84,6 +98,14 @@ async function startServer() {
       res.end(ICON);
       return;
     }
+    const delay = Number(url.searchParams.get('delay')) || 0;
+    if (delay) {
+      setTimeout(() => { url.searchParams.delete('delay'); handle(url, res); }, delay);
+      return;
+    }
+    handle(url, res);
+  });
+  function handle(url, res) {
     const name = decodeURIComponent(url.pathname.slice(1)) || 'index';
     const blank = url.searchParams.get('blank');
     const open = url.searchParams.get('open');
@@ -93,10 +115,10 @@ async function startServer() {
 ${blank ? `<a id="blank" href="${blank}" target="_blank">blank</a>` : ''}
 ${open ? `<button id="open" onclick="window.open('${open}')">open</button>` : ''}
 </body></html>`);
-  });
+  }
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${server.address().port}`;
-  return { base, url: (p) => base + p, close: () => new Promise((r) => server.close(r)) };
+  return { base, url: (p) => base + p, close: () => new Promise((r) => { server.closeAllConnections(); server.close(r); }) };
 }
 
 // A list as saved in the preferences.

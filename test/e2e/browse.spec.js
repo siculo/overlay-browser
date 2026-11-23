@@ -60,3 +60,75 @@ test('a window.open with features opens a popup window above the overlay', async
   await o.show();
   await expect.poll(async () => (await popup()).visible).toBe(true);
 });
+
+test('"Open link in new tab" over an application whose list does not exist yet creates it', async () => {
+  o = await launch({ show: false });
+  const { page } = o;
+  await o.show({ exe: 'newgame', name: 'New Game' });
+  await page.locator('#browse-btn').click();
+  await page.locator('#nav-url').fill(server.url('/From'));
+  await page.locator('#nav-url').press('Enter');
+  expect(await o.inSite(server.url('/From'), (d) => d.title)).toBe('From');
+
+  // What main.js sends for the context menu's "Open link in new tab".
+  const id = await o.contentsId(server.url('/From'));
+  await o.test('send', 'site:openNew', server.url('/Linked'), id);
+  await expect(page.locator('#dialog')).toBeVisible();
+  await page.locator('#dialog-ok').click();
+  await expect(tabs(page)).toHaveText(['Linked']);
+  await expect.poll(() => o.savedPrefs().lists.find((l) => l.match?.exe === 'newgame')?.sites.map((s) => s.url))
+    .toEqual([server.url('/Linked')]);
+
+  // A link already in the list shows its tab, without asking.
+  await page.locator('#browse-btn').click();
+  await o.test('send', 'site:openNew', server.url('/Linked'), id);
+  await expect(tabs(page).first()).toHaveClass(/active/);
+  await expect(page.locator('#dialog')).toBeHidden();
+  await expect(tabs(page)).toHaveCount(1);
+});
+
+test('an address typed while the start page is still loading is opened', async () => {
+  o = await launch({ prefs: { settings: { browseStart: server.url('/Slow?delay=3000') } } });
+  const { page } = o;
+  await page.locator('#browse-btn').click();
+  await page.locator('#nav-url').fill(server.url('/Typed'));
+  await page.locator('#nav-url').press('Enter');
+  expect(await o.inSite(server.url('/Typed'), (d) => d.title)).toBe('Typed');
+  // The start page arriving later does not replace it.
+  await page.waitForTimeout(3500);
+  await expect(page.locator('#nav-url')).toHaveValue(server.url('/Typed'));
+});
+
+test('the tab of the page shown in Browse is highlighted, also after an in-page navigation', async () => {
+  const known = site(server.url('/Known/'), 'Known');
+  o = await launch({ prefs: { lists: [list(null, [site(server.url('/A'), 'A'), known])] } });
+  const { page } = o;
+  await page.locator('#browse-btn').click();
+  await page.locator('#nav-url').fill(server.url('/Start'));
+  await page.locator('#nav-url').press('Enter');
+  expect(await o.inSite(server.url('/Start'), (d) => d.title)).toBe('Start');
+  await expect(page.locator('#nav-pin')).toBeEnabled();
+  await expect(page.locator('#tabs .tab.match')).toHaveCount(0);
+
+  // pushState to the tab's address (without the final "/", with a fragment).
+  await o.inSite(server.url('/Start'), () => { history.pushState({}, '', '/Known#part'); });
+  await expect(page.locator('#tabs .tab.match')).toHaveText('Known');
+  await expect(page.locator('#nav-pin')).toBeDisabled();
+});
+
+test('in a site tab the address is read-only and the site home button works after Browse', async () => {
+  const a = site(server.url('/A'), 'A');
+  o = await launch({ prefs: { lists: [list(null, [a])] } });
+  const { page } = o;
+  // Browse without a start page: its "back to the start page" button.
+  await page.locator('#browse-btn').click();
+  await tabs(page).first().click();
+  await expect(page.locator('#nav-url')).toHaveValue(server.url('/A'));
+  await expect(page.locator('#nav-url')).toHaveAttribute('readonly', '');
+  await expect(page.locator('#nav-site')).toBeEnabled();
+
+  await o.inSite(server.url('/A'), () => { location.href = '/Deeper'; });
+  await expect(page.locator('#nav-url')).toHaveValue(server.url('/Deeper'));
+  await page.locator('#nav-site').click();
+  await expect(page.locator('#nav-url')).toHaveValue(server.url('/A'));
+});

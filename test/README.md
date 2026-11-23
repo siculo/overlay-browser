@@ -14,8 +14,8 @@ trace (`npx playwright show-trace trace.zip`) of the failure.
 ## Unit tests (`test/unit/`)
 
 `node:test`, no dependencies: the modules that do not need Electron
-(`urls.js`, `settings.js`, `versions.js`, `accelerator.js`, `bookmarks.js`,
-`platform/hosted.js`) and the data shipped with the app
+(`urls.js`, `settings.js`, `versions.js`, `accelerator.js`, `context-menu.js`,
+`bookmarks.js`, `platform/hosted.js`) and the data shipped with the app
 (locales: same keys and placeholders as `en.json`, keys used by the code
 present; predefined lists valid as described in `lists/README.md`).
 
@@ -43,8 +43,16 @@ like a web page. `helpers.js`:
   title `<name>`, `?blank=` a `target=_blank` link, `?open=` a
   `window.open` button, a favicon): tests never use the network, except
   the predefined list test, whose sites are real.
+- `o.test(name, ...args)`: calls `global.overlayTest[name]` in the main
+  process (`hook` for the keyboard hook's state, `send` for a message to
+  the page as `main.js` sends it); `o.contentsId(urlPrefix)`: a webview's
+  webContents id, for the messages that name their page.
 - System dialogs (file open/save) are replaced from the main process
-  (`app.evaluate(({ dialog }) => ...)`, see `bookmarks.spec.js`).
+  (`app.evaluate(({ dialog }) => ...)`, see `bookmarks.spec.js`), and so is
+  the native context menu, whose items are recorded and clicked from the
+  test (`pages.spec.js`).
+- `focus.spec.js` needs a window manager that moves the focus between
+  windows: skipped on the Linux runner (xvfb has none).
 
 Not covered (needs a real system): the global shortcut and the keyboard
 hook in a game, focus given back to the game, the foreground app detection
