@@ -522,7 +522,9 @@
     </form>
   </div>
 
+<script src="urls.js"></script>
 <script>
+  const { normalizeUrl, samePage, cookieDomain } = OverlayUrls;
   const $ = (id) => document.getElementById(id);
   const homeBtn = $('home-btn'), tabsEl = $('tabs'), leftBtn = $('left'), rightBtn = $('right');
   const home = $('home'), listsEl = $('lists'), views = $('views');
@@ -622,21 +624,6 @@
   }
 
   // ---------- utilities ----------
-
-  function normalizeUrl(raw) {
-    let s = raw.trim();
-    if (!s) return null;
-    if (!/^[a-z][a-z\d+.-]*:\/\//i.test(s)) s = 'https://' + s;
-    try {
-      const u = new URL(s);
-      // Chromium takes spaces and other characters a host cannot have,
-      // escaped ("not an address" -> https://not%20an%20address/).
-      if (!/^https?:$/.test(u.protocol) || !u.hostname || u.hostname.includes('%')) return null;
-      return u.href;
-    } catch {
-      return null;
-    }
-  }
 
   const siteName = (site) => site.title || new URL(site.url).hostname;
 
@@ -983,29 +970,14 @@
   // scheme, or without spaces and with a host such as "example.com",
   // "localhost:8080" or an IP address), otherwise a search. Returns the page
   // to open, null if there is nothing to open (empty, or an invalid address
-  // with a scheme).
-  function addressOrSearch(raw) {
-    const text = raw.trim();
-    if (!text) return null;
-    if (/^[a-z][a-z\d+.-]*:\/\//i.test(text)) return normalizeUrl(text);
-    const host = /^([^\s/?#:]+|\[[\da-f:.]+\])(:\d+)?([/?#]\S*)?$/i.exec(text)?.[1];
-    const isHost = host && (host === 'localhost' || host.startsWith('[') ||
-      /^\d{1,3}(\.\d{1,3}){3}$/.test(host) ||
-      /^([\p{L}\p{N}-]+\.)+\p{L}[\p{L}\p{N}-]*$/iu.test(host));
-    if (isHost) { const url = normalizeUrl(text); if (url) return url; }
-    return searchTemplate().replaceAll('%s', encodeURIComponent(text));
-  }
+  // with a scheme). See urls.js.
+  function addressOrSearch(raw) { return OverlayUrls.addressOrSearch(raw, searchTemplate()); }
 
   // The current list's site whose address is the page's (the active tab's
   // own site first), or null. Ignored: http/https, "www.", the final "/" of
   // the path and the fragment (#...).
   function pageMatch(url) {
-    const key = (u) => {
-      const n = normalizeUrl(u ?? '');
-      if (!n) return null;
-      const { host, pathname, search } = new URL(n);
-      return host.replace(/^www\./, '') + pathname.replace(/\/+$/, '') + search;
-    };
+    const key = OverlayUrls.pageKey;
     const page = key(url);
     if (!page) return null;
     const own = findSite(active);
@@ -1013,19 +985,6 @@
     return currentList().sites.find((s) => key(s.url) === page) || null;
   }
 
-  // Whether two addresses are the same page: same host (ignoring "www.")
-  // and path (ignoring the final "/"), whatever the query and the fragment,
-  // which the page may change by itself (e.g. Google Docs adds ?tab=...).
-  function samePage(a, b) {
-    const key = (u) => {
-      const n = normalizeUrl(u ?? '');
-      if (!n) return null;
-      const { host, pathname } = new URL(n);
-      return host.replace(/^www\./, '') + pathname.replace(/\/+$/, '');
-    };
-    const ka = key(a);
-    return !!ka && ka === key(b);
-  }
 
   // Highlights the tab of the site `id` (null: none), scrolling to it.
   let matchId = null;
@@ -1115,15 +1074,6 @@
     if (e.key === 'Escape' && !navMenu.hidden) { e.preventDefault(); closeNavMenu(); navMore.focus(); }
   });
 
-  // Domain whose cookies are removed for a page: its host without "www.";
-  // main.js removes the cookies of that domain, of its subdomains and of the
-  // parent domains (those the page receives), see cookies:clear.
-  function cookieDomain(url) {
-    try {
-      const u = new URL(url);
-      return /^https?:$/.test(u.protocol) ? u.hostname.replace(/^www\./, '') : '';
-    } catch { return ''; }
-  }
   navCookies.onclick = async () => {
     closeNavMenu();
     const id = active;

@@ -3,6 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const platform = require('./platform');
 const bookmarks = require('./bookmarks');
+const { OPACITY_RANGE, UNLOAD_RANGE, isValidSetting, loadSettings } = require('./settings');
+const { newestRelease } = require('./versions');
+const { parseAccelerator } = require('./accelerator');
+const { contextMenuItems } = require('./context-menu');
 
 platform.configureApp(app);
 
@@ -20,49 +24,8 @@ const uiohook = (() => {
 })();
 
 const DEFAULT_SHORTCUT = platform.defaultShortcut;
-// Options of the Settings page: key -> default.
-const DEFAULT_SETTINGS = {
-  hideOnBlur: true,     // hide the overlay when it loses focus
-  language: 'system',   // 'system' or the code of one of the files in locales/
-  opacity: 0.95,        // window opacity, from OPACITY_RANGE.min (most transparent) to 1 (opaque)
-  accent: 'amber',      // accent color of the interface, one of ACCENTS
-  unloadAfter: 30,      // minutes after which the pages not in use (all but the active tab) are closed, UNLOAD_RANGE
-  browseStart: '',      // start page of the free browsing tab: an http(s) address, '' = none
-  searchEngine: 'google', // search engine of the free browsing tab, one of SEARCH_ENGINES
-  searchCustom: '',     // address of the 'custom' search engine, with %s in place of the text; '' = none
-  fixedTabs: 'labels',  // fixed tabs (Home, Browse, Settings): 'labels' (icon and name) or 'icons' (icon only)
-  checkUpdates: true,   // look for a newer version on GitHub (see 'new versions'); not in the Store version
-  verboseLog: false,   // overlay.log: also what happens (shows, focus...), not only errors and crashes
-};
-const UNLOAD_RANGE = { min: 5, max: 60 };
-// Names of the predefined accent colors; the colors themselves are defined by the page (index.html).
-// Names of the search engines; their addresses are defined by the page (index.html).
-const SEARCH_ENGINES = ['google', 'bing', 'duckduckgo', 'brave', 'ecosia', 'startpage', 'custom'];
-const ACCENTS = ['amber', 'orange', 'red', 'pink', 'purple', 'blue', 'cyan', 'green'];
-// Below the minimum the window would be too hard to read.
-const OPACITY_RANGE = { min: 0.3, max: 1 };
 const DEFAULT_SIZE = { width: 1000, height: 700 };
 const MIN_SIZE = { width: 480, height: 320 };
-
-// Validity of a setting value beyond its type.
-function isValidSetting(key, value) {
-  if (typeof value !== typeof DEFAULT_SETTINGS[key]) return false;
-  if (key === 'language') return isLanguageSetting(value);
-  if (key === 'opacity') return Number.isFinite(value) && value >= OPACITY_RANGE.min && value <= OPACITY_RANGE.max;
-  if (key === 'accent') return ACCENTS.includes(value);
-  if (key === 'browseStart') return value === '' || isHttpUrl(value);
-  if (key === 'fixedTabs') return value === 'labels' || value === 'icons';
-  if (key === 'searchEngine') return SEARCH_ENGINES.includes(value);
-  if (key === 'searchCustom') return value === '' || (value.includes('%s') && isHttpUrl(value.replaceAll('%s', 'x')));
-  if (key === 'unloadAfter') {
-    return Number.isInteger(value) && value >= UNLOAD_RANGE.min && value <= UNLOAD_RANGE.max;
-  }
-  return true;
-}
-
-function isHttpUrl(value) {
-  try { return /^https?:$/.test(new URL(value).protocol); } catch { return false; }
-}
 
 // Window options for the translucency, depending on how the platform obtains it.
 function opacityOptions() {
@@ -82,9 +45,15 @@ function applyOpacity() {
 
 // ---------- preferences ----------
 
+// Automated UI tests (test/e2e): the data folder given by the test, so
+// that the user's preferences, sessions and log are never touched; no
+// keyboard hook nor update checks, and the application the overlay is
+// opened over is set by the test (see global.overlayTest at the end).
+const TEST_DIR = process.env.OVERLAY_TEST_DIR || null;
+
 // Fixed data folder: without this line the packaged app would use the
 // productName ("Overlay Browser") and would not find the existing preferences.
-app.setPath('userData', path.join(app.getPath('appData'), 'overlay-browser'));
+app.setPath('userData', TEST_DIR ? path.resolve(TEST_DIR) : path.join(app.getPath('appData'), 'overlay-browser'));
 
 // Same user agent as Chrome: without the app and Electron versions that
 // Electron adds, some sites (Google sign-in above all) refuse the login as an
@@ -134,27 +103,6 @@ function loadLists(loaded) {
     lists = [{ id: crypto.randomUUID(), name: null, match: null, sites: [], activeTab: null }, ...lists];
   }
   return lists;
-}
-
-// Keeps only known keys with a valid value; the others get the default.
-// A language no longer available is kept: it counts as the system one
-// (see currentLanguage) and comes back if its file is restored.
-function loadSettings(saved) {
-  const settings = { ...DEFAULT_SETTINGS };
-  // Up to 1.0 there were two delays, one for the current list's pages
-  // (`unloadCurrentAfter`) and one for the other lists' (`unloadAfter`): the
-  // single delay keeps the first one.
-  if (saved && typeof saved === 'object' && 'unloadCurrentAfter' in saved) {
-    saved = { ...saved, unloadAfter: saved.unloadCurrentAfter };
-  }
-  if (saved && typeof saved === 'object') {
-    for (const key of Object.keys(DEFAULT_SETTINGS)) {
-      const value = saved[key];
-      const ok = key === 'language' ? typeof value === 'string' : isValidSetting(key, value);
-      if (ok) settings[key] = value;
-    }
-  }
-  return settings;
 }
 
 function savePrefs() {
@@ -444,10 +392,10 @@ function showWindow(reason = 'other') {
 let foregroundApp = null;
 
 function detectForegroundApp() {
-  if (!platform.features.appDetect) return;
+  if (!platform.features.appDetect && !TEST_DIR) return;
   let detected = null;
   try {
-    detected = platform.foregroundApp();
+    detected = TEST_DIR ? global.overlayTest.foregroundApp : platform.foregroundApp();
   } catch (err) {
     logError(`platform ${platform.id}: ERROR in foregroundApp: ${err?.stack || err}`);
   }
@@ -553,38 +501,6 @@ function toggleFromShortcut(source) {
 // keys before the game. The hook only observes: the key still reaches the
 // foreground application.
 
-const MODIFIER_NAMES = {
-  ctrl: 'ctrl', control: 'ctrl', commandorcontrol: 'ctrl', cmdorctrl: 'ctrl',
-  alt: 'alt', option: 'alt', altgr: 'alt',
-  shift: 'shift',
-  super: 'meta', meta: 'meta', cmd: 'meta', command: 'meta',
-};
-const ACCEL_KEYS = {
-  space: 'Space', tab: 'Tab', enter: 'Enter', return: 'Enter', backspace: 'Backspace',
-  insert: 'Insert', delete: 'Delete', home: 'Home', end: 'End',
-  pageup: 'PageUp', pagedown: 'PageDown', escape: 'Escape', esc: 'Escape',
-  up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight',
-  '-': 'Minus', '=': 'Equal', '[': 'BracketLeft', ']': 'BracketRight', '\\': 'Backslash',
-  ';': 'Semicolon', "'": 'Quote', ',': 'Comma', '.': 'Period', '/': 'Slash', '`': 'Backquote',
-  numadd: 'NumpadAdd', numsub: 'NumpadSubtract', nummult: 'NumpadMultiply',
-  numdiv: 'NumpadDivide', numdec: 'NumpadDecimal',
-};
-
-// Converts an Electron accelerator ("Ctrl+Shift+O") into { keycode, ctrl, alt, shift, meta }.
-function parseAccelerator(accelerator) {
-  const combo = { keycode: null, ctrl: false, alt: false, shift: false, meta: false };
-  for (const part of accelerator.split('+')) {
-    const p = part.trim().toLowerCase();
-    if (MODIFIER_NAMES[p]) { combo[MODIFIER_NAMES[p]] = true; continue; }
-    let name = ACCEL_KEYS[p];
-    if (!name && /^[a-z0-9]$/.test(p)) name = p.toUpperCase();
-    if (!name && /^f([1-9]|1\d|2[0-4])$/.test(p)) name = p.toUpperCase();
-    if (!name && /^num\d$/.test(p)) name = 'Numpad' + p.slice(3);
-    combo.keycode = uiohook.UiohookKey[name] ?? null;
-  }
-  return combo.keycode === null ? null : combo;
-}
-
 let hookCombo = null;        // combination the hook looks for
 let hookSuspended = false;   // true while the user records a new combination
 let hookKeyDown = false;     // avoids repeating the toggle while the key is held down
@@ -652,7 +568,7 @@ function logError(msg) { writeLog(msg); }
 
 function setHookCombo(accelerator) {
   if (!uiohook) return;
-  hookCombo = accelerator ? parseAccelerator(accelerator) : null;
+  hookCombo = accelerator ? parseAccelerator(accelerator, uiohook.UiohookKey) : null;
   hookKeyDown = false;
   if (accelerator && !hookCombo) logError(`hook: ERROR combination ${accelerator} not recognized`);
   else log(`hook: combination ${accelerator || 'none'} -> ok`);
@@ -819,52 +735,22 @@ app.on('web-contents-created', (_e, contents) => {
 // which for a <webview> is the overlay), enabled as Chromium says
 // (editFlags: nothing to undo, no selection, empty clipboard...).
 // The accelerators are only shown: the keys are handled by the page.
-const REDO_ACCELERATOR = process.platform === 'win32' ? 'Ctrl+Y' : 'CmdOrCtrl+Shift+Z';
-const TEXT_CONTROLS = new Set(['input-text', 'input-url', 'input-search', 'input-email', 'input-telephone', 'input-number', 'text-area']);
+// Which items: context-menu.js.
 app.on('web-contents-created', (_e, contents) => {
   contents.on('context-menu', (_event, params) => {
-    const overlayPage = contents === win?.webContents;
-    const readOnlyText = overlayPage
-      ? TEXT_CONTROLS.has(params.formControlType) || params.selectionText !== ''
-      : true;
-    if (!params.isEditable && !readOnlyText) return;
+    const items = contextMenuItems(params, { overlayPage: contents === win?.webContents, platform: process.platform });
+    if (!items) return;
     const host = contents.hostWebContents || contents;
     const window = BrowserWindow.fromWebContents(host);
     if (!window) return;
-    const flags = params.editFlags;
-    const item = (key, action, enabled, accelerator) => ({
-      label: t(`edit.${key}`), enabled, accelerator, registerAccelerator: false, click: () => contents[action](),
+    const template = items.map((i) => {
+      if (i.type) return i;
+      const label = t(`edit.${i.key}`);
+      if (i.action) return { label, enabled: i.enabled, accelerator: i.accelerator, registerAccelerator: false, click: () => contents[i.action]() };
+      if (i.key === 'copyImage') return { label, click: () => contents.copyImageAt(params.x, params.y) };
+      if (i.key === 'openLink') return { label, click: () => win.webContents.send('site:openNew', i.url, contents.id) };
+      return { label, click: () => clipboard.writeText(i.url) };   // copyLink
     });
-    const copy = item('copy', 'copy', flags.canCopy, 'CmdOrCtrl+C');
-    const selectAll = item('selectAll', 'selectAll', flags.canSelectAll, 'CmdOrCtrl+A');
-    const template = params.isEditable
-      ? [
-          item('undo', 'undo', flags.canUndo, 'CmdOrCtrl+Z'),
-          item('redo', 'redo', flags.canRedo, REDO_ACCELERATOR),
-          { type: 'separator' },
-          item('cut', 'cut', flags.canCut, 'CmdOrCtrl+X'),
-          copy,
-          item('paste', 'paste', flags.canPaste, 'CmdOrCtrl+V'),
-          selectAll,
-        ]
-      : [copy, selectAll];
-    const page = !overlayPage && !params.isEditable;
-    if (page && params.mediaType === 'image' && params.hasImageContents) {
-      template.unshift(
-        { label: t('edit.copyImage'), click: () => contents.copyImageAt(params.x, params.y) },
-        { type: 'separator' },
-      );
-    }
-    const link = page ? params.linkURL : '';
-    if (link) {
-      template.unshift(
-        ...(/^https?:/i.test(link)
-          ? [{ label: t('edit.openLink'), click: () => win.webContents.send('site:openNew', link, contents.id) }]
-          : []),
-        { label: t('edit.copyLink'), click: () => clipboard.writeText(link) },
-        { type: 'separator' },
-      );
-    }
     Menu.buildFromTemplate(template).popup({ window, frame: params.frame, sourceType: params.menuSourceType });
   });
 });
@@ -925,7 +811,7 @@ ipcMain.handle('state:load', () => ({
 ipcMain.handle('settings:set', (_e, key, value) => setSetting(key, value));
 // From the page (settings:set) or the tray menu (hideOnBlur).
 function setSetting(key, value) {
-  if (!(key in DEFAULT_SETTINGS) || !isValidSetting(key, value)) return;
+  if (!isValidSetting(key, value, isLanguageSetting)) return;
   if (key === 'verboseLog' && !value) log('verbose log off');
   if (prefs.settings[key] !== value) logSetting(key, value);
   prefs.settings[key] = value;
@@ -963,34 +849,10 @@ ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL));
 
 const RELEASES_API = 'https://api.github.com/repos/siculo/overlay-browser/releases?per_page=30';
 const RELEASE_PAGE = `${REPO_URL}/releases/`;
-const UPDATES_ENABLED = !process.windowsStore;
+const UPDATES_ENABLED = !process.windowsStore && !TEST_DIR;
 const UPDATE_INTERVAL = 6 * 3600000;
 let availableUpdate = null;   // { version, url } of the newest release newer than this one
 let lastUpdateCheck = 0;
-
-// 'v1.0.0-beta.5' -> { core: [1, 0, 0], pre: ['beta', 5] }; null if not a version.
-function parseVersion(text) {
-  const m = /^v?(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+.*)?$/.exec(String(text).trim());
-  if (!m) return null;
-  const pre = m[4] ? m[4].split('.').map((id) => (/^\d+$/.test(id) ? Number(id) : id)) : [];
-  return { core: [Number(m[1]), Number(m[2]), Number(m[3])], pre };
-}
-
-// Semantic versioning order: > 0 if a is newer than b.
-function compareVersions(a, b) {
-  for (let i = 0; i < 3; i++) if (a.core[i] !== b.core[i]) return a.core[i] - b.core[i];
-  // Same numbers: the version without prerelease is the newer one.
-  if (!a.pre.length || !b.pre.length) return b.pre.length - a.pre.length;
-  for (let i = 0; i < Math.min(a.pre.length, b.pre.length); i++) {
-    const x = a.pre[i], y = b.pre[i];
-    if (x === y) continue;
-    if (typeof x === 'number' && typeof y === 'number') return x - y;
-    if (typeof x === 'number') return -1;   // numbers come before names
-    if (typeof y === 'number') return 1;
-    return x < y ? -1 : 1;
-  }
-  return a.pre.length - b.pre.length;
-}
 
 // The newer version for the page, or null; `dismissed`: the user closed its
 // strip (it is then shown on the Settings page only).
@@ -1004,26 +866,16 @@ function setAvailableUpdate(update) {
 async function checkForUpdate() {
   if (!UPDATES_ENABLED || !prefs.settings.checkUpdates) return;
   lastUpdateCheck = Date.now();
-  const current = parseVersion(app.getVersion());
-  if (!current) return;
   try {
     const res = await net.fetch(RELEASES_API, {
       headers: { Accept: 'application/vnd.github+json' },
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) { log(`update: check failed (HTTP ${res.status})`); return; }
-    const releases = await res.json();
-    let best = null;
-    for (const r of Array.isArray(releases) ? releases : []) {
-      const v = parseVersion(r?.tag_name);
-      if (!v || r.draft || (r.prerelease && !current.pre.length)) continue;
-      if (compareVersions(v, current) <= 0 || (best && compareVersions(v, best.v) <= 0)) continue;
-      const url = typeof r.html_url === 'string' && r.html_url.startsWith(RELEASE_PAGE) ? r.html_url : RELEASE_PAGE;
-      best = { v, version: r.tag_name.replace(/^v/, ''), url };
-    }
+    const best = newestRelease(await res.json(), app.getVersion(), RELEASE_PAGE);
     if (!prefs.settings.checkUpdates) return;   // turned off while checking
     log(`update: checked, ${best ? `newer version ${best.version}${best.version === prefs.updateDismissed ? ' (notice closed)' : ''}` : 'no newer version'}`);
-    setAvailableUpdate(best && { version: best.version, url: best.url });
+    setAvailableUpdate(best);
   } catch (err) {
     log(`update: check failed (${err?.name === 'TimeoutError' ? 'timeout' : err?.message || err})`);
   }
@@ -1316,7 +1168,7 @@ function start() {
   // The hook uses the chosen combination anyway, even if globalShortcut
   // could not register it (e.g. already used by another application).
   setHookCombo(shortcut || prefs.shortcut);
-  startKeyboardHook();
+  if (!TEST_DIR) startKeyboardHook();
   createTray();
   startUpdateChecks();
 }
@@ -1342,3 +1194,19 @@ app.on('will-quit', () => {
   try { uiohook?.uIOhook.stop(); } catch { /* already stopped */ }
 });
 app.on('window-all-closed', () => app.quit());
+
+// What the UI tests reach through the main process (electronApp.evaluate):
+// showing and hiding as the shortcut does, and the application to report
+// as the one the overlay is opened over ({ exe, name, title }, null = none).
+if (TEST_DIR) {
+  global.overlayTest = {
+    foregroundApp: null,
+    show: () => showWindow('test'),
+    hide: () => hideWindow('test'),
+    prefs: () => prefs,
+    // The keyboard hook's state (the hook itself is not started in tests).
+    hook: () => ({ available: !!uiohook, suspended: hookSuspended, combo: hookCombo }),
+    // A message to the page, as main.js sends it.
+    send: (channel, ...args) => win.webContents.send(channel, ...args),
+  };
+}
