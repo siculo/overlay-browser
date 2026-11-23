@@ -126,7 +126,7 @@
   "update.available": "Hay una nueva versión de Overlay Browser disponible: {version}",
   "update.download": "Descargar",
   "update.dismiss": "Cerrar (la nueva versión sigue indicada en los Ajustes)",
-  "update.settings": "Versión {version} disponible",
+  "update.home": "Versión {version} disponible",
 
   "settings.title": "Ajustes",
   "settings.keyboard": "Teclado",

@@ -126,7 +126,7 @@
   "update.available": "Доступна новая версия Overlay Browser: {version}",
   "update.download": "Скачать",
   "update.dismiss": "Закрыть (новая версия останется указанной в настройках)",
-  "update.settings": "Доступна версия {version}",
+  "update.home": "Доступна версия {version}",
 
   "settings.title": "Настройки",
   "settings.keyboard": "Клавиатура",
