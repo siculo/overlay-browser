@@ -11,13 +11,16 @@ test.afterEach(async () => { await o?.close(); o = null; });
 
 const tabs = (page) => page.locator('#tabs .tab');
 
-// Replaces the native menu: the next menus are recorded (labels and
-// clicks) in global.testMenus instead of being shown.
+// Replaces the native menu: the context menus (the menus shown with
+// popup(), not the tray's) are recorded with their labels and clicks in
+// global.testMenus instead of being shown.
 const recordMenus = (app) => app.evaluate(({ Menu }) => {
   global.testMenus = [];
+  const build = Menu.buildFromTemplate.bind(Menu);
   Menu.buildFromTemplate = (template) => {
-    global.testMenus.push(template);
-    return { popup() {} };
+    const menu = build(template);
+    menu.popup = () => { global.testMenus.push(template); };
+    return menu;
   };
 });
 const lastMenuLabels = (app) => app.evaluate(() => global.testMenus.at(-1)?.map((i) => i.label ?? '-') ?? null);

@@ -1199,7 +1199,7 @@ if (TEST_DIR) {
     hide: () => hideWindow('test'),
     prefs: () => prefs,
     // The keyboard hook's state (the hook itself is not started in tests).
-    hook: () => ({ suspended: hookSuspended, combo: hookCombo }),
+    hook: () => ({ available: !!uiohook, suspended: hookSuspended, combo: hookCombo }),
     // A message to the page, as main.js sends it.
     send: (channel, ...args) => win.webContents.send(channel, ...args),
   };

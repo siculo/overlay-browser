@@ -64,7 +64,8 @@ test('after recording a new shortcut the keyboard hook works again', async () =>
   // is no longer suspended (it stayed off until restart, 0aa4e43).
   const hook = await o.test('hook');
   expect(hook.suspended).toBe(false);
-  expect(hook.combo).toBeTruthy();
+  // Not on macOS, which has no keyboard hook.
+  if (hook.available) expect(hook.combo).toBeTruthy();
 });
 
 test('Esc cancels the recording of the shortcut and resumes the hook', async () => {
