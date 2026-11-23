@@ -696,7 +696,13 @@ app.on('web-contents-created', (_e, contents) => {
   contents.on('did-create-window', (popup) => {
     popup.removeMenu();
     popup.setAlwaysOnTop(true, ...platform.topLevel);
-    popup.on('blur', () => onOverlayBlur(popup));
+    // A popup that closes (e.g. at the end of a login) loses the focus: that
+    // is not a blur of the overlay, which gets the focus back ('closed').
+    // Counted as one, it could hide the overlay when the blur arrives before
+    // the focus is back, or after the popup is no longer a child window.
+    let closing = false;
+    popup.on('close', () => { closing = true; });
+    popup.on('blur', () => { if (!closing) onOverlayBlur(popup); });
     // When the popup closes (e.g. at the end of a login) the overlay takes
     // the focus back, otherwise it would not notice the next blur.
     popup.on('closed', () => {
