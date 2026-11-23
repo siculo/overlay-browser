@@ -495,12 +495,17 @@ function toggleWindow(reason = 'other') {
 // window losing it is told before the one getting it.
 let lastBlurHide = 0;
 let blurTimer = null;
+// When a popup closes, the window manager can take the focus from the
+// overlay for an instant right after giving it back (seen on X11): for a
+// moment the blurs wait for the focus to settle as with popups open.
+let popupClosedAt = 0;
+const POPUP_CLOSE_SETTLE = 500;
 const overlayWindows = () => [win, ...win.getChildWindows()].filter((w) => !w.isDestroyed());
 const overlayFocused = () => overlayWindows().some((w) => w.isFocused());
 
 function onOverlayBlur(blurred) {
   clearTimeout(blurTimer);
-  if (win.getChildWindows().length === 0) return hideOnBlur(blurred);
+  if (win.getChildWindows().length === 0 && Date.now() - popupClosedAt > POPUP_CLOSE_SETTLE) return hideOnBlur(blurred);
   blurTimer = setTimeout(() => hideOnBlur(blurred), 100);
 }
 
@@ -790,6 +795,7 @@ app.on('web-contents-created', (_e, contents) => {
     // When the popup closes (e.g. at the end of a login) the overlay takes
     // the focus back, otherwise it would not notice the next blur.
     popup.on('closed', () => {
+      popupClosedAt = Date.now();
       if (!win.isDestroyed() && win.isVisible() && !overlayFocused()) win.focus();
     });
     popup.on('closed', () => log('popup closed'));
