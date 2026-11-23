@@ -39,7 +39,10 @@
   "nav.cookiesConfirm": "Die Cookies von {domain} und seinen Subdomains löschen? Du wirst auf dieser Website abgemeldet und die Seite wird neu geladen.",
   "nav.cookiesRemove": "Löschen",
 
-  "browse.empty": "Gib oben in der Leiste einen Suchbegriff oder eine Adresse ein. In den Einstellungen kannst du eine Startseite festlegen.",
+  "browse.empty": "Gib oben in der Leiste einen Suchbegriff oder eine Adresse ein.",
+  "browse.example": "Probier zum Beispiel:",
+  "browse.startHint": "In den Einstellungen kannst du eine Startseite festlegen.",
+  "browse.suggestTitle": "Nach „{name}“ suchen",
 
   "home.addPlaceholder": "Adresse der hinzuzufügenden Website (z. B. https://example.com)",
   "home.add": "Hinzufügen",

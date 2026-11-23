@@ -698,6 +698,12 @@ function updateTray() {
     { label: t('tray.home'), click: () => { showWindow('tray menu'); win.webContents.send('nav:home'); } },
     { label: t('tray.settings'), click: () => { showWindow('tray menu'); win.webContents.send('nav:settings'); } },
     { type: 'separator' },
+    // Same option as on the Settings page, which is told of the change.
+    { label: t('settings.hideOnBlur'), type: 'checkbox', checked: !!prefs.settings.hideOnBlur, click: (item) => {
+      setSetting('hideOnBlur', item.checked);
+      win.webContents.send('settings:changed', 'hideOnBlur', item.checked);
+    } },
+    { type: 'separator' },
     { label: t('tray.quit'), click: () => app.quit() },
   ]));
 }
@@ -904,7 +910,9 @@ ipcMain.handle('state:load', () => ({
   updates: UPDATES_ENABLED,    // false: no check for new versions, the option is hidden
   update: updateState(),       // newer version to tell about, or null
 }));
-ipcMain.handle('settings:set', (_e, key, value) => {
+ipcMain.handle('settings:set', (_e, key, value) => setSetting(key, value));
+// From the page (settings:set) or the tray menu (hideOnBlur).
+function setSetting(key, value) {
   if (!(key in DEFAULT_SETTINGS) || !isValidSetting(key, value)) return;
   if (key === 'verboseLog' && !value) log('verbose log off');
   if (prefs.settings[key] !== value) logSetting(key, value);
@@ -918,7 +926,8 @@ ipcMain.handle('settings:set', (_e, key, value) => {
   savePrefs();
   if (key === 'opacity') applyOpacity();
   if (key === 'checkUpdates') { if (value) checkForUpdate(); else setAvailableUpdate(null); }
-});
+  if (key === 'hideOnBlur') updateTray();
+}
 // Memory used by the app, process by process (measured by the platform
 // module, see memoryUsage in platform/index.js). For each process: its type
 // (Electron's: 'Browser', 'GPU', 'Tab', 'Utility'...), the bytes, the ids of

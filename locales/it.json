@@ -39,7 +39,10 @@
   "nav.cookiesConfirm": "Eliminare i cookie di {domain} e dei suoi sottodomini? Uscirai dagli account di questo sito e la pagina verrà ricaricata.",
   "nav.cookiesRemove": "Elimina",
 
-  "browse.empty": "Cerca o digita un indirizzo nella barra qui sopra. Puoi impostare una pagina iniziale nelle Impostazioni.",
+  "browse.empty": "Cerca o digita un indirizzo nella barra qui sopra.",
+  "browse.example": "Prova ad esempio:",
+  "browse.startHint": "Puoi impostare una pagina iniziale nelle Impostazioni.",
+  "browse.suggestTitle": "Cerca “{name}”",
 
   "home.addPlaceholder": "Indirizzo del sito da aggiungere (es. https://example.com)",
   "home.add": "Aggiungi",

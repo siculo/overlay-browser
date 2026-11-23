@@ -39,7 +39,10 @@
   "nav.cookiesConfirm": "Delete the cookies of {domain} and its subdomains? You will be signed out of this site and the page will reload.",
   "nav.cookiesRemove": "Delete",
 
-  "browse.empty": "Search or type an address in the bar above. You can set a start page in the Settings.",
+  "browse.empty": "Search or type an address in the bar above.",
+  "browse.example": "Try for example:",
+  "browse.startHint": "You can set a start page in the Settings.",
+  "browse.suggestTitle": "Search for “{name}”",
 
   "home.addPlaceholder": "Address of the site to add (e.g. https://example.com)",
   "home.add": "Add",
