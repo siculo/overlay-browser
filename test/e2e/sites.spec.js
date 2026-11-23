@@ -31,7 +31,7 @@ test('a site added with "+" opens in a tab named after its page, and is kept', a
   // Saved in the general list, and still there after a restart.
   await expect.poll(() => o.savedPrefs().lists.find((l) => l.match === null)?.sites.map((s) => s.title))
     .toEqual(['Wiki']);
-  await o.app.close();
+  await o.close({ keepDir: true });
   o = await launch({ dir: o.dir });
   await expect(tabs(o.page)).toHaveText(['Wiki']);
   // The list opens on its last tab.
@@ -51,9 +51,9 @@ test('an address that is not http(s) is refused', async () => {
   await expect(tabs(page)).toHaveCount(0);
 });
 
-// Found by this test: normalizeUrl accepts text with spaces, which becomes
-// the host https://not%20an%20address/. To be fixed on the release branch.
-test.fixme('text with spaces is not taken as an address', async () => {
+// normalizeUrl used to take text with spaces as the host
+// https://not%20an%20address/.
+test('text with spaces is not taken as an address', async () => {
   o = await launch();
   const { page } = o;
   await page.locator('#add-tab').click();

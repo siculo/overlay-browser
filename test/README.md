@@ -14,7 +14,8 @@ trace (`npx playwright show-trace trace.zip`) of the failure.
 ## Unit tests (`test/unit/`)
 
 `node:test`, no dependencies: the modules that do not need Electron
-(`bookmarks.js`, `platform/hosted.js`) and the data shipped with the app
+(`urls.js`, `settings.js`, `versions.js`, `accelerator.js`, `bookmarks.js`,
+`platform/hosted.js`) and the data shipped with the app
 (locales: same keys and placeholders as `en.json`, keys used by the code
 present; predefined lists valid as described in `lists/README.md`).
 
@@ -36,6 +37,8 @@ like a web page. `helpers.js`:
 - `o.inSite(urlPrefix, fn)`: runs `fn(document)` in a site's `<webview>`
   (reached from the main process: Playwright does not see webviews as pages).
 - `o.savedPrefs()`: `prefs.json` as on disk.
+- `o.close({ keepDir })`: closes the app (and removes its folder unless
+  `keepDir`); a JavaScript error in the overlay page fails the test there.
 - `startServer()`: local web server with test pages (`/<name>` has the
   title `<name>`, `?blank=` a `target=_blank` link, `?open=` a
   `window.open` button, a favicon): tests never use the network, except

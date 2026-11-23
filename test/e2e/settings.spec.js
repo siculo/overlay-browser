@@ -24,7 +24,7 @@ test('accent color, fixed tabs and language are applied and kept', async () => {
   await expect(page.locator('#home-btn .label')).toHaveText(it['bar.home']);
 
   await expect.poll(() => o.savedPrefs().settings).toMatchObject({ accent: 'blue', fixedTabs: 'icons', language: 'it' });
-  await o.app.close();
+  await o.close({ keepDir: true });
   o = await launch({ dir: o.dir });
   await expect(o.page.locator('body')).toHaveClass(/fixed-icons/);
   await expect(o.page.locator('#home-btn .label')).toHaveText(it['bar.home']);

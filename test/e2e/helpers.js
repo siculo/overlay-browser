@@ -29,9 +29,13 @@ async function launch({ prefs, dir, foregroundApp = null, show = true } = {}) {
   delete env.ELECTRON_RUN_AS_NODE;
   const app = await electron.launch({ args: [ROOT], env });
   const page = await app.firstWindow();
+  // Errors of the overlay's page fail the test when the app is closed
+  // (a broken script often leaves the page apparently working).
+  const pageErrors = [];
+  page.on('pageerror', (err) => pageErrors.push(String(err)));
   await page.waitForLoadState('domcontentloaded');
   const overlay = {
-    app, page, dir,
+    app, page, dir, pageErrors,
     // Shows the overlay as the shortcut does, opened over `fgApp`
     // ({ exe, name, title }, null = no application).
     async show(fgApp = foregroundApp) {
@@ -58,6 +62,7 @@ async function launch({ prefs, dir, foregroundApp = null, show = true } = {}) {
     async close({ keepDir = false } = {}) {
       await app.close();
       if (!keepDir) fs.rmSync(dir, { recursive: true, force: true });
+      expect(pageErrors, 'errors in the overlay page').toEqual([]);
     },
   };
   if (show) await overlay.show();
