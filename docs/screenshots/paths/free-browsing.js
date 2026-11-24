@@ -15,7 +15,7 @@ module.exports = async () => {
     // La lista creata nel percorso "Primo avvio".
     lists: [list({ exe: 'tiny-glade' }, [
       site('https://tinyglade.com/', 'Tiny Glade'),
-      site('https://store.steampowered.com/app/2198150/', tr({ it: 'Tiny Glade su Steam', en: 'Tiny Glade on Steam' })),
+      site('https://store.steampowered.com/app/2198150/', tr('steam.tinyGlade')),
     ], { name: 'Tiny Glade' })],
   });
   const { page, shot } = o;
@@ -47,7 +47,7 @@ module.exports = async () => {
       [...d.querySelectorAll('a')].find((a) => a.textContent.includes('Tiny Glade Wiki')).click());
     await expect($('#nav-url')).toHaveValue(new RegExp('^' + WIKI));
     await page.waitForTimeout(3000);
-    await hideBanner(o, WIKI, tr({ it: 'Abbiamo a cuore la tua privacy', en: 'We value your privacy' }));
+    await hideBanner(o, WIKI, tr('banner.wikigg'));
     await shot('03-page-found', [
       { el: $('#nav-back'), n: 1, at: 's' },
       { el: $('#nav-pin'), n: 2, at: 's' },

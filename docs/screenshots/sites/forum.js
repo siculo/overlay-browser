@@ -8,7 +8,7 @@
 //                        aprono in un nuovo tab)
 //           /accedi      la finestra di accesso (window.open con le
 //                        dimensioni, come i login veri)
-//           /discussione una discussione (percorsi tradotti: TOPIC, RUINS): link a un altro sito, un'immagine,
+//           /discussione una discussione (percorsi tradotti: forum.topicPath, forum.ruinsPath): link a un altro sito, un'immagine,
 //                        un campo per rispondere
 //           /rovine      un'altra discussione
 
@@ -18,11 +18,9 @@ const STEAM_GUIDES = 'https://steamcommunity.com/app/2198150/guides/';
 // run.js richiede questo modulo solo attraverso i percorsi: niente ciclo.
 const { tr, lang } = require('../run');
 
-const title = () => tr({ it: 'Forum di Tiny Glade', en: 'Tiny Glade Forum' });
+const title = () => tr('forum.title');
 // I percorsi delle discussioni, che si vedono nell'indirizzo.
-const TOPIC = { it: '/discussione', en: '/topic' };
-const RUINS = { it: '/rovine', en: '/ruins' };
-const topicUrl = () => URL + tr(TOPIC).slice(1);
+const topicUrl = () => URL + tr('forum.topicPath').slice(1);
 
 const STYLE = `<style>
   body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #f4efe6; color: #2d2a26; }
@@ -43,11 +41,11 @@ const STYLE = `<style>
 </style>`;
 
 const page = (pageTitle, body, script = '') => `<!doctype html><html lang="${lang()}"><head><meta charset="utf-8"><title>${pageTitle}</title>${STYLE}</head><body>
-<header><h1><a href="/">${title()}</a></h1><span class="tag">${tr({ it: "sito d'esempio", en: 'example site' })}</span><span id="account"></span></header>
+<header><h1><a href="/">${title()}</a></h1><span class="tag">${tr('forum.tag')}</span><span id="account"></span></header>
 <main>${body}</main>
 <script>
   const user = document.cookie.match(/(?:^|; )utente=([^;]*)/)?.[1];
-  if (user) document.getElementById('account').textContent = ${JSON.stringify(tr({ it: 'Ciao, ', en: 'Hi, ' }))} + decodeURIComponent(user);
+  if (user) document.getElementById('account').textContent = ${JSON.stringify(tr('forum.hi'))} + decodeURIComponent(user);
   ${script}
 </script></body></html>`;
 
@@ -59,58 +57,52 @@ const BRIDGE = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="160"
   <circle cx="270" cy="34" r="16" fill="#f5d76e"/></svg>`;
 
 const pages = () => {
-  const topic = tr({ it: 'Come si costruisce un ponte sul fiume?', en: 'How do you build a bridge over the river?' });
-  const ruins = tr({ it: 'Le vostre rovine più romantiche', en: 'Your most romantic ruins' });
-  const sheep = tr({ it: 'Pecore: quante sono troppe?', en: 'Sheep: how many are too many?' });
+  const topic = tr('forum.topic');
+  const ruins = tr('forum.ruins');
+  const sheep = tr('forum.sheep');
   return {
     '/': page(title(), `
-  <div class="card" id="login-card"><h2>${tr({ it: 'Partecipa alle discussioni', en: 'Join the discussions' })}</h2>
-    <p class="muted">${tr({ it: 'Per scrivere nel forum accedi con il tuo account.', en: 'Sign in with your account to post in the forum.' })}</p>
-    <button class="primary" id="login">${tr({ it: 'Continua con un account', en: 'Continue with an account' })}</button></div>
-  <div class="card"><h2><a id="topic" href="${tr(TOPIC)}" target="_blank">${topic}</a></h2><p class="muted">${tr({ it: '12 risposte · ultima 2 ore fa', en: '12 replies · last 2 hours ago' })}</p></div>
-  <div class="card"><h2><a href="${tr(RUINS)}" target="_blank">${ruins}</a></h2><p class="muted">${tr({ it: '48 risposte · ultima ieri', en: '48 replies · last yesterday' })}</p></div>
-  <div class="card"><h2><a href="${tr(RUINS)}" target="_blank">${sheep}</a></h2><p class="muted">${tr({ it: '7 risposte · ultima 3 giorni fa', en: '7 replies · last 3 days ago' })}</p></div>`, `
-  if (user) document.getElementById('login-card').innerHTML = ${JSON.stringify(tr({
-    it: "<h2>Bentornato!</h2><p class=\"muted\">Hai effettuato l'accesso: ora puoi scrivere nel forum.</p>",
-    en: '<h2>Welcome back!</h2><p class="muted">You are signed in: now you can post in the forum.</p>',
-  }))};
+  <div class="card" id="login-card"><h2>${tr('forum.join')}</h2>
+    <p class="muted">${tr('forum.joinText')}</p>
+    <button class="primary" id="login">${tr('forum.continue')}</button></div>
+  <div class="card"><h2><a id="topic" href="${tr('forum.topicPath')}" target="_blank">${topic}</a></h2><p class="muted">${tr('forum.topicMeta')}</p></div>
+  <div class="card"><h2><a href="${tr('forum.ruinsPath')}" target="_blank">${ruins}</a></h2><p class="muted">${tr('forum.ruinsMeta')}</p></div>
+  <div class="card"><h2><a href="${tr('forum.ruinsPath')}" target="_blank">${sheep}</a></h2><p class="muted">${tr('forum.sheepMeta')}</p></div>`, `
+  if (user) document.getElementById('login-card').innerHTML = ${JSON.stringify(`<h2>${tr('forum.welcome')}</h2><p class="muted">${tr('forum.welcomeText')}</p>`)};
   document.getElementById('login')?.addEventListener('click', () =>
     window.open('/accedi', 'accedi', 'width=420,height=440'));
   window.addEventListener('message', (e) => { if (e.data === 'accesso') location.reload(); });`),
 
-    '/accedi': `<!doctype html><html lang="${lang()}"><head><meta charset="utf-8"><title>${tr({ it: 'Accedi al forum', en: 'Sign in to the forum' })}</title>${STYLE}</head><body>
+    '/accedi': `<!doctype html><html lang="${lang()}"><head><meta charset="utf-8"><title>${tr('forum.signInTitle')}</title>${STYLE}</head><body>
 <main style="margin:20px auto">
-  <h2 style="margin:0 0 4px">${tr({ it: 'Accedi', en: 'Sign in' })}</h2>
-  <p class="muted">${tr({ it: "Usa l'account del forum di Tiny Glade.", en: 'Use your Tiny Glade Forum account.' })}</p>
-  <label for="email">Email</label><input id="email" value="${tr({ it: 'giocatore', en: 'player' })}@example.com">
+  <h2 style="margin:0 0 4px">${tr('forum.signIn')}</h2>
+  <p class="muted">${tr('forum.signInText')}</p>
+  <label for="email">Email</label><input id="email" value="${tr('forum.email')}@example.com">
   <label for="pwd">Password</label><input id="pwd" type="password" value="password">
-  <p><button class="primary" id="ok">${tr({ it: 'Accedi', en: 'Sign in' })}</button></p>
+  <p><button class="primary" id="ok">${tr('forum.signIn')}</button></p>
 </main>
 <script>
   document.getElementById('ok').onclick = () => {
-    document.cookie = 'utente=${tr({ it: 'Giocatore', en: 'Player' })}; path=/; max-age=86400';
+    document.cookie = 'utente=${tr('forum.user')}; path=/; max-age=86400';
     window.opener?.postMessage('accesso', '*');
     window.close();
   };
 </script></body></html>`,
 
-    [tr(TOPIC)]: page(`${topic} · ${title()}`, `
+    [tr('forum.topicPath')]: page(`${topic} · ${title()}`, `
   <div class="card"><h2>${topic}</h2>
-    <p class="muted">${tr({ it: 'Aperta da <strong>Muratore</strong> · 12 risposte', en: 'Started by <strong>Mason</strong> · 12 replies' })}</p>
-    <p id="text">${tr({
-      it: "Trascina un muro da una sponda all'altra del fiume: il gioco lo trasforma da solo in un ponte, con gli archi. Qui sotto il mio.",
-      en: 'Drag a wall from one bank of the river to the other: the game turns it into a bridge by itself, arches included. Here is mine.',
-    })}</p>
-    <p><img id="picture" src="/ponte.svg" width="320" height="160" alt="${tr({ it: 'Un ponte di pietra sul fiume', en: 'A stone bridge over the river' })}"></p>
-    <p>${tr({ it: 'Altre idee nelle', en: 'More ideas in the' })} <a id="external" href="${STEAM_GUIDES}" target="_blank">${tr({ it: 'guide della comunità su Steam', en: 'community guides on Steam' })}</a>
-      ${tr({ it: 'e nella discussione', en: 'and in the thread' })} <a id="other" href="${tr(RUINS)}" target="_blank">${ruins}</a>.</p></div>
-  <div class="card"><label for="reply">${tr({ it: 'Rispondi', en: 'Reply' })}</label><textarea id="reply" rows="3">${tr({ it: 'Bellissimo! Come hai fatto gli archi?', en: 'Beautiful! How did you make the arches?' })}</textarea></div>`),
+    <p class="muted">${tr('forum.topicBy')}</p>
+    <p id="text">${tr('forum.topicText')}</p>
+    <p><img id="picture" src="/ponte.svg" width="320" height="160" alt="${tr('forum.pictureAlt')}"></p>
+    <p>${tr('forum.moreIdeas')} <a id="external" href="${STEAM_GUIDES}" target="_blank">${tr('forum.steamGuides')}</a>
+      ${tr('forum.andThread')} <a id="other" href="${tr('forum.ruinsPath')}" target="_blank">${ruins}</a>.</p></div>
+  <div class="card"><label for="reply">${tr('forum.reply')}</label><textarea id="reply" rows="3">${tr('forum.replyText')}</textarea></div>`),
 
     '/ponte.svg': { type: 'image/svg+xml', body: BRIDGE },
 
-    [tr(RUINS)]: page(`${ruins} · ${title()}`, `
-  <div class="card"><h2>${ruins}</h2><p class="muted">${tr({ it: 'Aperta da <strong>Pecorella</strong> · 48 risposte', en: 'Started by <strong>Lamb</strong> · 48 replies' })}</p>
-    <p>${tr({ it: "Mostrate le vostre rovine coperte d'edera!", en: 'Show us your ivy-covered ruins!' })}</p></div>`),
+    [tr('forum.ruinsPath')]: page(`${ruins} · ${title()}`, `
+  <div class="card"><h2>${ruins}</h2><p class="muted">${tr('forum.ruinsBy')}</p>
+    <p>${tr('forum.ruinsText')}</p></div>`),
   };
 };
 

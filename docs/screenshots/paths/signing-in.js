@@ -47,7 +47,7 @@ module.exports = async () => {
       return w.webContents.executeJavaScript("document.getElementById('ok').click()");
     });
     await expect.poll(popupCount).toBe(0);
-    await expect.poll(() => o.inSite(FORUM, (d) => d.getElementById('account').textContent)).toContain(tr({ it: 'Giocatore', en: 'Player' }));
+    await expect.poll(() => o.inSite(FORUM, (d) => d.getElementById('account').textContent)).toContain(tr('forum.user'));
     await page.waitForTimeout(800);
     await shot('03-signed-in', [{ el: await siteRect(o, FORUM, '#account') }]);
 

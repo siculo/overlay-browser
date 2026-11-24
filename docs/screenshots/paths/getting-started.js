@@ -60,7 +60,7 @@ module.exports = async () => {
     // 5. Il secondo sito aperto: due tab nella barra.
     await tabs.nth(1).click();
     await page.waitForTimeout(3000);
-    await hideBanner(o, 'https://store.steampowered.com', tr({ it: 'Rifiuta tutti', en: 'Reject All' }));
+    await hideBanner(o, 'https://store.steampowered.com', tr('banner.steam'));
     await shot('05-two-tabs', [
       { el: tabs.nth(0), n: 1, at: 's' },
       { el: tabs.nth(1), n: 2, at: 's' },

@@ -9,7 +9,8 @@
 //
 // Gli script dei percorsi non contengono testi in una lingua: quelli
 // dell'interfaccia vengono da locales/<lingua>.json (t()), quelli degli
-// esempi (titoli dei siti, bookmark, il forum) sono dati per lingua (tr()).
+// esempi (titoli dei siti, bookmark, il forum) sono in examples/<lingua>.json
+// (tr()).
 const fs = require('fs');
 const path = require('path');
 const { launch, site, list } = require('../../test/e2e/helpers');
@@ -21,9 +22,11 @@ const ROOT = path.join(DOCS, '..');
 // La lingua delle schermate: scelta da --lang (vedi sotto), italiano se no.
 let LANG = 'it';
 const lang = () => LANG;
+// Cambia la lingua (per l'avvio, e per controllare i testi senza avviare l'app).
+function setLang(l) { LANG = l; messages = null; examples = null; }
 // Locale del sistema per Chromium, per lingua: decide la lingua chiesta ai
 // siti (Accept-Language, navigator.language).
-const LOCALES = { it: 'it_IT', en: 'en_US', fr: 'fr_FR', de: 'de_DE', es: 'es_ES', pt: 'pt_PT', ru: 'ru_RU' };
+const LOCALES = { it: 'it_IT', en: 'en_US', fr: 'fr_FR', de: 'de_DE', es: 'es_ES', pt: 'pt_BR', ru: 'ru_RU' };
 
 // I testi dell'interfaccia nella lingua delle schermate, come li mostra
 // l'app (locales/<lingua>.json, con i segnaposto {nome}).
@@ -34,10 +37,15 @@ function t(key, params = {}) {
   if (text === undefined) throw new Error(`testo mancante in locales/${LANG}.json: ${key}`);
   return text.replace(/\{(\w+)\}/g, (m, name) => params[name] ?? m);
 }
-// Un testo degli esempi nella lingua delle schermate: tr({ it: '…', en: '…' }).
-function tr(texts) {
-  if (!(LANG in texts)) throw new Error(`esempio senza la lingua ${LANG}: ${JSON.stringify(texts)}`);
-  return texts[LANG];
+// Un testo degli esempi nella lingua delle schermate: tr('forum.title'), da
+// examples/<lingua>.json (titoli dei siti, bookmark, pagine del forum, testi
+// dei banner dei cookie). Per una nuova lingua: un nuovo file con le stesse
+// chiavi.
+let examples = null;
+function tr(key) {
+  examples ??= JSON.parse(fs.readFileSync(path.join(__dirname, 'examples', `${LANG}.json`), 'utf8'));
+  if (!(key in examples)) throw new Error(`esempio mancante in examples/${LANG}.json: ${key}`);
+  return examples[key];
 }
 // Il gioco sopra cui si apre l'overlay negli esempi (simulato).
 const GAME = { exe: 'tiny-glade', name: 'Tiny Glade', title: 'Tiny Glade' };
@@ -49,12 +57,12 @@ const BROTATO = { exe: 'Brotato.x86_64', name: 'Brotato', title: 'Brotato' };
 // start(id, { lists: [tinyGladeList()] }).
 const tinyGladeList = () => list({ exe: 'tiny-glade' }, [
   site('https://tinyglade.com/', 'Tiny Glade'),
-  site('https://store.steampowered.com/app/2198150/', tr({ it: 'Tiny Glade su Steam', en: 'Tiny Glade on Steam' })),
+  site('https://store.steampowered.com/app/2198150/', tr('steam.tinyGlade')),
   site('https://tinyglade.wiki.gg/', 'Tiny Glade Wiki'),
 ], { name: 'Tiny Glade' });
 const brotatoList = () => list({ exe: 'brotato.x86_64' }, [
   site('https://brotato.wiki.spellsandguns.com/', 'Brotato Wiki'),
-  site('https://store.steampowered.com/app/1942280/', tr({ it: 'Brotato su Steam', en: 'Brotato on Steam' })),
+  site('https://store.steampowered.com/app/1942280/', tr('steam.brotato')),
 ], { name: 'Brotato' });
 
 // Avvia l'app con le preferenze `prefs` (più la lingua) e restituisce
@@ -78,7 +86,7 @@ async function start(guide, { settings, ...prefs } = {}) {
 
 // Nasconde nella pagina del sito (indirizzo che inizia con `urlPrefix`) il
 // banner dei cookie: gli elementi figli del body che contengono `text` (il
-// testo del banner, che dipende dalla lingua: es. tr({ it: …, en: … })),
+// testo del banner, che dipende dalla lingua: es. tr('banner.steam')),
 // aspettati fino a 10 s, e anche quelli ricreati in seguito (alcuni banner
 // si ricreano se tolti). Solo per la schermata: copre la pagina, e accettare
 // o rifiutare i cookie non è il soggetto della guida.
@@ -234,14 +242,15 @@ const clearMenu = (o) => o.page.evaluate(() => document.getElementById('doc-menu
 // Esegue la voce `label` dell'ultimo menu contestuale registrato.
 const menuClick = (o, label) => o.app.evaluate((_e, l) => global.docMenus.at(-1).find((i) => i.label === l).click(), label);
 
-module.exports = { start, lang, t, tr, hideBanner, serveSite, drawPopups, clearPopups, contextMenu, clearMenu, menuClick, GAME, BROTATO, tinyGladeList, brotatoList };
+module.exports = { start, lang, setLang, t, tr, hideBanner, serveSite, drawPopups, clearPopups, contextMenu, clearMenu, menuClick, GAME, BROTATO, tinyGladeList, brotatoList };
 
 if (require.main === module) {
   (async () => {
     const args = process.argv.slice(2);
     const at = args.indexOf('--lang');
-    if (at >= 0) [, LANG] = args.splice(at, 2);
-    if (!LOCALES[LANG] || !fs.existsSync(path.join(ROOT, 'locales', `${LANG}.json`))) throw new Error(`lingua sconosciuta: ${LANG}`);
+    if (at >= 0) setLang(args.splice(at, 2)[1]);
+    if (!LOCALES[LANG] || !fs.existsSync(path.join(ROOT, 'locales', `${LANG}.json`))
+      || !fs.existsSync(path.join(__dirname, 'examples', `${LANG}.json`))) throw new Error(`lingua sconosciuta: ${LANG}`);
     // La lingua del sistema per Chromium (pagine dei siti), ereditata
     // dall'app avviata da helpers.launch.
     process.env.LANG = process.env.LC_ALL = `${LOCALES[LANG]}.UTF-8`;

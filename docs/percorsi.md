@@ -1,6 +1,6 @@
 # Percorsi d'uso
 
-Questo file è la fonte della documentazione utente: ogni sezione descrive un percorso d'uso dell'app, da cui vengono generate la guida (`it/<id>.md`, con le schermate in `it/img/<id>/`) e la presentazione (`it/presentazione.html`). L'ordine delle sezioni è l'ordine delle guide.
+Questo file è la fonte della documentazione utente: ogni sezione descrive un percorso d'uso dell'app, da cui vengono generate la guida (`it/<id>.md`, con le schermate in `it/img/<id>/`) e la presentazione (`it/slideshow.html`). L'ordine delle sezioni è l'ordine delle guide.
 
 La documentazione si rigenera da zero, solo su richiesta esplicita e insieme a chi la chiede, seguendo la skill `user-docs` (`.agents/skills/user-docs/SKILL.md`). Per aggiornarla a una nuova versione dell'app basta aggiungere, modificare o togliere percorsi qui, poi chiedere la rigenerazione.
 

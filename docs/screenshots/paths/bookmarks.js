@@ -11,19 +11,16 @@ const { start, tr, t, BROTATO, tinyGladeList } = require('../run');
 const url = (name, u) => ({ type: 'url', name, url: u });
 const folder = (name, children) => ({ type: 'folder', name, children });
 
-// La cartella dei giochi nei bookmark d'esempio.
-const GAMES = { it: 'Giochi', en: 'Games' };
-
 // Profili Chromium: { browser: { profilo: { bar, other } } }, nella lingua
 // delle schermate.
 const browsers = () => ({
   'Google Chrome': {
-    [tr({ it: 'Personale', en: 'Personal' })]: {
+    [tr('bookmarks.profile')]: {
       bar: [
-        folder(tr(GAMES), [
+        folder(tr('bookmarks.games'), [
           folder('Brotato', [
             url('Brotato Wiki', 'https://brotato.wiki.spellsandguns.com/'),
-            url(tr({ it: 'Brotato su Steam', en: 'Brotato on Steam' }), 'https://store.steampowered.com/app/1942280/'),
+            url(tr('steam.brotato'), 'https://store.steampowered.com/app/1942280/'),
             url('r/brotato', 'https://www.reddit.com/r/brotato/'),
           ]),
           folder('Tiny Glade', [
@@ -32,13 +29,13 @@ const browsers = () => ({
           ]),
         ]),
         url('YouTube', 'https://www.youtube.com/'),
-        url('Wikipedia', tr({ it: 'https://it.wikipedia.org/', en: 'https://en.wikipedia.org/' })),
+        url('Wikipedia', tr('bookmarks.wikipedia')),
       ],
-      other: [url(tr({ it: 'Meteo', en: 'Weather' }), tr({ it: 'https://www.ilmeteo.it/', en: 'https://weather.com/' }))],
+      other: [url(tr('bookmarks.weather'), tr('bookmarks.weatherUrl'))],
     },
   },
   Brave: {
-    [tr({ it: 'Persona 1', en: 'Person 1' })]: { bar: [url('GitHub', 'https://github.com/')], other: [] },
+    [tr('bookmarks.profile2')]: { bar: [url('GitHub', 'https://github.com/')], other: [] },
   },
 });
 
@@ -86,7 +83,7 @@ module.exports = async () => {
     const chrome = await $('#bm-source option').filter({ hasText: 'Chrome' }).first().getAttribute('value');
     await $('#bm-source').selectOption(chrome);
     await expect($('#bm-tree')).toContainText('YouTube');
-    for (const name of [t('bookmarks.root.bar'), tr(GAMES)]) {
+    for (const name of [t('bookmarks.root.bar'), tr('bookmarks.games')]) {
       if (await folderRow(name).locator('.twisty').textContent() === '▸') await folderRow(name).click();
     }
     await folderRow('Brotato').click();

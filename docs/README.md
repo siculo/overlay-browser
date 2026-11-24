@@ -19,7 +19,7 @@ La fonte è l'elenco dei percorsi, [percorsi.md](percorsi.md): le guide, le sche
 - [Link, nuovi tab e menu contestuale](it/links-and-menu.md)
 - [Risoluzione dei problemi](it/troubleshooting.md)
 
-Le stesse guide come presentazione: [it/presentazione.html](it/presentazione.html) (da aprire nel browser, anche senza server).
+Le stesse guide come presentazione: [it/slideshow.html](it/slideshow.html) (da aprire nel browser, anche senza server).
 
 ## English
 
@@ -38,7 +38,7 @@ The same guides as a slideshow: [en/slideshow.html](en/slideshow.html).
 
 ## Presentazione
 
-La presentazione di ogni lingua (`it/presentazione.html`, `en/slideshow.html`) è generata dalle sue guide da `slideshow/build.js` con il modello `slideshow/template.html` e i testi di `slideshow/strings.js` (non va modificata a mano):
+La presentazione di ogni lingua (`<lingua>/slideshow.html`) è generata dalle sue guide da `slideshow/build.js` con il modello `slideshow/template.html` e i testi di `slideshow/strings.js` (non va modificata a mano):
 
 ```sh
 npm run docs:slideshow          # italiano
