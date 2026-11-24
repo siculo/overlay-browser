@@ -16,29 +16,29 @@ Mentre giochi premi **Win+F10** (Super+F10 su Linux, Cmd+Shift+Spazio su macOS).
 
 L'overlay ha riconosciuto il gioco: in cima c'è la lista **Tiny Glade** ❶, *attiva* e ancora *nuova*. Ogni gioco ha la sua lista di siti, creata quando ci aggiungi il primo sito. Tra le *Altre liste* c'è la lista **Generale** ❷, usata quando non è aperto nessun gioco; **Usa** la rende attiva a mano.
 
-![La Home aperta sopra Tiny Glade, con la lista del gioco ancora vuota](img/01-home-vuota.png)
+![La Home aperta sopra Tiny Glade, con la lista del gioco ancora vuota](img/primo-avvio/01-home-vuota.png)
 
 ## 3. Aggiungi un sito
 
 Clicca **+** ❶ nella barra in alto, scrivi l'indirizzo del sito ❷ (basta anche `tinyglade.com`) e premi **Aggiungi** ❸.
 
-![La finestra per aggiungere un sito, con l'indirizzo tinyglade.com](img/02-aggiungi-sito.png)
+![La finestra per aggiungere un sito, con l'indirizzo tinyglade.com](img/primo-avvio/02-aggiungi-sito.png)
 
 Il sito si apre subito nel suo **tab** ❶, che prende il nome dal titolo della pagina; la **×** lo chiude. Sotto c'è la barra di navigazione, come in un browser: **indietro, avanti e ricarica** ❷, l'**indirizzo** della pagina ❸ (puoi scriverne un altro e premere Invio) e **Fissa** ❹, che trasforma in un nuovo tab una pagina che hai raggiunto navigando.
 
-![Il sito ufficiale di Tiny Glade aperto nel suo tab](img/03-sito-aperto.png)
+![Il sito ufficiale di Tiny Glade aperto nel suo tab](img/primo-avvio/03-sito-aperto.png)
 
 ## 4. Aggiungine altri dalla Home
 
 Torna alla **Home**: qui vedi i siti della lista. Clicca il **nome di un sito** ❶ per aprirlo, **Modifica** ❷ per cambiarne l'indirizzo (Invio per salvare, Esc per annullare) o **Rimuovi** ❸ per toglierlo dalla lista. Per aggiungere un sito scrivi l'indirizzo nel **campo sotto la lista** ❹ e premi *Aggiungi*: qui abbiamo aggiunto la pagina Steam del gioco.
 
-![La Home con i due siti della lista di Tiny Glade](img/04-home-con-siti.png)
+![La Home con i due siti della lista di Tiny Glade](img/primo-avvio/04-home-con-siti.png)
 
 ## 5. Passa da un sito all'altro
 
 Ogni sito ha il suo tab nella barra: qui il **sito ufficiale** ❶ e la **pagina Steam** ❷, quella aperta adesso. Cambiando tab e tornando indietro ritrovi la pagina esattamente dove l'avevi lasciata.
 
-![La pagina Steam di Tiny Glade nel secondo tab](img/05-due-tab.png)
+![La pagina Steam di Tiny Glade nel secondo tab](img/primo-avvio/05-due-tab.png)
 
 ## 6. Torna a giocare
 

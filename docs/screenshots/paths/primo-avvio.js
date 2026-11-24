@@ -1,28 +1,13 @@
-// Schermate del percorso "Primo avvio" (docs/it/primo-avvio.md).
-// Avvia l'app vera con una cartella dati temporanea (come i test UI),
-// la apre sopra Tiny Glade (simulato) e salva le schermate in docs/it/img/.
-// Usa la rete: i siti mostrati sono reali.
-//   npm run docs:screenshots
-const path = require('path');
+// Percorso "Primo avvio" (docs/it/primo-avvio.md): l'overlay aperto per la
+// prima volta sopra Tiny Glade, due siti aggiunti alla sua lista.
 const { expect } = require('@playwright/test');
-const { launch } = require('../../test/e2e/helpers');
-const { annotate, clearAnnotations } = require('./annotate');
+const { start, hideBanner, GAME } = require('../run');
 
-const OUT = path.join(__dirname, '..', 'it', 'img');
-const GAME = { exe: 'tiny-glade', name: 'Tiny Glade', title: 'Tiny Glade' };
 const SITES = ['https://tinyglade.com', 'https://store.steampowered.com/app/2198150/'];
 
-(async () => {
-  const o = await launch({ prefs: { settings: { language: 'it' } }, show: false });
-  const { page } = o;
-  // Schermata con le evidenziazioni `marks` (vedi annotate.js).
-  const shot = async (name, marks = []) => {
-    await page.waitForTimeout(500);
-    await annotate(page, marks);
-    await page.screenshot({ path: path.join(OUT, `${name}.png`) });
-    await clearAnnotations(page);
-    console.log(name);
-  };
+module.exports = async () => {
+  const o = await start('primo-avvio');
+  const { page, shot } = o;
   const $ = (sel) => page.locator(sel);
   const current = $('#lists section.list.current');
   const tabs = page.locator('#tabs .tab');
@@ -75,14 +60,7 @@ const SITES = ['https://tinyglade.com', 'https://store.steampowered.com/app/2198
     // 5. Il secondo sito aperto: due tab nella barra.
     await tabs.nth(1).click();
     await page.waitForTimeout(3000);
-    // Il banner dei cookie di Steam copre la pagina: nascosto (solo per la schermata).
-    await o.inSite('https://store.steampowered.com', async (d) => {
-      for (let i = 0; i < 50 && !d.querySelector('#rejectAllButton'); i++) await new Promise((r) => setTimeout(r, 200));
-      let e = d.querySelector('#rejectAllButton');
-      while (e && e.parentElement !== d.body) e = e.parentElement;
-      e?.remove();
-    });
-    await page.waitForTimeout(1500);
+    await hideBanner(o, 'https://store.steampowered.com', 'Rifiuta tutti');
     await shot('05-due-tab', [
       { el: tabs.nth(0), n: 1, at: 's' },
       { el: tabs.nth(1), n: 2, at: 's' },
@@ -90,4 +68,4 @@ const SITES = ['https://tinyglade.com', 'https://store.steampowered.com/app/2198
   } finally {
     await o.close();
   }
-})().catch((err) => { console.error(err); process.exit(1); });
+};
