@@ -29,6 +29,8 @@
   "forum.sheepMeta": "7 replies · last 3 days ago",
   "forum.signInTitle": "Sign in to the forum",
   "forum.signIn": "Sign in",
+  "forum.emailLabel": "Email",
+  "forum.passwordLabel": "Password",
   "forum.signInText": "Use your Tiny Glade Forum account.",
   "forum.topicBy": "Started by <strong>Mason</strong> · 12 replies",
   "forum.topicText": "Drag a wall from one bank of the river to the other: the game turns it into a bridge by itself, arches included. Here is mine.",

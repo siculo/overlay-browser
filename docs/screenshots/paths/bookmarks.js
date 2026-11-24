@@ -91,7 +91,7 @@ module.exports = async () => {
     await expect($('#add-ok')).toHaveText(t('bookmarks.add.other', { count: 3 }));
     await page.mouse.move(990, 690);
     await shot('02-import', [
-      { el: $('#bm-source'), n: 1, at: 'n' },
+      { el: [$('label[for="bm-source"]'), $('#bm-source')], n: 1, at: 'w' },
       { el: $('#bm-file'), n: 2, at: 'e' },
       { el: $('#bm-search'), n: 3, at: 'e' },
       { el: folderRow('Brotato'), n: 4, at: 'e' },

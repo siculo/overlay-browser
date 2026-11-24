@@ -29,7 +29,7 @@ module.exports = async () => {
     await shot('01-browse', [
       { el: $('#browse-btn'), n: 1, at: 's', len: 50 },
       { el: $('#nav-url'), n: 2, at: 's' },
-      { el: $('#browse-suggest'), n: 3, at: 's' },
+      { el: $('#browse-suggest'), n: 3, at: 'e' },
     ]);
 
     // 2. I risultati della ricerca.

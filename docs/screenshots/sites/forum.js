@@ -77,8 +77,8 @@ const pages = () => {
 <main style="margin:20px auto">
   <h2 style="margin:0 0 4px">${tr('forum.signIn')}</h2>
   <p class="muted">${tr('forum.signInText')}</p>
-  <label for="email">Email</label><input id="email" value="${tr('forum.email')}@example.com">
-  <label for="pwd">Password</label><input id="pwd" type="password" value="password">
+  <label for="email">${tr('forum.emailLabel')}</label><input id="email" value="${tr('forum.email')}@example.com">
+  <label for="pwd">${tr('forum.passwordLabel')}</label><input id="pwd" type="password" value="password">
   <p><button class="primary" id="ok">${tr('forum.signIn')}</button></p>
 </main>
 <script>

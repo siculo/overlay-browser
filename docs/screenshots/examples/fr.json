@@ -29,6 +29,8 @@
   "forum.sheepMeta": "7 réponses · dernière il y a 3 jours",
   "forum.signInTitle": "Connexion au forum",
   "forum.signIn": "Se connecter",
+  "forum.emailLabel": "E-mail",
+  "forum.passwordLabel": "Mot de passe",
   "forum.signInText": "Utilisez votre compte du forum de Tiny Glade.",
   "forum.topicBy": "Ouverte par <strong>Maçon</strong> · 12 réponses",
   "forum.topicText": "Faites glisser un mur d’une rive à l’autre : le jeu le transforme tout seul en pont, avec les arches. Voici le mien.",

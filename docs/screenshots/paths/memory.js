@@ -43,7 +43,7 @@ module.exports = async () => {
     await shot('01-memory', [
       { el: $('#opt-unload'), n: 1, at: 'n' },
       { el: $('#memory-total'), n: 2, at: 'w' },
-      { el: $('#memory-close-all'), n: 3, at: 'n' },
+      { el: $('#memory-close-all'), n: 3, at: 'e' },
       { el: [$('#memory-table tr').first(), $('#memory-table tr.own-end')], n: 4, at: 'w' },
       { el: [group('Tiny Glade'), group('Brotato')], n: 5, at: 'w' },
     ]);
