@@ -92,7 +92,9 @@ test('an address typed while the start page is still loading is opened', async (
   const { page } = o;
   await page.locator('#browse-btn').click();
   await page.locator('#nav-url').fill(server.url('/Typed'));
-  await page.locator('#nav-url').press('Enter');
+  // Enter moves focus to the loading webview. Playwright's press() can
+  // time out even after the guest has finished navigating to /Typed.
+  await page.locator('#nav-url').dispatchEvent('keydown', { key: 'Enter' });
   expect(await o.inSite(server.url('/Typed'), (d) => d.title)).toBe('Typed');
   // The start page arriving later does not replace it.
   await page.waitForTimeout(3500);
