@@ -2,7 +2,7 @@
 
 Guide per percorsi d'uso, con le schermate dell'app vera.
 
-Le guide sono in italiano e in inglese: le italiane si generano dai percorsi, le altre lingue sono loro traduzioni, con le schermate rigenerate nella lingua.
+Le guide sono in italiano, inglese e francese: le italiane si generano dai percorsi, le altre lingue sono loro traduzioni, con le schermate rigenerate nella lingua.
 
 La fonte è l'elenco dei percorsi, [percorsi.md](percorsi.md): le guide, le schermate e la presentazione si rigenerano da zero a partire da lì, solo su richiesta esplicita e insieme a chi la chiede, seguendo la skill `user-docs` (`.agents/skills/user-docs/SKILL.md`, collegata in `.claude/skills/`). Per una nuova versione dell'app: aggiorna i percorsi, poi chiedi la rigenerazione.
 
@@ -35,6 +35,21 @@ Le stesse guide come presentazione: [it/slideshow.html](it/slideshow.html) (da a
 - [Troubleshooting](en/troubleshooting.md)
 
 The same guides as a slideshow: [en/slideshow.html](en/slideshow.html).
+
+## Français
+
+- [Premiers pas : les sites de ton jeu à portée de main](fr/getting-started.md)
+- [Navigation libre : chercher, trouver, épingler](fr/free-browsing.md)
+- [Une liste par jeu](fr/lists-per-game.md)
+- [Importer et exporter les favoris](fr/bookmarks.md)
+- [Personnaliser l’overlay](fr/customizing.md)
+- [Mémoire et pages fermées](fr/memory.md)
+- [Nouvelles versions](fr/new-versions.md)
+- [Se connecter à un site et les cookies](fr/signing-in.md)
+- [Liens, nouveaux onglets et menu contextuel](fr/links-and-menu.md)
+- [Résolution des problèmes](fr/troubleshooting.md)
+
+Les mêmes guides en diaporama : [fr/slideshow.html](fr/slideshow.html).
 
 ## Presentazione
 

@@ -192,7 +192,14 @@ async function contextMenu(o, urlPrefix, selector) {
     }
     return global.docMenus.length;
   });
-  const point = await o.inSite(urlPrefix, new Function('d', `const r = d.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+  // Il centro del primo rettangolo dell'elemento: un link che va a capo ne ha
+  // più d'uno, e il centro di quello che li contiene può cadere fuori.
+  // Se quel punto è fuori dalla parte visibile della pagina (il clic non
+  // arriverebbe all'elemento), l'elemento viene prima portato al centro.
+  const point = await o.inSite(urlPrefix, new Function('d', `const e = d.querySelector(${JSON.stringify(selector)});
+    let r = e.getClientRects()[0];
+    const y = r.y + r.height / 2;
+    if (y < 0 || y > d.defaultView.innerHeight) { e.scrollIntoView({ block: 'center' }); r = e.getClientRects()[0]; }
     return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };`));
   await o.app.evaluate(({ webContents }, { prefix, x, y }) => {
     const wc = webContents.getAllWebContents().find((w) => w.getType() === 'webview' && w.getURL().startsWith(prefix));
