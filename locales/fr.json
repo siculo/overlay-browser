@@ -38,6 +38,8 @@
   "nav.cookiesOf": "Supprimer les cookies de {domain}",
   "nav.cookiesConfirm": "Supprimer les cookies de {domain} et de ses sous-domaines ? Vous serez déconnecté de ce site et la page sera rechargée.",
   "nav.cookiesRemove": "Supprimer",
+  "nav.otherSiteConfirm": "{host} est un autre site : l'ouvrir dans l'onglet Naviguer ? Cet onglet reste sur sa page.",
+  "nav.otherSiteOpen": "Ouvrir dans Naviguer",
 
   "browse.empty": "Recherchez ou saisissez une adresse dans la barre ci-dessus.",
   "browse.example": "Essayez par exemple :",

@@ -116,7 +116,7 @@ test('the tab of the page shown in Browse is highlighted, also after an in-page 
   await expect(page.locator('#nav-pin')).toBeDisabled();
 });
 
-test('in a site tab the address is read-only and the site home button works after Browse', async () => {
+test('in a site tab the address is editable and the site home button works after Browse', async () => {
   const a = site(server.url('/A'), 'A');
   o = await launch({ prefs: { lists: [list(null, [a])] } });
   const { page } = o;
@@ -124,11 +124,44 @@ test('in a site tab the address is read-only and the site home button works afte
   await page.locator('#browse-btn').click();
   await tabs(page).first().click();
   await expect(page.locator('#nav-url')).toHaveValue(server.url('/A'));
-  await expect(page.locator('#nav-url')).toHaveAttribute('readonly', '');
+  await expect(page.locator('#nav-url')).toBeEditable();
   await expect(page.locator('#nav-site')).toBeEnabled();
 
   await o.inSite(server.url('/A'), () => { location.href = '/Deeper'; });
   await expect(page.locator('#nav-url')).toHaveValue(server.url('/Deeper'));
   await page.locator('#nav-site').click();
   await expect(page.locator('#nav-url')).toHaveValue(server.url('/A'));
+});
+
+test('an address typed in a site tab opens there on the same host, in Browse on another after confirming', async () => {
+  const a = site(server.url('/A'), 'A');
+  o = await launch({ prefs: { lists: [list(null, [a], { activeTab: a.id })] } });
+  const { page } = o;
+  const url = page.locator('#nav-url');
+  expect(await o.inSite(server.url('/A'), (d) => d.title)).toBe('A');
+
+  // Same host: the tab's page goes there, without asking.
+  await url.fill(server.url('/Same'));
+  await url.press('Enter');
+  await expect(url).toHaveValue(server.url('/Same'));
+  await expect(page.locator('#dialog')).toBeHidden();
+  await expect(tabs(page).first()).toHaveClass(/active/);
+
+  // Another host (localhost instead of 127.0.0.1): asks; cancelled, nothing
+  // opens and the typed text stays.
+  const other = server.url('/Other').replace('127.0.0.1', 'localhost');
+  await url.fill(other);
+  await url.press('Enter');
+  await expect(page.locator('#dialog')).toBeVisible();
+  await page.locator('#dialog-cancel').click();
+  await expect(url).toHaveValue(other);
+  await expect(tabs(page).first()).toHaveClass(/active/);
+
+  // Confirmed: it opens in Browse, the site tab keeps its page.
+  await url.press('Enter');
+  await page.locator('#dialog-ok').click();
+  await expect(page.locator('#browse-btn')).toHaveClass(/active/);
+  await expect.poll(() => o.contentsId(other)).not.toBeNull();
+  await tabs(page).first().click();
+  await expect(url).toHaveValue(server.url('/Same'));
 });

@@ -170,7 +170,6 @@
   #nav-url { flex: 1; min-width: 0; -webkit-app-region: no-drag; }
   /* In the sites' tabs: the address only, selectable but not editable,
      without border and background */
-  #nav-url[readonly], #nav-url[readonly]:focus { color: #aaa; background: transparent; border-color: transparent; }
   #nav-url.invalid, #opt-browse-start.invalid, #opt-search-custom.invalid { border-color: #c55; }
   #nav-pin { -webkit-app-region: no-drag; display: flex; align-items: center; gap: 6px; }
   /* Menu of the "..." button, right of the address: further operations on the page */
@@ -532,7 +531,7 @@
 
 <script src="urls.js"></script>
 <script>
-  const { normalizeUrl, samePage, cookieDomain } = OverlayUrls;
+  const { normalizeUrl, samePage, sameHost, cookieDomain } = OverlayUrls;
   const $ = (id) => document.getElementById(id);
   const homeBtn = $('home-btn'), tabsEl = $('tabs'), leftBtn = $('left'), rightBtn = $('right');
   const home = $('home'), listsEl = $('lists'), views = $('views');
@@ -914,8 +913,8 @@
   const browseEmpty = $('browse-empty');
   let browseStart = '';   // start page of the free browsing tab (settings.browseStart), '' = none
 
-  // The address field shows the page's address in every tab with a page;
-  // it can be edited only in the free browsing tab. `showUrl`: update it
+  // The address field shows the page's address in every tab with a page,
+  // and can be edited in all of them (see navUrl.onkeydown). `showUrl`: update it
   // even while it has the focus (otherwise left alone, so as not to replace
   // what the user is typing), after a navigation or a tab change.
   function updateNav(showUrl = false) {
@@ -929,8 +928,7 @@
     navForward.disabled = !forward;
     const browse = active === BROWSE;
     navUrl.hidden = !isSite(active);
-    navUrl.readOnly = !browse;
-    navUrl.placeholder = !browse ? '' : searchName() ? t('nav.addressWith', { engine: searchName() }) : t('nav.address');
+    navUrl.placeholder = searchName() ? t('nav.addressWith', { engine: searchName() }) : t('nav.address');
     navPin.hidden = !isSite(active);
     navMore.hidden = !isSite(active);
     navCookies.disabled = !cookieDomain(url);
@@ -947,7 +945,7 @@
     navPin.disabled = !/^https?:/i.test(url) || !!match;
     navPin.title = match ? t('nav.pinned', { name: siteName(match) }) : t('nav.pinTitle');
     markMatch(match && match.id !== active ? match.id : null);
-    if (showUrl || document.activeElement !== navUrl || navUrl.readOnly) {
+    if (showUrl || document.activeElement !== navUrl) {
       navUrl.value = /^https?:/i.test(url) ? url : '';
       navUrl.classList.remove('invalid');
     }
@@ -1050,12 +1048,40 @@
   };
   navUrl.onkeydown = (e) => {
     if (e.key === 'Escape') { updateNav(true); webviews.get(active)?.focus(); return; }
-    if (e.key !== 'Enter' || navUrl.readOnly) return;
+    if (e.key !== 'Enter') return;
     const url = addressOrSearch(navUrl.value);
     if (!url) { navUrl.classList.add('invalid'); return; }
+    if (active === BROWSE) { browseTo(url); webviews.get(BROWSE)?.focus(); return; }
+    openInSiteTab(active, url);
+  };
+
+  // An address typed in a site's tab: on the host of its page it opens
+  // there; on another host (or a search) the tab would leave its site, so
+  // after a confirmation it opens in the free browsing tab instead, and the
+  // site's tab keeps its page.
+  async function openInSiteTab(id, url) {
+    const wv = webviews.get(id);
+    if (!wv) return;
+    let current = '';
+    try { current = wv?.getURL() ?? ''; } catch { /* not ready yet */ }
+    if (sameHost(url, current || findSite(id)?.url)) {
+      logAction(`address typed: ${tabRef(id)}, same site`);
+      // loadURL throws until the page is ready; its promise is rejected when
+      // another navigation replaces it.
+      try { wv.loadURL(url).catch(() => {}); } catch { wv.src = url; }
+      wv.focus();
+      return;
+    }
+    const ok = await openDialog({
+      message: t('nav.otherSiteConfirm', { host: new URL(url).host }),
+      okLabel: t('nav.otherSiteOpen'),
+    });
+    if (!ok) { logAction(`address typed: ${tabRef(id)}, other site, cancelled`); navUrl.focus(); return; }
+    logAction(`address typed: ${tabRef(id)}, other site, opened in Browse`);
+    if (active === id) updateNav(true);   // the tab's field shows its page again
     browseTo(url);
     webviews.get(BROWSE)?.focus();
-  };
+  }
   navUrl.oninput = () => navUrl.classList.remove('invalid');
   navUrl.onfocus = () => navUrl.select();
   navPin.onclick = pinPage;

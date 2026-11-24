@@ -38,6 +38,8 @@
   "nav.cookiesOf": "Delete cookies for {domain}",
   "nav.cookiesConfirm": "Delete the cookies of {domain} and its subdomains? You will be signed out of this site and the page will reload.",
   "nav.cookiesRemove": "Delete",
+  "nav.otherSiteConfirm": "{host} is another site: open it in the Browse tab? This tab stays on its page.",
+  "nav.otherSiteOpen": "Open in Browse",
 
   "browse.empty": "Search or type an address in the bar above.",
   "browse.example": "Try for example:",

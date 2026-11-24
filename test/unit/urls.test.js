@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeUrl, addressOrSearch, pageKey, samePage, cookieDomain } = require('../../urls');
+const { normalizeUrl, addressOrSearch, pageKey, samePage, sameHost, cookieDomain } = require('../../urls');
 
 // Node's URL parser refuses spaces in a host, Chromium's takes them
 // (escaped): the case of "not an address" in the page is in the UI tests
@@ -47,6 +47,15 @@ test('pageKey / samePage: http(s), www., final / and fragment ignored', () => {
   assert.equal(samePage('https://www.example.com/', 'http://example.com'), true);
   assert.equal(samePage('https://example.com/a', 'https://example.com/b'), false);
   assert.equal(samePage('', ''), false);
+});
+
+test('sameHost: same host and port, ignoring http/https and www.', () => {
+  assert.equal(sameHost('https://www.example.com/a?x=1', 'http://example.com/b'), true);
+  assert.equal(sameHost('https://EXAMPLE.com/', 'https://example.com/x'), true);
+  assert.equal(sameHost('https://wiki.example.com/', 'https://example.com/'), false);
+  assert.equal(sameHost('http://localhost:8080/', 'http://localhost:9090/'), false);
+  assert.equal(sameHost('about:blank', 'about:blank'), false);
+  assert.equal(sameHost('', 'https://example.com/'), false);
 });
 
 test('cookieDomain: host without www., empty for other schemes', () => {

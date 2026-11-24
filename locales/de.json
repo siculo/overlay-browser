@@ -38,6 +38,8 @@
   "nav.cookiesOf": "Cookies von {domain} löschen",
   "nav.cookiesConfirm": "Die Cookies von {domain} und seinen Subdomains löschen? Du wirst auf dieser Website abgemeldet und die Seite wird neu geladen.",
   "nav.cookiesRemove": "Löschen",
+  "nav.otherSiteConfirm": "{host} ist eine andere Website: im Tab Surfen öffnen? Dieser Tab bleibt auf seiner Seite.",
+  "nav.otherSiteOpen": "In Surfen öffnen",
 
   "browse.empty": "Gib oben in der Leiste einen Suchbegriff oder eine Adresse ein.",
   "browse.example": "Probier zum Beispiel:",

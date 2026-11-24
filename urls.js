@@ -65,5 +65,19 @@
     } catch { return ''; }
   }
 
-  return { normalizeUrl, addressOrSearch, pageKey, samePage, cookieDomain };
+  // Whether two http(s) addresses are on the same host (with the port),
+  // ignoring http/https and "www.": an address typed in a site's tab opens
+  // there only then, otherwise in the free browsing tab after a confirmation.
+  function sameHost(a, b) {
+    const host = (url) => {
+      try {
+        const u = new URL(url);
+        return /^https?:$/.test(u.protocol) ? u.host.replace(/^www\./, '') : '';
+      } catch { return ''; }
+    };
+    const ha = host(a);
+    return !!ha && ha === host(b);
+  }
+
+  return { normalizeUrl, addressOrSearch, pageKey, samePage, sameHost, cookieDomain };
 }));
