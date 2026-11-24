@@ -2,22 +2,14 @@
 // delle pagine non usate e la sezione Memoria delle Impostazioni, con le
 // pagine aperte delle liste di Tiny Glade e di Brotato.
 const { expect } = require('@playwright/test');
-const { start, hideBanner, GAME, BROTATO } = require('../run');
-const { site, list } = require('../../../test/e2e/helpers');
+const { start, hideBanner, GAME, BROTATO, tinyGladeList, brotatoList } = require('../run');
 
 module.exports = async () => {
   const o = await start('memoria', {
     // Le liste come al termine delle guide precedenti.
     lists: [
-      list({ exe: 'tiny-glade' }, [
-        site('https://tinyglade.com/', 'Tiny Glade'),
-        site('https://store.steampowered.com/app/2198150/', 'Tiny Glade su Steam'),
-        site('https://tinyglade.wiki.gg/', 'Tiny Glade Wiki'),
-      ], { name: 'Tiny Glade' }),
-      list({ exe: 'brotato.x86_64' }, [
-        site('https://brotato.wiki.spellsandguns.com/', 'Brotato Wiki'),
-        site('https://store.steampowered.com/app/1942280/', 'Brotato su Steam'),
-      ], { name: 'Brotato' }),
+      tinyGladeList(),
+      brotatoList(),
     ],
   });
   const { page, shot } = o;

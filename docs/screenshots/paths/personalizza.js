@@ -2,17 +2,12 @@
 // Impostazioni (scorciatoia, comportamento, aspetto, lingua) e l'overlay
 // con colore d'accento, tab fissi e opacità cambiati.
 const { expect } = require('@playwright/test');
-const { start, GAME } = require('../run');
-const { site, list } = require('../../../test/e2e/helpers');
+const { start, GAME, tinyGladeList } = require('../run');
 
 module.exports = async () => {
   const o = await start('personalizza', {
     // La lista di Tiny Glade come al termine delle guide precedenti.
-    lists: [list({ exe: 'tiny-glade' }, [
-      site('https://tinyglade.com/', 'Tiny Glade'),
-      site('https://store.steampowered.com/app/2198150/', 'Tiny Glade su Steam'),
-      site('https://tinyglade.wiki.gg/', 'Tiny Glade Wiki'),
-    ], { name: 'Tiny Glade' })],
+    lists: [tinyGladeList()],
   });
   const { page, shot } = o;
   const $ = (sel) => page.locator(sel);
@@ -28,6 +23,9 @@ module.exports = async () => {
     // 1. La scorciatoia.
     await $('#settings-btn').click();
     await expect($('#shortcut')).not.toBeEmpty();
+    // Come di default (i test lo tolgono, e attivo nasconderebbe l'overlay
+    // durante lo script): solo la casella, senza cambiare l'impostazione.
+    await $('#opt-hide-on-blur').evaluate((e) => { e.checked = true; });
     await shot('01-scorciatoia', [
       { el: $('#settings-btn'), n: 1, at: 's' },
       { el: $('#shortcut'), n: 2, at: 's' },
@@ -44,9 +42,6 @@ module.exports = async () => {
 
     // 3. Comportamento.
     await scrollTo('settings.behavior');
-    // Come di default (i test lo tolgono, e attivo nasconderebbe l'overlay
-    // durante lo script): solo la casella, senza cambiare l'impostazione.
-    await $('#opt-hide-on-blur').evaluate((e) => { e.checked = true; });
     await page.waitForTimeout(300);
     await shot('03-comportamento', [
       { el: $('#opt-hide-on-blur'), n: 1, at: 'w' },

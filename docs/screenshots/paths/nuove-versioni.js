@@ -3,18 +3,13 @@
 // controlla le versioni: la nuova versione è mandata alla pagina come farebbe
 // main.js (update:available), come nel test smoke.spec.js.
 const { expect } = require('@playwright/test');
-const { start, GAME } = require('../run');
-const { site, list } = require('../../../test/e2e/helpers');
+const { start, GAME, tinyGladeList } = require('../run');
 
 const UPDATE = { version: '1.1.0', url: 'https://github.com/siculo/overlay-browser/releases', dismissed: false };
 
 module.exports = async () => {
   const o = await start('nuove-versioni', {
-    lists: [list({ exe: 'tiny-glade' }, [
-      site('https://tinyglade.com/', 'Tiny Glade'),
-      site('https://store.steampowered.com/app/2198150/', 'Tiny Glade su Steam'),
-      site('https://tinyglade.wiki.gg/', 'Tiny Glade Wiki'),
-    ], { name: 'Tiny Glade' })],
+    lists: [tinyGladeList()],
   });
   const { page, shot } = o;
   const $ = (sel) => page.locator(sel);

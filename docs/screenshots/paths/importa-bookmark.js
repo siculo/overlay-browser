@@ -6,8 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { expect } = require('@playwright/test');
-const { start, BROTATO } = require('../run');
-const { site, list } = require('../../../test/e2e/helpers');
+const { start, BROTATO, tinyGladeList } = require('../run');
 
 const url = (name, u) => ({ type: 'url', name, url: u });
 const folder = (name, children) => ({ type: 'folder', name, children });
@@ -60,11 +59,7 @@ function writeStores(dir) {
 module.exports = async () => {
   const o = await start('importa-bookmark', {
     // La lista di Tiny Glade come al termine delle guide precedenti.
-    lists: [list({ exe: 'tiny-glade' }, [
-      site('https://tinyglade.com/', 'Tiny Glade'),
-      site('https://store.steampowered.com/app/2198150/', 'Tiny Glade su Steam'),
-      site('https://tinyglade.wiki.gg/', 'Tiny Glade Wiki'),
-    ], { name: 'Tiny Glade' })],
+    lists: [tinyGladeList()],
   });
   writeStores(o.dir);
   const { page, app, shot } = o;

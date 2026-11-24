@@ -13,6 +13,9 @@ La fonte è l'elenco dei percorsi, [percorsi.md](percorsi.md): le guide, le sche
 - [Personalizzare l'overlay](it/personalizza.md)
 - [Memoria e pagine chiuse](it/memoria.md)
 - [Nuove versioni](it/nuove-versioni.md)
+- [Accedere a un sito e i cookie](it/accedere-ai-siti.md)
+- [Link, nuovi tab e menu contestuale](it/link-e-menu.md)
+- [Risoluzione dei problemi](it/problemi.md)
 
 Le stesse guide come presentazione: [it/presentazione.html](it/presentazione.html) (da aprire nel browser, anche senza server).
 

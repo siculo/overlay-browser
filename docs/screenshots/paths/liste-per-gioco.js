@@ -2,19 +2,14 @@
 // di Tiny Glade e di Brotato, la lista Generale, una lista scelta a mano,
 // tab riordinati, una lista rimossa.
 const { expect } = require('@playwright/test');
-const { start, GAME, BROTATO } = require('../run');
-const { site, list } = require('../../../test/e2e/helpers');
+const { start, GAME, BROTATO, tinyGladeList } = require('../run');
 
 const SITES = ['https://brotato.wiki.spellsandguns.com/', 'https://store.steampowered.com/app/1942280/'];
 
 module.exports = async () => {
   const o = await start('liste-per-gioco', {
     // La lista di Tiny Glade come al termine delle guide precedenti.
-    lists: [list({ exe: 'tiny-glade' }, [
-      site('https://tinyglade.com/', 'Tiny Glade'),
-      site('https://store.steampowered.com/app/2198150/', 'Tiny Glade su Steam'),
-      site('https://tinyglade.wiki.gg/', 'Tiny Glade Wiki'),
-    ], { name: 'Tiny Glade' })],
+    lists: [tinyGladeList()],
   });
   const { page, shot } = o;
   const $ = (sel) => page.locator(sel);

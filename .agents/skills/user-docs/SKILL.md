@@ -40,7 +40,10 @@ Ogni percorso è un modulo `docs/screenshots/paths/<id>.js` che esporta una funz
 
 - `start('<id>', prefs)` (da `../run`): avvia l'app vera su una cartella dati temporanea, in italiano, con le preferenze `prefs` (es. `{ lists: [...] , settings: {...} }`, costruite con `site()` e `list()` di `test/e2e/helpers.js`). Restituisce l'app dei test UI (`page`, `app`, `show(app)`, `hide()`, `test()`, `inSite()`, `dir`, `close()`) più `shot(nome, marks)`, che salva `docs/it/img/<id>/<nome>.png`. Chiudi sempre con `o.close()` in un `finally`.
 - `GAME` (Tiny Glade) e `BROTATO` (da `../run`): le applicazioni sopra cui aprire l'overlay, `o.show(GAME)`; `o.show(null)`: nessuna applicazione (lista Generale).
-- Lo stato di partenza di un percorso ("Parte da" in `percorsi.md`) si costruisce con le preferenze, non ripetendo i percorsi precedenti.
+- Lo stato di partenza di un percorso ("Parte da" in `percorsi.md`) si costruisce con le preferenze, non ripetendo i percorsi precedenti: `tinyGladeList()` e `brotatoList()` (da `../run`) sono le liste degli esempi comuni.
+- Siti che non si possono usare davvero (un login con un account, pagine sempre uguali): `serveSite(o, host, pagine)` (da `../run`) serve un sito d'esempio su un dominio riservato agli esempi (`*.example`), senza rete; le pagine sono HTML o `{ type, body }`. Il forum d'esempio dei percorsi è `docs/screenshots/sites/forum.js` (accesso con una finestra, discussioni, link, un'immagine, un campo di testo): riusalo o estendilo. Nella guida va detto che è un sito d'esempio.
+- Finestre aperte dai siti (es. il login): sono finestre a sé, fuori dalla schermata. `drawPopups(o)` le disegna sopra l'overlay (evidenziabili come `'#doc-popups .popup'`), `clearPopups(o)` le toglie.
+- Menu contestuale (nativo, fuori dalla schermata): `contextMenu(o, urlPrefix, selettore)` fa clic con il tasto destro su un elemento della pagina di un sito e disegna il menu con le voci vere dell'app nel punto del clic (voci evidenziabili come `'#doc-menu .item'`); `clearMenu(o)` lo toglie, `menuClick(o, voce)` esegue una voce.
 - **Evidenziazioni**, `marks`: `[{ el, n, at, len }]` (`annotate.js`). `el`: un locator, un array di locator (un riquadro che li contiene) o un rettangolo, ad esempio di un elemento dentro la pagina di un sito con `siteRect(o, urlPrefix, selettore, testo)`; `n`: il numero (omesso se l'elemento evidenziato è uno solo); `at`: dove mettere il numero (`n`, `s`, `e`, `w`, `ne`, …); `len`: linea più lunga, per staccare il numero da altri riquadri. Numera nell'ordine in cui il testo cita gli elementi.
 - Nomi delle schermate: `NN-descrizione` (`01-home-vuota`), nell'ordine in cui compaiono nella guida.
 - Pagine dei siti:
@@ -55,7 +58,10 @@ Ogni percorso è un modulo `docs/screenshots/paths/<id>.js` che esporta una funz
   - le finestre di sistema (apri/salva file) si sostituiscono dal processo principale (`app.evaluate(({ dialog }) => ...)`);
   - non registrare una combinazione di tasti vera (annulla con Esc).
 - Il puntatore lasciato sopra un elemento lo sottolinea: spostalo (`page.mouse.move(990, 690)`) prima della schermata.
-- Non si possono riprendere: l'area di notifica, la combinazione di tasti, il gioco dietro l'overlay (anche l'opacità), i menu nativi (menu contestuale), i login veri. Per questi passi: solo testo, oppure una soluzione decisa con l'utente.
+- Non si possono riprendere: l'area di notifica, la combinazione di tasti, il gioco dietro l'overlay (anche l'opacità), i login veri. Per questi passi: solo testo, gli strumenti qui sopra (sito d'esempio, finestre e menu disegnati), oppure una soluzione decisa con l'utente.
+- Non cliccare ciò che agisce fuori dall'app (es. "Mostra il file di log", "Scarica" di una nuova versione, link che aprono il browser del sistema): aprirebbe programmi sul sistema di chi genera.
+- Un numero vicino a un bordo o tra elementi fitti può coprire testo o altri riquadri: cambia `at`/`len`, oppure usa un solo riquadro senza numeri per più elementi (`el: [a, b]`) e citali per nome nel testo.
+- Per controllare molte schermate in una volta: `montage` (ImageMagick), se disponibile, le raccoglie in un foglio di miniature.
 - Gli script usano la rete (siti reali) e la finestra dell'app compare sullo schermo mentre girano.
 
 ## Testo delle guide
