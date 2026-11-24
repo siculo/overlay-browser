@@ -14,7 +14,8 @@
     "dist:installer": "electron-builder --win nsis",
     "dist:store": "electron-builder --win appx",
     "dist:linux": "electron-builder --linux",
-    "dist:mac": "electron-builder --mac"
+    "dist:mac": "electron-builder --mac",
+    "docs:screenshots": "node docs/screenshots/primo-avvio.js"
   },
   "keywords": [],
   "author": "Fabrizio Di Giuseppe",
