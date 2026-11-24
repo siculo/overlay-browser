@@ -6,20 +6,24 @@
 const fs = require('fs');
 const path = require('path');
 const { expect } = require('@playwright/test');
-const { start, BROTATO, tinyGladeList } = require('../run');
+const { start, tr, t, BROTATO, tinyGladeList } = require('../run');
 
 const url = (name, u) => ({ type: 'url', name, url: u });
 const folder = (name, children) => ({ type: 'folder', name, children });
 
-// Profili Chromium: { browser: { profilo: { bar, other } } }.
-const BROWSERS = {
+// La cartella dei giochi nei bookmark d'esempio.
+const GAMES = { it: 'Giochi', en: 'Games' };
+
+// Profili Chromium: { browser: { profilo: { bar, other } } }, nella lingua
+// delle schermate.
+const browsers = () => ({
   'Google Chrome': {
-    Personale: {
+    [tr({ it: 'Personale', en: 'Personal' })]: {
       bar: [
-        folder('Giochi', [
+        folder(tr(GAMES), [
           folder('Brotato', [
             url('Brotato Wiki', 'https://brotato.wiki.spellsandguns.com/'),
-            url('Brotato su Steam', 'https://store.steampowered.com/app/1942280/'),
+            url(tr({ it: 'Brotato su Steam', en: 'Brotato on Steam' }), 'https://store.steampowered.com/app/1942280/'),
             url('r/brotato', 'https://www.reddit.com/r/brotato/'),
           ]),
           folder('Tiny Glade', [
@@ -28,18 +32,18 @@ const BROWSERS = {
           ]),
         ]),
         url('YouTube', 'https://www.youtube.com/'),
-        url('Wikipedia', 'https://it.wikipedia.org/'),
+        url('Wikipedia', tr({ it: 'https://it.wikipedia.org/', en: 'https://en.wikipedia.org/' })),
       ],
-      other: [url('Meteo', 'https://www.ilmeteo.it/')],
+      other: [url(tr({ it: 'Meteo', en: 'Weather' }), tr({ it: 'https://www.ilmeteo.it/', en: 'https://weather.com/' }))],
     },
   },
   Brave: {
-    'Persona 1': { bar: [url('GitHub', 'https://github.com/')], other: [] },
+    [tr({ it: 'Persona 1', en: 'Person 1' })]: { bar: [url('GitHub', 'https://github.com/')], other: [] },
   },
-};
+});
 
 function writeStores(dir) {
-  const stores = Object.entries(BROWSERS).map(([browser, profiles]) => {
+  const stores = Object.entries(browsers()).map(([browser, profiles]) => {
     const store = path.join(dir, 'browsers', browser);
     const info = {};
     Object.entries(profiles).forEach(([name, { bar, other }], i) => {
@@ -78,16 +82,16 @@ module.exports = async () => {
 
     // 2. La finestra di importazione: cartelle aperte fino a Brotato.
     await $('#import-btn').click();
-    await expect($('#bm-tree')).toContainText('Barra');
+    await expect($('#bm-tree')).toContainText(t('bookmarks.root.bar'));
     const chrome = await $('#bm-source option').filter({ hasText: 'Chrome' }).first().getAttribute('value');
     await $('#bm-source').selectOption(chrome);
     await expect($('#bm-tree')).toContainText('YouTube');
-    for (const name of ['Barra dei preferiti', 'Giochi']) {
+    for (const name of [t('bookmarks.root.bar'), tr(GAMES)]) {
       if (await folderRow(name).locator('.twisty').textContent() === '▸') await folderRow(name).click();
     }
     await folderRow('Brotato').click();
     await folderRow('Brotato').locator('input').click();
-    await expect($('#add-ok')).toHaveText('Aggiungi 3 siti');
+    await expect($('#add-ok')).toHaveText(t('bookmarks.add.other', { count: 3 }));
     await page.mouse.move(990, 690);
     await shot('02-importa', [
       { el: $('#bm-source'), n: 1, at: 'n' },

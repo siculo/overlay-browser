@@ -2,6 +2,8 @@
 
 Guide per percorsi d'uso, con le schermate dell'app vera.
 
+Le guide sono in italiano e in inglese: le italiane si generano dai percorsi, le altre lingue sono loro traduzioni, con le schermate rigenerate nella lingua.
+
 La fonte è l'elenco dei percorsi, [percorsi.md](percorsi.md): le guide, le schermate e la presentazione si rigenerano da zero a partire da lì, solo su richiesta esplicita e insieme a chi la chiede, seguendo la skill `user-docs` (`.agents/skills/user-docs/SKILL.md`, collegata in `.claude/skills/`). Per una nuova versione dell'app: aggiorna i percorsi, poi chiedi la rigenerazione.
 
 ## Italiano
@@ -19,23 +21,40 @@ La fonte è l'elenco dei percorsi, [percorsi.md](percorsi.md): le guide, le sche
 
 Le stesse guide come presentazione: [it/presentazione.html](it/presentazione.html) (da aprire nel browser, anche senza server).
 
+## English
+
+- [Getting started: your game's sites at hand](en/primo-avvio.md)
+- [Free browsing: search, find, pin](en/navigazione-libera.md)
+- [One list per game](en/liste-per-gioco.md)
+- [Importing and exporting bookmarks](en/importa-bookmark.md)
+- [Customizing the overlay](en/personalizza.md)
+- [Memory and closed pages](en/memoria.md)
+- [New versions](en/nuove-versioni.md)
+- [Signing in to a site and cookies](en/accedere-ai-siti.md)
+- [Links, new tabs and the context menu](en/link-e-menu.md)
+- [Troubleshooting](en/problemi.md)
+
+The same guides as a slideshow: [en/slideshow.html](en/slideshow.html).
+
 ## Presentazione
 
-`it/presentazione.html` è generata dalle guide da `slideshow/build.js` con il modello `slideshow/template.html` (non va modificata a mano):
+La presentazione di ogni lingua (`it/presentazione.html`, `en/slideshow.html`) è generata dalle sue guide da `slideshow/build.js` con il modello `slideshow/template.html` e i testi di `slideshow/strings.js` (non va modificata a mano):
 
 ```sh
-npm run docs:slideshow
+npm run docs:slideshow          # italiano
+npm run docs:slideshow -- en    # inglese
 ```
 
-Le guide e il loro ordine sono quelli di `percorsi.md` (un percorso senza la sua guida è segnalato e saltato). Ogni guida diventa una serie di slide: il titolo e l'introduzione, poi, per ogni sezione, ogni immagine con il testo che la precede, e il testo dopo l'ultima immagine come slide di solo testo. Si naviga con i pulsanti o con la tastiera (frecce, Fine/Inizio, Esc per il menu); ogni slide ha il suo indirizzo (`#primo-avvio/3`). Va rigenerata quando si cambia una guida. Per controllarla senza aprire un browser: `node docs/slideshow/preview.js <cartella>` salva le schermate del menu e delle slide.
+Le guide e il loro ordine sono quelli di `percorsi.md` (un percorso senza la sua guida è segnalato e saltato). Ogni guida diventa una serie di slide: il titolo e l'introduzione, poi, per ogni sezione, ogni immagine con il testo che la precede, e il testo dopo l'ultima immagine come slide di solo testo. Si naviga con i pulsanti o con la tastiera (frecce, Fine/Inizio, Esc per il menu); ogni slide ha il suo indirizzo (`#primo-avvio/3`). Va rigenerata quando si cambia una guida. Per controllarla senza aprire un browser: `node docs/slideshow/preview.js <cartella> [--lang en]` salva le schermate del menu e delle slide.
 
 ## Schermate
 
-Le schermate (`it/img/<guida>/`, una cartella per guida) sono generate da script Playwright (`screenshots/`), che avviano l'app su una cartella dati temporanea, come i test UI (`test/e2e/helpers.js`), e la aprono sopra un gioco simulato (Tiny Glade):
+Le schermate (`<lingua>/img/<guida>/`, una cartella per guida) sono generate da script Playwright (`screenshots/`), che avviano l'app su una cartella dati temporanea, come i test UI (`test/e2e/helpers.js`), e la aprono sopra un gioco simulato (Tiny Glade):
 
 ```sh
 npm run docs:screenshots                        # tutti i percorsi
 npm run docs:screenshots -- navigazione-libera  # solo quelli indicati
+npm run docs:screenshots -- --lang en           # in inglese (docs/en/img/)
 ```
 
 Ogni percorso è un modulo in `screenshots/paths/` (stesso nome della guida); `screenshots/run.js` li lancia e fornisce `start()` (l'app avviata, in italiano, con `shot()` per le schermate) e `hideBanner()` (nasconde i banner dei cookie dei siti, solo per le schermate).

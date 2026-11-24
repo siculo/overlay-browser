@@ -1,5 +1,5 @@
 // Genera la presentazione della documentazione utente: una pagina HTML
-// (docs/it/presentazione.html) con un menu delle guide e, per ogni guida,
+// (docs/<lingua>/<file>, vedi STRINGS) con un menu delle guide e, per ogni guida,
 // le sue slide, ricavate dai file .md:
 //   - il titolo e l'introduzione della guida: la prima slide;
 //   - in ogni sezione (##), ogni immagine con il testo che la precede: una
@@ -9,17 +9,18 @@
 // un percorso senza la sua guida è segnalato e saltato.
 // La pagina non ha bisogno di un server: le immagini sono quelle di
 // docs/it/img/, accanto alla pagina.
-//   npm run docs:slideshow
+//   npm run docs:slideshow             in italiano
+//   npm run docs:slideshow -- en       in un'altra lingua (docs/en/)
 const fs = require('fs');
 const path = require('path');
 
 const DOCS = path.join(__dirname, '..');
-const LANG = 'it';
-const OUT = path.join(DOCS, LANG, 'presentazione.html');
-
-// Il paragrafo che spiega le evidenziazioni, uguale in ogni guida: nella
-// presentazione è detto una volta sola, nel menu.
-const LEGEND = /^Nelle schermate gli elementi citati/;
+const STRINGS = require('./strings');
+const LANG = process.argv[2] || 'it';
+if (!STRINGS[LANG]) throw new Error(`lingua senza i testi della presentazione: ${LANG} (aggiungili a STRINGS)`);
+const S = STRINGS[LANG];
+const OUT = path.join(DOCS, LANG, S.file);
+const LEGEND = new RegExp('^' + S.legendStart);
 
 const escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -124,7 +125,13 @@ for (const g of guides) {
   }
 }
 
-const template = fs.readFileSync(path.join(__dirname, 'template.html'), 'utf8');
-const data = JSON.stringify({ guides }).replace(/</g, '\\u003c');
-fs.writeFileSync(OUT, template.replace('/*DATA*/null', data));
+const { file, legendStart, ...strings } = S;
+const template = fs.readFileSync(path.join(__dirname, 'template.html'), 'utf8')
+  .replace(/\{\{(\w+)\}\}/g, (m, k) => {
+    if (k === 'lang') return LANG;
+    if (!(k in strings)) throw new Error(`testo mancante: ${k}`);
+    return k === 'legend' ? strings[k] : escapeHtml(strings[k]);
+  });
+const data = JSON.stringify({ guides, strings }).replace(/</g, '\\u003c');
+fs.writeFileSync(OUT, template.replace('/*DATA*/null', () => data));
 console.log(`${path.relative(process.cwd(), OUT)}: ${guides.length} guide, ${guides.reduce((n, g) => n + g.slides.length, 0)} slide`);

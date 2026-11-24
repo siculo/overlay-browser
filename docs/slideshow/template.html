@@ -1,11 +1,12 @@
 <!doctype html>
-<!-- Modello della presentazione: build.js sostituisce i dati e scrive
-     docs/it/presentazione.html. Non modificare la pagina generata. -->
-<html lang="it">
+<!-- Modello della presentazione: build.js sostituisce i testi (segnaposti tra doppie graffe, da
+     STRINGS in build.js) e i dati e scrive docs/<lingua>/<file>.html. Non
+     modificare la pagina generata. -->
+<html lang="{{lang}}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Overlay Browser · Guida</title>
+<title>{{docTitle}}</title>
 <link rel="icon" href="../../assets/icon.png">
 <style>
   :root {
@@ -101,25 +102,24 @@
     <img src="../../assets/logo.png" alt="">
     <div>
       <h1>Overlay Browser</h1>
-      <p>Guida all'uso, passo per passo</p>
+      <p>{{subtitle}}</p>
     </div>
   </div>
-  <p class="legend">Nelle schermate gli elementi citati nel testo sono evidenziati da un riquadro rosso <span class="box"></span>;
-    i numeri come <span class="num">1</span> nel testo indicano l'elemento con lo stesso numero nella schermata.</p>
+  <p class="legend">{{legend}}</p>
   <ol id="guides"></ol>
 </main>
 
 <div id="deck" hidden>
   <header>
-    <a class="btn" href="#" title="Torna all'elenco delle guide (Esc)">☰ Guide</a>
+    <a class="btn" href="#" title="{{menuTitle}}">☰ {{menu}}</a>
     <span class="title" id="guide-title"></span>
     <span id="pos"></span>
   </header>
   <section id="slide" aria-live="polite"></section>
   <footer>
-    <button class="btn" id="prev" title="Slide precedente (←)">← Indietro</button>
+    <button class="btn" id="prev" title="{{prevTitle}}">← {{prev}}</button>
     <div id="dots" role="tablist"></div>
-    <button class="btn primary" id="next" title="Slide successiva (→)">Avanti →</button>
+    <button class="btn primary" id="next" title="{{nextTitle}}">{{next}} →</button>
   </footer>
 </div>
 
@@ -127,9 +127,10 @@
 
 <script>
 const DATA = /*DATA*/null;
+const S = DATA.strings;   // testi della pagina nella lingua delle guide
 const $ = (id) => document.getElementById(id);
 const guides = DATA.guides;
-const plural = (n) => (n === 1 ? '1 slide' : `${n} slide`);
+const plural = (n) => (n === 1 ? S.slideOne : S.slideOther.replace('{count}', n));
 
 // ---------- menu ----------
 $('guides').replaceChildren(...guides.map((g, i) => {
@@ -159,7 +160,7 @@ function showMenu() {
   current = null;
   $('deck').hidden = true;
   $('menu').hidden = false;
-  document.title = 'Overlay Browser · Guida';
+  document.title = S.docTitle;
 }
 
 const go = (i) => { location.hash = `${current.id}/${i + 1}`; };
@@ -179,12 +180,12 @@ function renderSlide(dir) {
   const text = document.createElement('div');
   text.className = 'text';
   if (s.intro) {
-    text.innerHTML = `<p class="section">Guida ${gi + 1} di ${guides.length}</p><h2></h2>${s.html}`;
+    text.innerHTML = `<p class="section">${S.guideOf.replace('{n}', gi + 1).replace('{total}', guides.length)}</p><h2></h2>${s.html}`;
     text.querySelector('h2').textContent = g.title;
   } else {
     text.innerHTML = `<p class="section"></p><h2></h2>${s.html}`;
     const m = s.heading.match(/^(\d+)\.\s+(.*)$/);
-    text.querySelector('.section').textContent = m ? `Passo ${m[1]}` : '';
+    text.querySelector('.section').textContent = m ? S.step.replace('{n}', m[1]) : '';
     text.querySelector('h2').textContent = m ? m[2] : s.heading;
   }
   const parts = [text];
@@ -211,9 +212,9 @@ function renderSlide(dir) {
     return b;
   }));
   $('prev').disabled = index === 0 && gi === 0;
-  $('prev').textContent = index === 0 && gi > 0 ? '← Guida precedente' : '← Indietro';
+  $('prev').textContent = index === 0 && gi > 0 ? `← ${S.prevGuide}` : `← ${S.prev}`;
   const last = index === g.slides.length - 1;
-  $('next').textContent = !last ? 'Avanti →' : nextGuide ? `Prossima guida: ${nextGuide.title} →` : 'Torna alle guide';
+  $('next').textContent = !last ? `${S.next} →` : nextGuide ? `${S.nextGuide.replace('{title}', nextGuide.title)} →` : S.backToGuides;
 }
 
 function next() {

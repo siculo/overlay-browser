@@ -1,6 +1,6 @@
 // Controllo della presentazione: la apre con l'Electron del progetto (non
 // serve un browser) e salva la schermata del menu e delle slide indicate.
-//   node docs/slideshow/preview.js <cartella> [<guida>/<n> ...]
+//   node docs/slideshow/preview.js <cartella> [--lang en] [<guida>/<n> ...]
 // Senza slide: il menu e la prima e l'ultima slide di ogni guida. Segnala
 // gli errori JavaScript della pagina.
 const fs = require('fs');
@@ -8,10 +8,16 @@ const path = require('path');
 const { _electron } = require('playwright');
 
 (async () => {
-  const [out, ...hashes] = process.argv.slice(2);
+  const args = process.argv.slice(2);
+  const at = args.indexOf('--lang');
+  const lang = at >= 0 ? args.splice(at, 2)[1] : 'it';
+  const [out, ...hashes] = args;
   if (!out) throw new Error('uso: node docs/slideshow/preview.js <cartella> [<guida>/<n> ...]');
   fs.mkdirSync(out, { recursive: true });
-  const env = { ...process.env };
+  // La pagina della lingua, con il nome scelto in strings.js.
+  const file = require('./strings')[lang]?.file;
+  if (!file) throw new Error(`lingua sconosciuta: ${lang}`);
+  const env = { ...process.env, DOCS_PAGE: path.join(__dirname, '..', lang, file) };
   delete env.ELECTRON_RUN_AS_NODE;
   const app = await _electron.launch({ args: [path.join(__dirname, 'preview', 'main.js')], env });
   try {

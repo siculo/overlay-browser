@@ -1,6 +1,6 @@
 ---
 name: user-docs
-description: Rigenera da zero la documentazione utente di Overlay Browser (guide Markdown con schermate e presentazione HTML) a partire dai percorsi d'uso di docs/percorsi.md. Solo quando l'utente lo chiede esplicitamente.
+description: Rigenera da zero la documentazione utente di Overlay Browser (guide Markdown con schermate e presentazione HTML) a partire dai percorsi d'uso di docs/percorsi.md, e la traduce nelle altre lingue (oggi inglese). Solo quando l'utente lo chiede esplicitamente.
 disable-model-invocation: true
 ---
 
@@ -34,11 +34,32 @@ Restano: `docs/screenshots/run.js`, `docs/screenshots/annotate.js`, `docs/slides
 
 Se durante la generazione trovi un **difetto dell'app**, non correggerlo qui: segnalalo all'utente (una correzione segue le regole dei branch di `AGENTS.md`), poi rigenera le schermate interessate.
 
+Dopo una rigenerazione delle guide italiane, le traduzioni sono superate: chiedi all'utente se aggiornarle subito (vedi *Traduzione*) o più avanti, e diglielo nel riepilogo.
+
+## Traduzione
+
+Le guide delle altre lingue (`docs/<lingua>/`, oggi `en`) sono traduzioni di quelle italiane, non si rigenerano dai percorsi: hanno gli stessi passi, le stesse immagini (rigenerate nella lingua) e gli stessi numeri negli stessi punti. Anche la traduzione si fa solo su richiesta esplicita, insieme all'utente.
+
+1. **Schermate.** `npm run docs:screenshots -- --lang <lingua>` (tutti i percorsi superano il tempo di un comando: lanciali a gruppi). L'app parte con l'interfaccia nella lingua, e le pagine dei siti la ricevono dal locale del sistema. Controlla ogni schermata come per l'italiano, in più: nessun testo italiano rimasto (dati d'esempio, percorsi del forum), banner dei cookie nella lingua (`hideBanner` con il loro testo nella lingua, in `tr()`).
+2. **Testi.** Traduci ogni `docs/it/<id>.md` in `docs/<lingua>/<id>.md` (stessi nomi dei file e delle immagini):
+   - nomi dell'interfaccia identici a `locales/<lingua>.json`;
+   - stessi numeri ❶ ❷ … negli stessi punti: controlla che la sequenza dei numeri di ogni guida sia identica a quella italiana;
+   - il paragrafo della legenda come in `docs/slideshow/strings.js` (`legendStart`: la presentazione lo riconosce da lì);
+   - link alle altre guide invariati (`<id>.md`); il README della lingua (`../../README.md` per l'inglese, con le sue ancore);
+   - stesso tono: seconda persona, frasi brevi.
+3. **Indice e presentazione.** L'elenco della lingua in `docs/README.md`; `npm run docs:slideshow -- <lingua>` e `node docs/slideshow/preview.js <cartella> --lang <lingua>`.
+
+**Una nuova lingua** richiede anche:
+- in `docs/screenshots/run.js` il suo locale in `LOCALES`;
+- in ogni `tr({ … })` degli script, di `run.js` e di `sites/forum.js` il testo nella lingua (`tr` si ferma se manca);
+- i testi della presentazione in `docs/slideshow/strings.js`.
+
 ## Script delle schermate
 
 Ogni percorso è un modulo `docs/screenshots/paths/<id>.js` che esporta una funzione `async () => {}`; `docs/screenshots/run.js` li esegue tutti o quelli indicati. Usa come esempio i moduli esistenti, se ci sono, o quelli nella storia git.
 
-- `start('<id>', prefs)` (da `../run`): avvia l'app vera su una cartella dati temporanea, in italiano, con le preferenze `prefs` (es. `{ lists: [...] , settings: {...} }`, costruite con `site()` e `list()` di `test/e2e/helpers.js`). Restituisce l'app dei test UI (`page`, `app`, `show(app)`, `hide()`, `test()`, `inSite()`, `dir`, `close()`) più `shot(nome, marks)`, che salva `docs/it/img/<id>/<nome>.png`. Chiudi sempre con `o.close()` in un `finally`.
+- **Nessun testo in una lingua negli script**: i testi dell'interfaccia (per trovare un pulsante, aspettare un'etichetta) con `t('chiave', params)` (da `../run`, da `locales/<lingua>.json`); i dati degli esempi (titoli dei siti, bookmark, pagine del forum, testi dei banner) con `tr({ it: '…', en: '…' })`. Così lo stesso script genera le schermate di ogni lingua.
+- `start('<id>', prefs)` (da `../run`): avvia l'app vera su una cartella dati temporanea, nella lingua delle schermate (`--lang`, italiano di default), con le preferenze `prefs` (es. `{ lists: [...] , settings: {...} }`, costruite con `site()` e `list()` di `test/e2e/helpers.js`). Restituisce l'app dei test UI (`page`, `app`, `show(app)`, `hide()`, `test()`, `inSite()`, `dir`, `close()`) più `shot(nome, marks)`, che salva `docs/it/img/<id>/<nome>.png`. Chiudi sempre con `o.close()` in un `finally`.
 - `GAME` (Tiny Glade) e `BROTATO` (da `../run`): le applicazioni sopra cui aprire l'overlay, `o.show(GAME)`; `o.show(null)`: nessuna applicazione (lista Generale).
 - Lo stato di partenza di un percorso ("Parte da" in `percorsi.md`) si costruisce con le preferenze, non ripetendo i percorsi precedenti: `tinyGladeList()` e `brotatoList()` (da `../run`) sono le liste degli esempi comuni.
 - Siti che non si possono usare davvero (un login con un account, pagine sempre uguali): `serveSite(o, host, pagine)` (da `../run`) serve un sito d'esempio su un dominio riservato agli esempi (`*.example`), senza rete; le pagine sono HTML o `{ type, body }`. Il forum d'esempio dei percorsi è `docs/screenshots/sites/forum.js` (accesso con una finestra, discussioni, link, un'immagine, un campo di testo): riusalo o estendilo. Nella guida va detto che è un sito d'esempio.

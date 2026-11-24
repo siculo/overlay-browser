@@ -6,24 +6,24 @@
 // come quelli veri (window.open con le dimensioni della finestra, che
 // comunica il risultato alla pagina che l'ha aperta).
 const { expect } = require('@playwright/test');
-const { start, serveSite, drawPopups, clearPopups, GAME, tinyGladeList } = require('../run');
+const { start, tr, serveSite, drawPopups, clearPopups, GAME, tinyGladeList } = require('../run');
 const { siteRect } = require('../annotate');
 const { site } = require('../../../test/e2e/helpers');
 
-const { HOST, URL: FORUM, PAGES } = require('../sites/forum');
+const { HOST, URL: FORUM, pages, title } = require('../sites/forum');
 
 module.exports = async () => {
-  const forum = site(FORUM, 'Forum di Tiny Glade');
+  const forum = site(FORUM, title());
   const lists = [tinyGladeList()];
   lists[0].sites.push(forum);
   const o = await start('accedere-ai-siti', { lists });
   const { page, shot } = o;
   const $ = (sel) => page.locator(sel);
-  const tab = $('#tabs .tab').filter({ hasText: 'Forum' });
+  const tab = $('#tabs .tab').nth(3);   // dopo i tre di Tiny Glade
   const popupCount = () => o.app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows().filter((w) => w.getParentWindow()).length);
   try {
-    await serveSite(o, HOST, PAGES);
+    await serveSite(o, HOST, pages());
     await o.show(GAME);
 
     // 1. Il forum, senza accesso.
@@ -47,7 +47,7 @@ module.exports = async () => {
       return w.webContents.executeJavaScript("document.getElementById('ok').click()");
     });
     await expect.poll(popupCount).toBe(0);
-    await expect.poll(() => o.inSite(FORUM, (d) => d.getElementById('account').textContent)).toContain('Giocatore');
+    await expect.poll(() => o.inSite(FORUM, (d) => d.getElementById('account').textContent)).toContain(tr({ it: 'Giocatore', en: 'Player' }));
     await page.waitForTimeout(800);
     await shot('03-accesso-fatto', [{ el: await siteRect(o, FORUM, '#account') }]);
 

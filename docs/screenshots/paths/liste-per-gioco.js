@@ -2,7 +2,7 @@
 // di Tiny Glade e di Brotato, la lista Generale, una lista scelta a mano,
 // tab riordinati, una lista rimossa.
 const { expect } = require('@playwright/test');
-const { start, GAME, BROTATO, tinyGladeList } = require('../run');
+const { start, t, GAME, BROTATO, tinyGladeList } = require('../run');
 
 const SITES = ['https://brotato.wiki.spellsandguns.com/', 'https://store.steampowered.com/app/1942280/'];
 
@@ -48,21 +48,21 @@ module.exports = async () => {
       { el: [tabs.nth(0), tabs.nth(2)], n: 1, at: 's' },
       { el: current.locator('.list-head'), n: 2, at: 'w' },
       { el: other('Brotato').locator('.list-head'), n: 3, at: 'w' },
-      { el: other('Brotato').locator('.list-head button', { hasText: 'Usa' }), n: 4, at: 's' },
+      { el: other('Brotato').locator('.list-head button', { hasText: t('lists.use') }), n: 4, at: 's' },
     ]);
 
     // 4. Nessun gioco: la lista Generale.
     await o.hide();
     await o.show(null);
     await $('#home-btn').click();
-    await expect(current.locator('.name')).toHaveText('Generale');
+    await expect(current.locator('.name')).toHaveText(t('lists.general'));
     await shot('04-generale', [{ el: current.locator('.list-head') }]);
 
     // 5. Una lista scelta a mano: Usa.
     await o.hide();
     await o.show(GAME);
     await $('#home-btn').click();
-    await other('Brotato').locator('.list-head button', { hasText: 'Usa' }).click();
+    await other('Brotato').locator('.list-head button', { hasText: t('lists.use') }).click();
     await page.mouse.move(990, 690);   // il puntatore sottolineerebbe il nome di una lista
     await expect($('#pinned')).toBeVisible();
     await expect(current.locator('.name')).toHaveText('Brotato');
@@ -91,7 +91,7 @@ module.exports = async () => {
 
     // 7. Rimuovere una lista.
     await page.waitForTimeout(800);
-    await other('Brotato').locator('.list-head button', { hasText: 'Rimuovi lista' }).click();
+    await other('Brotato').locator('.list-head button', { hasText: t('lists.remove') }).click();
     await expect($('#dialog-ok')).toBeVisible();
     await shot('07-rimuovi-lista', [{ el: $('#dialog-ok') }]);
     await $('#dialog-ok').click();

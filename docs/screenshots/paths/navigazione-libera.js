@@ -2,7 +2,7 @@
 // una ricerca nel tab Naviga, la pagina trovata fissata come tab della
 // lista di Tiny Glade.
 const { expect } = require('@playwright/test');
-const { start, hideBanner, GAME } = require('../run');
+const { start, tr, hideBanner, GAME } = require('../run');
 const { siteRect } = require('../annotate');
 const { site, list } = require('../../../test/e2e/helpers');
 
@@ -15,7 +15,7 @@ module.exports = async () => {
     // La lista creata nel percorso "Primo avvio".
     lists: [list({ exe: 'tiny-glade' }, [
       site('https://tinyglade.com/', 'Tiny Glade'),
-      site('https://store.steampowered.com/app/2198150/', 'Tiny Glade su Steam'),
+      site('https://store.steampowered.com/app/2198150/', tr({ it: 'Tiny Glade su Steam', en: 'Tiny Glade on Steam' })),
     ], { name: 'Tiny Glade' })],
   });
   const { page, shot } = o;
@@ -47,7 +47,7 @@ module.exports = async () => {
       [...d.querySelectorAll('a')].find((a) => a.textContent.includes('Tiny Glade Wiki')).click());
     await expect($('#nav-url')).toHaveValue(new RegExp('^' + WIKI));
     await page.waitForTimeout(3000);
-    await hideBanner(o, WIKI, 'Abbiamo a cuore la tua privacy');
+    await hideBanner(o, WIKI, tr({ it: 'Abbiamo a cuore la tua privacy', en: 'We value your privacy' }));
     await shot('03-pagina-trovata', [
       { el: $('#nav-back'), n: 1, at: 's' },
       { el: $('#nav-pin'), n: 2, at: 's' },

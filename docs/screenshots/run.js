@@ -1,15 +1,44 @@
-// Genera le schermate della documentazione utente (docs/it/img/<guida>/).
-//   npm run docs:screenshots              tutti i percorsi
-//   npm run docs:screenshots -- <nome>    solo i percorsi indicati (paths/<nome>.js)
+// Genera le schermate della documentazione utente (docs/<lingua>/img/<guida>/).
+//   npm run docs:screenshots                         tutti i percorsi, in italiano
+//   npm run docs:screenshots -- <nome> ...           solo i percorsi indicati (paths/<nome>.js)
+//   npm run docs:screenshots -- --lang en [<nome>]   in un'altra lingua
 // Ogni percorso avvia l'app vera su una cartella dati temporanea (come i
-// test UI, test/e2e/helpers.js) con l'interfaccia in italiano. Usa la rete:
-// i siti mostrati sono reali.
+// test UI, test/e2e/helpers.js) con l'interfaccia nella lingua scelta; anche
+// le pagine dei siti la ricevono (locale del sistema per Chromium). Usa la
+// rete: i siti mostrati sono reali.
+//
+// Gli script dei percorsi non contengono testi in una lingua: quelli
+// dell'interfaccia vengono da locales/<lingua>.json (t()), quelli degli
+// esempi (titoli dei siti, bookmark, il forum) sono dati per lingua (tr()).
 const fs = require('fs');
 const path = require('path');
 const { launch, site, list } = require('../../test/e2e/helpers');
 const { annotate, clearAnnotations } = require('./annotate');
 
-const OUT = path.join(__dirname, '..', 'it', 'img');
+const DOCS = path.join(__dirname, '..');
+const ROOT = path.join(DOCS, '..');
+
+// La lingua delle schermate: scelta da --lang (vedi sotto), italiano se no.
+let LANG = 'it';
+const lang = () => LANG;
+// Locale del sistema per Chromium, per lingua: decide la lingua chiesta ai
+// siti (Accept-Language, navigator.language).
+const LOCALES = { it: 'it_IT', en: 'en_US', fr: 'fr_FR', de: 'de_DE', es: 'es_ES', pt: 'pt_PT', ru: 'ru_RU' };
+
+// I testi dell'interfaccia nella lingua delle schermate, come li mostra
+// l'app (locales/<lingua>.json, con i segnaposto {nome}).
+let messages = null;
+function t(key, params = {}) {
+  messages ??= JSON.parse(fs.readFileSync(path.join(ROOT, 'locales', `${LANG}.json`), 'utf8'));
+  const text = messages[key];
+  if (text === undefined) throw new Error(`testo mancante in locales/${LANG}.json: ${key}`);
+  return text.replace(/\{(\w+)\}/g, (m, name) => params[name] ?? m);
+}
+// Un testo degli esempi nella lingua delle schermate: tr({ it: '…', en: '…' }).
+function tr(texts) {
+  if (!(LANG in texts)) throw new Error(`esempio senza la lingua ${LANG}: ${JSON.stringify(texts)}`);
+  return texts[LANG];
+}
 // Il gioco sopra cui si apre l'overlay negli esempi (simulato).
 const GAME = { exe: 'tiny-glade', name: 'Tiny Glade', title: 'Tiny Glade' };
 // Il secondo gioco degli esempi (eseguibile come su Linux).
@@ -20,22 +49,23 @@ const BROTATO = { exe: 'Brotato.x86_64', name: 'Brotato', title: 'Brotato' };
 // start(id, { lists: [tinyGladeList()] }).
 const tinyGladeList = () => list({ exe: 'tiny-glade' }, [
   site('https://tinyglade.com/', 'Tiny Glade'),
-  site('https://store.steampowered.com/app/2198150/', 'Tiny Glade su Steam'),
+  site('https://store.steampowered.com/app/2198150/', tr({ it: 'Tiny Glade su Steam', en: 'Tiny Glade on Steam' })),
   site('https://tinyglade.wiki.gg/', 'Tiny Glade Wiki'),
 ], { name: 'Tiny Glade' });
 const brotatoList = () => list({ exe: 'brotato.x86_64' }, [
   site('https://brotato.wiki.spellsandguns.com/', 'Brotato Wiki'),
-  site('https://store.steampowered.com/app/1942280/', 'Brotato su Steam'),
+  site('https://store.steampowered.com/app/1942280/', tr({ it: 'Brotato su Steam', en: 'Brotato on Steam' })),
 ], { name: 'Brotato' });
 
-// Avvia l'app con le preferenze `prefs` (più l'italiano) e restituisce
+// Avvia l'app con le preferenze `prefs` (più la lingua) e restituisce
 // l'app (helpers.launch) con shot(nome, marks): schermata della finestra con
 // le evidenziazioni `marks` (vedi annotate.js), salvata in
-// OUT/<guide>/<nome>.png (`guide`: il nome della guida, docs/it/<guide>.md).
+// docs/<lingua>/img/<guide>/<nome>.png (`guide`: il nome della guida,
+// docs/<lingua>/<guide>.md).
 async function start(guide, { settings, ...prefs } = {}) {
-  const dir = path.join(OUT, guide);
+  const dir = path.join(DOCS, LANG, 'img', guide);
   fs.mkdirSync(dir, { recursive: true });
-  const o = await launch({ prefs: { settings: { language: 'it', ...settings }, ...prefs }, show: false });
+  const o = await launch({ prefs: { settings: { language: LANG, ...settings }, ...prefs }, show: false });
   o.shot = async (name, marks = []) => {
     await o.page.waitForTimeout(500);
     await annotate(o.page, marks);
@@ -47,7 +77,8 @@ async function start(guide, { settings, ...prefs } = {}) {
 }
 
 // Nasconde nella pagina del sito (indirizzo che inizia con `urlPrefix`) il
-// banner dei cookie: gli elementi figli del body che contengono `text`,
+// banner dei cookie: gli elementi figli del body che contengono `text` (il
+// testo del banner, che dipende dalla lingua: es. tr({ it: …, en: … })),
 // aspettati fino a 10 s, e anche quelli ricreati in seguito (alcuni banner
 // si ricreano se tolti). Solo per la schermata: copre la pagina, e accettare
 // o rifiutare i cookie non è il soggetto della guida.
@@ -203,13 +234,22 @@ const clearMenu = (o) => o.page.evaluate(() => document.getElementById('doc-menu
 // Esegue la voce `label` dell'ultimo menu contestuale registrato.
 const menuClick = (o, label) => o.app.evaluate((_e, l) => global.docMenus.at(-1).find((i) => i.label === l).click(), label);
 
-module.exports = { start, hideBanner, serveSite, drawPopups, clearPopups, contextMenu, clearMenu, menuClick, GAME, BROTATO, tinyGladeList, brotatoList };
+module.exports = { start, lang, t, tr, hideBanner, serveSite, drawPopups, clearPopups, contextMenu, clearMenu, menuClick, GAME, BROTATO, tinyGladeList, brotatoList };
 
 if (require.main === module) {
   (async () => {
+    const args = process.argv.slice(2);
+    const at = args.indexOf('--lang');
+    if (at >= 0) [, LANG] = args.splice(at, 2);
+    if (!LOCALES[LANG] || !fs.existsSync(path.join(ROOT, 'locales', `${LANG}.json`))) throw new Error(`lingua sconosciuta: ${LANG}`);
+    // La lingua del sistema per Chromium (pagine dei siti), ereditata
+    // dall'app avviata da helpers.launch.
+    process.env.LANG = process.env.LC_ALL = `${LOCALES[LANG]}.UTF-8`;
+    process.env.LANGUAGE = `${LOCALES[LANG]}:${LANG}`;
+    console.log(`lingua: ${LANG}`);
     const dir = path.join(__dirname, 'paths');
     const all = fs.readdirSync(dir).filter((f) => f.endsWith('.js')).map((f) => f.slice(0, -3)).sort();
-    const names = process.argv.length > 2 ? process.argv.slice(2) : all;
+    const names = args.length ? args : all;
     for (const name of names) {
       if (!all.includes(name)) throw new Error(`percorso sconosciuto: ${name} (disponibili: ${all.join(', ')})`);
       console.log(name);

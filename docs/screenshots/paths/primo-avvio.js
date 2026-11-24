@@ -1,7 +1,7 @@
 // Percorso "Primo avvio" (docs/it/primo-avvio.md): l'overlay aperto per la
 // prima volta sopra Tiny Glade, due siti aggiunti alla sua lista.
 const { expect } = require('@playwright/test');
-const { start, hideBanner, GAME } = require('../run');
+const { start, tr, hideBanner, GAME } = require('../run');
 
 const SITES = ['https://tinyglade.com', 'https://store.steampowered.com/app/2198150/'];
 
@@ -60,7 +60,7 @@ module.exports = async () => {
     // 5. Il secondo sito aperto: due tab nella barra.
     await tabs.nth(1).click();
     await page.waitForTimeout(3000);
-    await hideBanner(o, 'https://store.steampowered.com', 'Rifiuta tutti');
+    await hideBanner(o, 'https://store.steampowered.com', tr({ it: 'Rifiuta tutti', en: 'Reject All' }));
     await shot('05-due-tab', [
       { el: tabs.nth(0), n: 1, at: 's' },
       { el: tabs.nth(1), n: 2, at: 's' },

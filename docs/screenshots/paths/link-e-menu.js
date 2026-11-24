@@ -5,16 +5,16 @@
 // di testo. Il sito è il forum d'esempio (sites/forum.js); il menu
 // contestuale, nativo, è disegnato dalle sue voci (contextMenu in run.js).
 const { expect } = require('@playwright/test');
-const { start, serveSite, contextMenu, clearMenu, menuClick, GAME, tinyGladeList } = require('../run');
+const { start, t, serveSite, contextMenu, clearMenu, menuClick, GAME, tinyGladeList } = require('../run');
 const { siteRect } = require('../annotate');
 const { site } = require('../../../test/e2e/helpers');
-const { HOST, URL: FORUM, PAGES } = require('../sites/forum');
+const { HOST, URL: FORUM, pages, title, topicUrl } = require('../sites/forum');
 
-const TOPIC = `${FORUM}discussione`;
 
 module.exports = async () => {
+  const TOPIC = topicUrl();
   const lists = [tinyGladeList()];
-  lists[0].sites.push(site(FORUM, 'Forum di Tiny Glade'));
+  lists[0].sites.push(site(FORUM, title()));
   const o = await start('link-e-menu', { lists });
   const { page, shot } = o;
   const $ = (sel) => page.locator(sel);
@@ -23,7 +23,7 @@ module.exports = async () => {
   const item = (label) => $('#doc-menu .item').filter({ hasText: label });
   const loaded = (url) => expect.poll(() => page.locator('#nav-url').inputValue()).toBe(url);
   try {
-    await serveSite(o, HOST, PAGES);
+    await serveSite(o, HOST, pages());
     await o.show(GAME);
     await forumTab.click();
     await expect.poll(() => o.inSite(FORUM, (d) => !!d.getElementById('topic'))).toBe(true);
@@ -51,13 +51,13 @@ module.exports = async () => {
     // 4. Il menu contestuale di un link.
     await contextMenu(o, TOPIC, '#other');
     await shot('04-menu-link', [
-      { el: item('Apri link in un nuovo tab'), n: 1, at: 'e' },
-      { el: item('Copia link'), n: 2, at: 'e' },
+      { el: item(t('edit.openLink')), n: 1, at: 'e' },
+      { el: item(t('edit.copyLink')), n: 2, at: 'e' },
     ]);
     await clearMenu(o);
 
     // 5. Apri link in un nuovo tab: la conferma.
-    await menuClick(o, 'Apri link in un nuovo tab');
+    await menuClick(o, t('edit.openLink'));
     await expect($('#dialog-ok')).toBeVisible();
     await shot('05-conferma-tab', [{ el: $('#dialog-ok') }]);
 
@@ -72,7 +72,7 @@ module.exports = async () => {
     await loaded(TOPIC);
     await page.waitForTimeout(800);
     await contextMenu(o, TOPIC, '#picture');
-    await shot('07-menu-immagine', [{ el: item('Copia immagine') }]);
+    await shot('07-menu-immagine', [{ el: item(t('edit.copyImage')) }]);
     await clearMenu(o);
 
     // 8. Il menu di un campo di testo.
