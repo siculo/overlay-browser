@@ -8,31 +8,31 @@ La fonte è l'elenco dei percorsi, [percorsi.md](percorsi.md): le guide, le sche
 
 ## Italiano
 
-- [Primo avvio: i siti del tuo gioco a portata di mano](it/primo-avvio.md)
-- [Navigazione libera: cerca, trova, fissa](it/navigazione-libera.md)
-- [Una lista per ogni gioco](it/liste-per-gioco.md)
-- [Importare ed esportare i bookmark](it/importa-bookmark.md)
-- [Personalizzare l'overlay](it/personalizza.md)
-- [Memoria e pagine chiuse](it/memoria.md)
-- [Nuove versioni](it/nuove-versioni.md)
-- [Accedere a un sito e i cookie](it/accedere-ai-siti.md)
-- [Link, nuovi tab e menu contestuale](it/link-e-menu.md)
-- [Risoluzione dei problemi](it/problemi.md)
+- [Primo avvio: i siti del tuo gioco a portata di mano](it/getting-started.md)
+- [Navigazione libera: cerca, trova, fissa](it/free-browsing.md)
+- [Una lista per ogni gioco](it/lists-per-game.md)
+- [Importare ed esportare i bookmark](it/bookmarks.md)
+- [Personalizzare l'overlay](it/customizing.md)
+- [Memoria e pagine chiuse](it/memory.md)
+- [Nuove versioni](it/new-versions.md)
+- [Accedere a un sito e i cookie](it/signing-in.md)
+- [Link, nuovi tab e menu contestuale](it/links-and-menu.md)
+- [Risoluzione dei problemi](it/troubleshooting.md)
 
 Le stesse guide come presentazione: [it/presentazione.html](it/presentazione.html) (da aprire nel browser, anche senza server).
 
 ## English
 
-- [Getting started: your game's sites at hand](en/primo-avvio.md)
-- [Free browsing: search, find, pin](en/navigazione-libera.md)
-- [One list per game](en/liste-per-gioco.md)
-- [Importing and exporting bookmarks](en/importa-bookmark.md)
-- [Customizing the overlay](en/personalizza.md)
-- [Memory and closed pages](en/memoria.md)
-- [New versions](en/nuove-versioni.md)
-- [Signing in to a site and cookies](en/accedere-ai-siti.md)
-- [Links, new tabs and the context menu](en/link-e-menu.md)
-- [Troubleshooting](en/problemi.md)
+- [Getting started: your game's sites at hand](en/getting-started.md)
+- [Free browsing: search, find, pin](en/free-browsing.md)
+- [One list per game](en/lists-per-game.md)
+- [Importing and exporting bookmarks](en/bookmarks.md)
+- [Customizing the overlay](en/customizing.md)
+- [Memory and closed pages](en/memory.md)
+- [New versions](en/new-versions.md)
+- [Signing in to a site and cookies](en/signing-in.md)
+- [Links, new tabs and the context menu](en/links-and-menu.md)
+- [Troubleshooting](en/troubleshooting.md)
 
 The same guides as a slideshow: [en/slideshow.html](en/slideshow.html).
 
@@ -45,7 +45,7 @@ npm run docs:slideshow          # italiano
 npm run docs:slideshow -- en    # inglese
 ```
 
-Le guide e il loro ordine sono quelli di `percorsi.md` (un percorso senza la sua guida è segnalato e saltato). Ogni guida diventa una serie di slide: il titolo e l'introduzione, poi, per ogni sezione, ogni immagine con il testo che la precede, e il testo dopo l'ultima immagine come slide di solo testo. Si naviga con i pulsanti o con la tastiera (frecce, Fine/Inizio, Esc per il menu); ogni slide ha il suo indirizzo (`#primo-avvio/3`). Va rigenerata quando si cambia una guida. Per controllarla senza aprire un browser: `node docs/slideshow/preview.js <cartella> [--lang en]` salva le schermate del menu e delle slide.
+Le guide e il loro ordine sono quelli di `percorsi.md` (un percorso senza la sua guida è segnalato e saltato). Ogni guida diventa una serie di slide: il titolo e l'introduzione, poi, per ogni sezione, ogni immagine con il testo che la precede, e il testo dopo l'ultima immagine come slide di solo testo. Si naviga con i pulsanti o con la tastiera (frecce, Fine/Inizio, Esc per il menu); ogni slide ha il suo indirizzo (`#getting-started/3`). Va rigenerata quando si cambia una guida. Per controllarla senza aprire un browser: `node docs/slideshow/preview.js <cartella> [--lang en]` salva le schermate del menu e delle slide.
 
 ## Schermate
 
@@ -53,7 +53,7 @@ Le schermate (`<lingua>/img/<guida>/`, una cartella per guida) sono generate da 
 
 ```sh
 npm run docs:screenshots                        # tutti i percorsi
-npm run docs:screenshots -- navigazione-libera  # solo quelli indicati
+npm run docs:screenshots -- free-browsing  # solo quelli indicati
 npm run docs:screenshots -- --lang en           # in inglese (docs/en/img/)
 ```
 

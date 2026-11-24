@@ -66,7 +66,7 @@ Ogni percorso è un modulo `docs/screenshots/paths/<id>.js` che esporta una funz
 - Finestre aperte dai siti (es. il login): sono finestre a sé, fuori dalla schermata. `drawPopups(o)` le disegna sopra l'overlay (evidenziabili come `'#doc-popups .popup'`), `clearPopups(o)` le toglie.
 - Menu contestuale (nativo, fuori dalla schermata): `contextMenu(o, urlPrefix, selettore)` fa clic con il tasto destro su un elemento della pagina di un sito e disegna il menu con le voci vere dell'app nel punto del clic (voci evidenziabili come `'#doc-menu .item'`); `clearMenu(o)` lo toglie, `menuClick(o, voce)` esegue una voce.
 - **Evidenziazioni**, `marks`: `[{ el, n, at, len }]` (`annotate.js`). `el`: un locator, un array di locator (un riquadro che li contiene) o un rettangolo, ad esempio di un elemento dentro la pagina di un sito con `siteRect(o, urlPrefix, selettore, testo)`; `n`: il numero (omesso se l'elemento evidenziato è uno solo); `at`: dove mettere il numero (`n`, `s`, `e`, `w`, `ne`, …); `len`: linea più lunga, per staccare il numero da altri riquadri. Numera nell'ordine in cui il testo cita gli elementi.
-- Nomi delle schermate: `NN-descrizione` (`01-home-vuota`), nell'ordine in cui compaiono nella guida.
+- Nomi delle schermate: `NN-descrizione` (`01-empty-home`), nell'ordine in cui compaiono nella guida.
 - Pagine dei siti:
   - banner dei cookie: `hideBanner(o, urlPrefix, testo)` (da `../run`) li nasconde, anche se il sito li ricrea;
   - ricerche: `settings: { searchEngine: 'duckduckgo' }` (Google risponde con un captcha, che mostra anche l'indirizzo IP);

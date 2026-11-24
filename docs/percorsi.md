@@ -23,7 +23,7 @@ Note: limiti, cose da non mostrare, dubbi da chiarire.
 - Siti reali dei giochi (sito ufficiale, pagina Steam, wiki); i bookmark sono di esempio, mai quelli dell'utente.
 - I percorsi successivi partono dallo stato lasciato da quelli precedenti: la lista di Tiny Glade con il sito ufficiale, la pagina Steam e la wiki.
 
-## primo-avvio — Primo avvio: i siti del tuo gioco a portata di mano
+## getting-started — Primo avvio: i siti del tuo gioco a portata di mano
 
 Obiettivo: aprire l'overlay sopra un gioco, aggiungere i primi siti alla sua lista, nasconderlo e riaprirlo.
 Esempio: Tiny Glade; siti tinyglade.com e la pagina Steam del gioco.
@@ -37,7 +37,7 @@ Passi:
 - nascondere l'overlay (combinazione o clic sul gioco) e riaprirlo sull'ultimo tab (solo testo)
 Note: l'area di notifica e la combinazione di tasti non si possono riprendere.
 
-## navigazione-libera — Navigazione libera: cerca, trova, fissa
+## free-browsing — Navigazione libera: cerca, trova, fissa
 
 Obiettivo: cercare e aprire pagine qualsiasi nel tab Naviga, e tenere quelle utili con Fissa.
 Esempio: la ricerca "tiny glade wiki", la Tiny Glade Wiki.
@@ -52,7 +52,7 @@ Passi:
 - un indirizzo di un altro sito scritto in un tab di un sito si apre in Naviga, dopo una conferma (solo testo)
 Note: le ricerche con DuckDuckGo (Google risponde alle ricerche automatiche con un captcha); dirlo nel testo.
 
-## liste-per-gioco — Una lista per ogni gioco
+## lists-per-game — Una lista per ogni gioco
 
 Obiettivo: capire che ogni gioco (o programma) ha la sua lista, la lista Generale, scegliere una lista a mano, riordinare, rimuovere una lista.
 Esempio: Tiny Glade e Brotato (Brotato Wiki, pagina Steam di Brotato).
@@ -66,7 +66,7 @@ Passi:
 - Rimuovi lista, con la conferma
 Note: una lista viene creata con il primo sito; la Generale non si può rimuovere.
 
-## importa-bookmark — Importare ed esportare i bookmark
+## bookmarks — Importare ed esportare i bookmark
 
 Obiettivo: importare nelle liste i bookmark di un browser o di un file, ed esportare le liste.
 Esempio: bookmark di esempio in finti profili di Google Chrome e Brave, con una cartella Giochi/Brotato e Giochi/Tiny Glade; la lista di Brotato ancora nuova.
@@ -79,7 +79,7 @@ Passi:
 - l'esportazione: tutti i bookmark, l'elenco per lista, Esporta N siti
 Note: su macOS solo da file; i browser supportati come nel README.
 
-## personalizza — Personalizzare l'overlay
+## customizing — Personalizzare l'overlay
 
 Obiettivo: cambiare la combinazione di tasti, il comportamento, l'aspetto e la lingua.
 Esempio: accento blu, tab fissi solo icona.
@@ -93,7 +93,7 @@ Passi:
 - le altre sezioni (Memoria, Diagnostica), rimandando alle loro guide (solo testo)
 Note: non registrare davvero una combinazione (sarebbe una scorciatoia globale del sistema); l'opacità non si vede nelle schermate.
 
-## memoria — Memoria e pagine chiuse
+## memory — Memoria e pagine chiuse
 
 Obiettivo: capire perché una pagina si ricarica, e controllare e liberare la memoria.
 Esempio: pagine aperte nelle liste di Tiny Glade e di Brotato.
@@ -105,7 +105,7 @@ Passi:
 - la memoria dopo aver chiuso le pagine di una lista
 Note: le cifre sono quelle misurate durante la generazione.
 
-## nuove-versioni — Nuove versioni
+## new-versions — Nuove versioni
 
 Obiettivo: riconoscere l'avviso di una nuova versione e sapere come e quando l'app controlla.
 Esempio: la versione 1.1.0 simulata.
@@ -116,7 +116,7 @@ Passi:
 - quando controlla (all'avvio, ogni 6 ore, beta solo da una beta); l'opzione nelle Impostazioni; la versione del Microsoft Store
 Note: in test l'app non controlla le versioni: la nuova versione si simula mandandola alla pagina.
 
-## accedere-ai-siti — Accedere a un sito e i cookie
+## signing-in — Accedere a un sito e i cookie
 
 Obiettivo: accedere con un account a un sito nell'overlay ed eliminare i cookie di un sito.
 Esempio: un sito con "Continua con Google".
@@ -127,7 +127,7 @@ Passi:
 - quando serve: uscire da un account, un sito che non funziona più
 Note: il login vero non si può automatizzare (account reale): schermate di una pagina di prova o fatte a mano; da decidere con l'utente.
 
-## link-e-menu — Link, nuovi tab e menu contestuale
+## links-and-menu — Link, nuovi tab e menu contestuale
 
 Obiettivo: sapere cosa succede ai link che i siti aprono in un nuovo tab e usare il menu del tasto destro.
 Esempio: link della Tiny Glade Wiki.
@@ -138,7 +138,7 @@ Passi:
 - tasto destro su un'immagine o su un testo: Copia immagine, Copia, Seleziona tutto; nei campi di testo Annulla, Taglia, Incolla
 Note: il menu contestuale è nativo, Playwright non lo vede: disegnarlo dalle sue voci o schermate fatte a mano; da decidere con l'utente.
 
-## problemi — Risoluzione dei problemi
+## troubleshooting — Risoluzione dei problemi
 
 Obiettivo: risolvere i problemi più comuni e raccogliere le informazioni per una segnalazione.
 Esempio: nessuno in particolare.

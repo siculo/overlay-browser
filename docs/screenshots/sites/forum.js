@@ -1,5 +1,5 @@
 // Il forum d'esempio dei percorsi che non possono usare un sito vero
-// (accedere-ai-siti: il login; link-e-menu: link, immagini e campi di testo
+// (signing-in: il login; links-and-menu: link, immagini e campi di testo
 // sempre uguali). Servito da serveSite() (run.js) sul dominio riservato agli
 // esempi forum.example: nella guida va detto che è un sito d'esempio.
 // I testi sono nella lingua delle schermate (tr() di run.js): le pagine si
