@@ -211,9 +211,8 @@
   .page h1 { margin: 0 0 16px; font-weight: 500; font-size: 22px; }
   .page h2 { margin: 40px 0 14px; font-weight: 500; font-size: 16px; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; }
   .page h1 + h2 { margin-top: 8px; }
-  /* Head of the Home: logo and app name, below it the version, the newer
-     version and the project link */
-  #home-info { display: flex; align-items: center; gap: 14px; max-width: 720px; margin-bottom: 48px; padding-bottom: 20px; border-bottom: 1px solid #333; }
+  #home-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; max-width: 720px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #333; }
+  #home-info { display: flex; align-items: center; gap: 14px; }
   #app-logo { flex: none; height: 44px; }
   /* name and version 3 px above the logo's center, to line up with it */
   #home-info > div { position: relative; top: -3px; }
@@ -222,6 +221,10 @@
   #app-version { font-variant-numeric: tabular-nums; user-select: text; }
   #app-repo, #app-update-link { color: var(--accent-text); text-decoration: none; }
   #app-repo:hover, #app-update-link:hover { text-decoration: underline; }
+  #app-guide { flex: none; min-height: 36px; padding: 6px 16px; }
+  #guide-page { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  #guide-toolbar { padding: 6px 12px; border-bottom: 1px solid #333; }
+  #guide { flex: 1; min-height: 0; width: 100%; border: 0; }
   #app-update-link { font-weight: 500; }
   .setting.check { align-items: flex-start; cursor: pointer; max-width: 720px; }
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
@@ -353,12 +356,15 @@
   </div>
 
   <div id="home">
-    <div id="home-info">
-      <img id="app-logo" src="assets/logo.png" alt="">
-      <div>
-        <div id="app-name">overlay browser</div>
-        <div id="app-meta"><span id="app-version"></span><span id="app-update" hidden> · <a href="#" id="app-update-link"></a></span> · <a href="#" id="app-repo">GitHub</a></div>
+    <div id="home-header">
+      <div id="home-info">
+        <img id="app-logo" src="assets/logo.png" alt="">
+        <div>
+          <div id="app-name">overlay browser</div>
+          <div id="app-meta"><span id="app-version"></span><span id="app-update" hidden> · <a href="#" id="app-update-link"></a></span> · <a href="#" id="app-repo">GitHub</a></div>
+        </div>
       </div>
+      <button type="button" id="app-guide" class="primary" data-i18n="home.guide"></button>
     </div>
     <div class="notice" id="pinned" hidden>
       <span id="pinned-label"></span>
@@ -380,6 +386,13 @@
         <button id="export-btn" data-i18n="home.exportBookmarks"></button>
       </div>
     </section>
+  </div>
+
+  <div id="guide-page" hidden>
+    <div id="guide-toolbar">
+      <button type="button" id="guide-home"><span aria-hidden="true">←</span> <span data-i18n="home.guideBack"></span></button>
+    </div>
+    <iframe id="guide" data-i18n-title="home.guide" sandbox="allow-scripts allow-popups"></iframe>
   </div>
 
   <div id="settings" class="page" hidden>
@@ -543,6 +556,8 @@
   const $ = (id) => document.getElementById(id);
   const homeBtn = $('home-btn'), tabsEl = $('tabs'), leftBtn = $('left'), rightBtn = $('right');
   const home = $('home'), listsEl = $('lists'), views = $('views');
+  const guide = $('guide');
+  const guidePage = $('guide-page'), guideButton = $('app-guide'), guideHome = $('guide-home');
   const settingsBtn = $('settings-btn'), settingsPage = $('settings'), browseBtn = $('browse-btn');
 
   // ---------- site lists ----------
@@ -775,6 +790,7 @@
     watchMemory(id === SETTINGS);
     if (isSite(id)) getWebview(id);
     home.hidden = id !== null;
+    guidePage.hidden = true;
     settingsPage.hidden = id !== SETTINGS;
     views.hidden = !isSite(id);
     for (const [wid, wv] of webviews) wv.style.display = wid === id ? 'flex' : 'none';
@@ -2301,6 +2317,16 @@
   });
 
   homeBtn.onclick = () => activate(null);
+  guideButton.onclick = () => {
+    if (guide.getAttribute('src') !== i18n.guideUrl) guide.src = i18n.guideUrl;
+    home.hidden = true;
+    guidePage.hidden = false;
+    guideHome.focus();
+  };
+  guideHome.onclick = () => {
+    activate(null);
+    guideButton.focus();
+  };
   browseBtn.onclick = () => activate(BROWSE);
   settingsBtn.onclick = () => activate(SETTINGS);
   window.overlay.onSettings(() => activate(SETTINGS));

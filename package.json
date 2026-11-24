@@ -50,6 +50,8 @@
       "locales/**/*",
       "lists/**/*.json",
       "assets/**/*",
+      "docs/*/slideshow.html",
+      "docs/*/img/**/*.png",
       "package.json"
     ],
     "win": {

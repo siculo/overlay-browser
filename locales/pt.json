@@ -58,6 +58,8 @@
   "home.bookmarks": "Favoritos",
   "home.bookmarksDesc": "Importe para as listas os favoritos dos navegadores, ou exporte as listas para um arquivo de favoritos para abrir em um navegador.",
   "home.version": "Versão {version}",
+  "home.guide": "Guia",
+  "home.guideBack": "Voltar ao início",
   "home.empty": "Nenhum site. Adicione um abaixo.",
 
   "lists.general": "Geral",

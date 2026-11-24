@@ -1,6 +1,7 @@
-const { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, screen, session, shell, Tray, webContents } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, globalShortcut, ipcMain, Menu, nativeImage, net, protocol, screen, session, shell, Tray, webContents } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { pathToFileURL } = require('node:url');
 const platform = require('./platform');
 const bookmarks = require('./bookmarks');
 const { OPACITY_RANGE, UNLOAD_RANGE, isValidSetting, loadSettings } = require('./settings');
@@ -9,6 +10,10 @@ const { parseAccelerator } = require('./accelerator');
 const { contextMenuItems } = require('./context-menu');
 
 platform.configureApp(app);
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'overlay-guide', privileges: { standard: true, secure: true } },
+]);
 
 // Low-level keyboard hook (see below), only where the platform supports it.
 // Loaded here rather than with a plain require so that a missing native
@@ -168,8 +173,12 @@ function t(key, params = {}) {
 
 // Everything the page needs to translate itself and build the language list.
 function i18nState() {
+  const language = currentLanguage();
+  const guideLanguage = fs.existsSync(path.join(__dirname, 'docs', language, 'slideshow.html'))
+    ? language : FALLBACK_LANGUAGE;
   return {
-    language: currentLanguage(),
+    language,
+    guideUrl: `overlay-guide://local/docs/${guideLanguage}/slideshow.html`,
     system: systemLanguage(),
     languages: Object.keys(locales).sort().map((code) => ({ code, name: locales[code]['language.name'] || code })),
     messages: currentMessages(),
@@ -1179,6 +1188,15 @@ if (!app.requestSingleInstanceLock()) {
 function start() {
   prefs = loadPrefs();
   setupClientHints();
+  // Serve only the bundled guide files so its sandboxed frame can load images.
+  protocol.handle('overlay-guide', (request) => {
+    const { host, pathname } = new URL(request.url);
+    const guideFile = /^\/docs\/([a-zA-Z0-9-]+)\/(?:slideshow\.html|img\/[a-z0-9-]+\/[a-z0-9-]+\.png)$/.exec(pathname);
+    if (host !== 'local' || (pathname !== '/assets/logo.png' && !Object.hasOwn(locales, guideFile?.[1]))) {
+      return new Response(null, { status: 404 });
+    }
+    return net.fetch(pathToFileURL(path.join(__dirname, pathname)).href);
+  });
   log('verbose log on');   // with the verbose log, the session line is written at startup
 
   win = new BrowserWindow({
@@ -1196,6 +1214,15 @@ function start() {
     },
   });
   win.setAlwaysOnTop(true, ...platform.topLevel);
+  // Guide links to the project README and external pages use the system browser.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    const { protocol, host, pathname, hash } = new URL(url);
+    if (protocol === 'overlay-guide:' && host === 'local' && /^\/README(?:-it)?\.md$/.test(pathname)) {
+      url = `${REPO_URL}/blob/main${pathname}${hash}`;
+    }
+    if (url.startsWith('https://')) void shell.openExternal(url).catch(() => {});
+    return { action: 'deny' };
+  });
   win.loadFile('index.html');
   win.on('blur', () => onOverlayBlur(win));
   trackBounds(win);

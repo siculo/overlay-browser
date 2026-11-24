@@ -58,6 +58,8 @@
   "home.bookmarks": "Bookmark",
   "home.bookmarksDesc": "Importa nelle liste i bookmark dei browser, o esporta le liste in un file di bookmark da aprire in un browser.",
   "home.version": "Versione {version}",
+  "home.guide": "Guida",
+  "home.guideBack": "Torna alla Home",
   "home.empty": "Nessun sito. Aggiungine uno qui sotto.",
 
   "lists.general": "Generale",

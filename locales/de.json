@@ -58,6 +58,8 @@
   "home.bookmarks": "Lesezeichen",
   "home.bookmarksDesc": "Importiere die Lesezeichen der Browser in die Listen oder exportiere die Listen in eine Lesezeichendatei für einen Browser.",
   "home.version": "Version {version}",
+  "home.guide": "Anleitung",
+  "home.guideBack": "Zurück zur Startseite",
   "home.empty": "Keine Websites. Füge unten eine hinzu.",
 
   "lists.general": "Allgemein",
