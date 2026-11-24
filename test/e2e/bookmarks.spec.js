@@ -60,6 +60,7 @@ function writeStores(dir, browsers) {
 }
 
 test('the import shows again the browser chosen last, also after a restart', async () => {
+  test.skip(process.platform === 'darwin', 'macOS: bookmarks are imported from a file only');
   o = await launch();
   writeStores(o.dir, ['Alpha', 'Beta']);
   const { page } = o;
