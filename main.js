@@ -83,6 +83,9 @@ function loadPrefs() {
     settings: loadSettings(loaded.settings),
     // Newer version whose notice the user closed: not shown again for it.
     updateDismissed: typeof loaded.updateDismissed === 'string' ? loaded.updateDismissed : null,
+    // Bookmarks file of the browser source read last (the sources' ids are
+    // positions in the list, which changes with the browsers installed).
+    bookmarkSource: typeof loaded.bookmarkSource === 'string' ? loaded.bookmarkSource : null,
   };
 }
 
@@ -801,7 +804,7 @@ ipcMain.handle('state:load', () => ({
     features: platform.features,
     opacity: platform.opacity,   // 'css': the page applies settings.opacity itself
     opacityRange: OPACITY_RANGE,
-    browserBookmarks: platform.bookmarkStores().length > 0,   // else bookmarks are imported from a file only
+    browserBookmarks: bookmarkStores().length > 0,   // else bookmarks are imported from a file only
   },
   unloadRange: UNLOAD_RANGE,
   version: app.getVersion(),   // shown on the Settings page
@@ -1029,10 +1032,18 @@ const sourceName = (s) => (s.profile ? `${s.browser} (${s.profile})` : s.browser
 
 // { sources: [{ id, browser, profile }], denied: [browser] }: denied are the
 // browsers whose data the system does not let the app read.
+// The browsers' data folders; in tests, those of bookmark-stores.json in the
+// test's data folder, if there is one ([{ browser, engine, dir }]).
+function bookmarkStores() {
+  if (TEST_DIR) {
+    try { return JSON.parse(fs.readFileSync(path.join(TEST_DIR, 'bookmark-stores.json'), 'utf8')); } catch { /* none */ }
+  }
+  return platform.bookmarkStores();
+}
 ipcMain.handle('bookmarks:sources', () => {
   let denied = [];
   try {
-    ({ sources: bookmarkSources, denied } = bookmarks.listSources(platform.bookmarkStores()));
+    ({ sources: bookmarkSources, denied } = bookmarks.listSources(bookmarkStores()));
   } catch (err) {
     logError(`bookmarks: cannot list the sources: ${err?.stack || err}`);
     bookmarkSources = [];
@@ -1040,11 +1051,19 @@ ipcMain.handle('bookmarks:sources', () => {
   log(`bookmarks: ${bookmarkSources.length} sources found` +
     `${bookmarkSources.length ? `: ${bookmarkSources.map(sourceName).join(', ')}` : ''}`);
   if (denied.length) log(`bookmarks: no access to the data of ${denied.join(', ')}`);
-  return { sources: bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile })), denied };
+  return {
+    sources: bookmarkSources.map(({ id, browser, profile }) => ({ id, browser, profile })),
+    denied,
+    last: bookmarkSources.find((s) => s.file === prefs.bookmarkSource)?.id ?? null,
+  };
 });
 ipcMain.handle('bookmarks:read', (_e, id) => {
   const source = bookmarkSources.find((s) => s.id === id);
   if (!source) return { error: true };
+  if (prefs.bookmarkSource !== source.file) {
+    prefs.bookmarkSource = source.file;
+    savePrefs();
+  }
   try {
     const tree = bookmarks.readSource(source);
     log(`bookmarks: read ${sourceName(source)}, ${countBookmarks(tree)} bookmarks`);

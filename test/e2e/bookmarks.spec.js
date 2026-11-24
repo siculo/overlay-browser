@@ -43,6 +43,45 @@ test('import from an HTML file into a list, skipping the addresses it has', asyn
   ]);
 });
 
+// Browser data folders with one profile each (see bookmark-stores.json in
+// main.js), whose bookmark bar holds a bookmark named after the browser.
+function writeStores(dir, browsers) {
+  const stores = browsers.map((browser) => {
+    const store = path.join(dir, 'browsers', browser);
+    fs.mkdirSync(path.join(store, 'Default'), { recursive: true });
+    fs.writeFileSync(path.join(store, 'Default', 'Bookmarks'), JSON.stringify({ roots: {
+      bookmark_bar: { type: 'folder', name: 'Bar', children: [
+        { type: 'url', name: `${browser} bookmark`, url: `https://${browser.toLowerCase()}.example.com/` },
+      ] },
+    } }));
+    return { browser, engine: 'chromium', dir: store };
+  });
+  fs.writeFileSync(path.join(dir, 'bookmark-stores.json'), JSON.stringify(stores));
+}
+
+test('the import shows again the browser chosen last, also after a restart', async () => {
+  o = await launch();
+  writeStores(o.dir, ['Alpha', 'Beta']);
+  const { page } = o;
+  const source = page.locator('#bm-source');
+
+  await page.locator('#import-btn').click();
+  await expect(page.locator('#bm-tree')).toContainText('Alpha bookmark');
+  await source.selectOption({ label: 'Beta' });
+  await expect(page.locator('#bm-tree')).toContainText('Beta bookmark');
+  await page.locator('#add-cancel').click();
+  await expect(page.locator('#add-dialog')).toBeHidden();
+
+  // A browser installed meanwhile comes first in the list: the one chosen
+  // is found by its data, not by its position.
+  await o.close({ keepDir: true });
+  writeStores(o.dir, ['Aaa', 'Alpha', 'Beta']);
+  o = await launch({ dir: o.dir });
+  await o.page.locator('#import-btn').click();
+  await expect(o.page.locator('#bm-tree')).toContainText('Beta bookmark');
+  await expect(o.page.locator('#bm-source option:checked')).toHaveText('Beta');
+});
+
 test('export of the lists as an HTML bookmark file', async () => {
   o = await launch({
     prefs: {

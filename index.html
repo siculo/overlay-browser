@@ -1927,7 +1927,6 @@
   const FILE_SOURCE = ':file';
   let addTab = 'url';
   let addHome = false;     // opened from the Home: bookmarks only, list chosen in the dialog
-  let lastSource = null;   // id of the browser source used last (this session)
   let browserBookmarks = true;   // false: the platform cannot read the browsers (macOS), bookmarks come from a file only
   const bm = {
     sources: null,        // [{ id, browser, profile }], null until listed
@@ -2048,25 +2047,25 @@
     renderSourceSelect();
     const request = ++bm.request;
     if (id === FILE_SOURCE) return showImport(bm.file);
-    lastSource = id;
     importPicker.setStatus(t('bookmarks.loading'));
     const res = await window.overlay.readBookmarks(id);
     if (request === bm.request) showImport(res);
   }
 
   // The sources are listed again at every opening (browsers installed or
-  // profiles added meanwhile); the one used last is shown first.
+  // profiles added meanwhile); the one used last (`last`, remembered by
+  // main.js across restarts) is shown first.
   async function loadSources() {
     const request = ++bm.request;
     bm.loading = true;
     importPicker.setStatus(t('bookmarks.loading'));
-    const { sources, denied } = await window.overlay.bookmarkSources();
+    const { sources, denied, last } = await window.overlay.bookmarkSources();
     if (request !== bm.request) return;
     bm.loading = false;
     bm.sources = sources;
     bm.denied = denied;
     renderDenied();
-    const first = sources.find((s) => s.id === lastSource) ?? sources[0];
+    const first = sources.find((s) => s.id === last) ?? sources[0];
     if (first) return showSource(first.id);
     renderSourceSelect();
     importPicker.setStatus(t(browserBookmarks ? 'bookmarks.noSources' : 'bookmarks.fileOnly'));
