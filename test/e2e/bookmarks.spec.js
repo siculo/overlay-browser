@@ -43,6 +43,28 @@ test('import from an HTML file into a list, skipping the addresses it has', asyn
   ]);
 });
 
+// The current list was missing from "To the list" (empty choice) while it
+// was still a new one: currentList() makes a new object at each call.
+test('the import from the Home shows a new current list as the target, and creates it', async () => {
+  o = await launch({ foregroundApp: { exe: 'MyGame.exe', name: 'My Game', title: 'My Game' } });
+  const { page, app } = o;
+  const file = path.join(o.dir, 'bookmarks.html');
+  fs.writeFileSync(file, BOOKMARKS);
+  await replaceDialog(app, 'showOpenDialog', { canceled: false, filePaths: [file] });
+
+  await page.locator('#import-btn').click();
+  await expect(page.locator('#add-list option:checked')).toHaveText('My Game (new)');
+  await page.locator('#bm-file').click();
+  await expect(page.locator('#bm-tree')).toContainText('Wiki');
+  await page.locator('#bm-all').check();
+  await page.locator('#add-ok').click();
+  await expect(page.locator('#add-dialog')).toBeHidden();
+
+  await expect.poll(() => o.savedPrefs().lists.find((l) => l.match?.exe)?.sites.map((s) => s.url)).toEqual([
+    'https://wiki.example.com/', 'https://calc.example.com/', 'https://already.example.com/',
+  ]);
+});
+
 // Browser data folders with one profile each (see bookmark-stores.json in
 // main.js), whose bookmark bar holds a bookmark named after the browser.
 function writeStores(dir, browsers) {

@@ -2012,7 +2012,8 @@
     bm.targets = [cur, ...lists.filter((l) => l !== cur)];
     $('add-list').replaceChildren(...bm.targets.map((l, i) =>
       new Option(l.id ? listName(l) : `${listName(l)} (${t('lists.new')})`, String(i))));
-    $('add-list').value = String(bm.targets.indexOf(bm.target));
+    // By key: a new current list is a new object at each currentList().
+    $('add-list').value = String(bm.targets.findIndex((l) => listKey(l) === listKey(bm.target)));
   }
   $('add-list').onchange = () => setTarget(bm.targets[Number($('add-list').value)]);
 
