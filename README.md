@@ -69,6 +69,8 @@ The **Browse** tab opens any page without adding it to the list. In its address 
 
 **Pin**, in the navigation bar of the Browse tab and of the sites' tabs, turns the open page, with its history, into a new tab of the list. If the page is already one of the list's tabs, that tab is highlighted.
 
+Use **−** or **+** in the **…** menu to change the page zoom. Click the percentage to return to 100%. The keyboard shortcuts are **Ctrl++**, **Ctrl+-**, and **Ctrl+0** (also with **⌘** on macOS).
+
 ### Bookmarks
 
 - **Import**: *Import bookmarks…*, in the *Bookmarks* section at the end of the Home, or the *Bookmarks* tab of the **+** dialog, adds sites from a browser's bookmarks (Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Firefox, LibreWolf and other similar browsers; Firefox can stay open) or from an HTML bookmark file exported by any browser. Choose bookmarks and folders with the checkboxes, or find them with the search; sites already in the list are skipped. On macOS bookmarks can only be imported from a file: export them from the browser first.

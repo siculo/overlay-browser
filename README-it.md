@@ -69,6 +69,8 @@ Il tab **Naviga** apre qualsiasi pagina senza aggiungerla all'elenco. Nel suo ca
 
 **Fissa**, nella barra di navigazione del tab Naviga e dei tab dei siti, trasforma la pagina aperta, con la sua cronologia, in un nuovo tab della lista. Se la pagina è già uno dei tab della lista, quel tab viene evidenziato.
 
+Usa **−** o **+** nel menu **…** per regolare lo zoom della pagina. Fai clic sulla percentuale per tornare al 100%. Le scorciatoie sono **Ctrl++**, **Ctrl+-** e **Ctrl+0** (anche con **⌘** su macOS).
+
 ### Bookmark
 
 - **Importa**: *Importa bookmark…*, nella sezione *Bookmark* in fondo alla Home, oppure la scheda *Bookmark* della finestra del **+**, aggiunge siti dai bookmark di un browser (Chrome, Edge, Brave, Opera, Vivaldi, Chromium, Firefox, LibreWolf e altri browser simili; Firefox può restare aperto) oppure da un file HTML di bookmark esportato da qualsiasi browser. Scegli bookmark e cartelle con le caselle, o trovali con la ricerca; i siti già presenti nella lista vengono saltati. Su macOS i bookmark si importano solo da file: esportali prima dal browser.
