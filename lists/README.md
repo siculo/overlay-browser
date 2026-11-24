@@ -6,6 +6,9 @@ first time only (`presetsApplied` in the preferences): if that list is
 removed later, it is just offered on the Home. The folder is packaged with
 the app (the JSON files only).
 
+**Disabled for now**: `PRESETS_ENABLED` in `main.js` is false, so no list
+of this folder is loaded or offered (their UI tests are skipped meanwhile).
+
 ## `index.json`
 
 Maps executables to list files:

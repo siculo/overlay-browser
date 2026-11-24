@@ -20,13 +20,14 @@ function testPrefs({ settings, ...rest } = {}) {
 
 // Starts the app. `dir`: data folder to reuse (to restart the app on the
 // same preferences), otherwise a new one with `prefs` (`prefsText`: the
-// file's content as it is).
-async function launch({ prefs, prefsText, dir, foregroundApp = null, show = true } = {}) {
+// file's content as it is). `presets`: the predefined lists on (disabled in
+// the app for now, see PRESETS_ENABLED in main.js).
+async function launch({ prefs, prefsText, dir, foregroundApp = null, show = true, presets = false } = {}) {
   if (!dir) {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'overlay-e2e-'));
     fs.writeFileSync(path.join(dir, 'prefs.json'), prefsText ?? JSON.stringify(testPrefs(prefs)));
   }
-  const env = { ...process.env, OVERLAY_TEST_DIR: dir };
+  const env = { ...process.env, OVERLAY_TEST_DIR: dir, OVERLAY_TEST_PRESETS: presets ? '1' : '' };
   delete env.ELECTRON_RUN_AS_NODE;
   const app = await electron.launch({ args: [ROOT], env });
   const page = await app.firstWindow();

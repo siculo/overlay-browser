@@ -91,12 +91,31 @@ test('each application has its own list, created with its first site', async () 
   await expect(tabs(page)).toHaveText(['GameWiki']);
 });
 
-test('the predefined list of a known game is loaded the first time', async () => {
-  o = await launch({ show: false });
+// Disabled with the predefined lists (PRESETS_ENABLED in main.js).
+test.skip('the predefined list of a known game is loaded the first time', async () => {
+  o = await launch({ show: false, presets: true });
   await o.show({ exe: 'StarCitizen.exe', name: 'Star Citizen' });
   const expected = require('../../lists/star-citizen.json').sites.length;
   await expect(tabs(o.page)).toHaveCount(expected);
   await expect.poll(() => o.savedPrefs().presetsApplied).toEqual(['starcitizen']);
+});
+
+test('with the predefined lists disabled, none is loaded or offered', async () => {
+  const sc = { exe: 'StarCitizen.exe', name: 'Star Citizen' };
+  // First time over the game: nothing is loaded.
+  o = await launch({ show: false });
+  await o.show(sc);
+  await o.page.waitForTimeout(500);   // time for the lookup's answer
+  await expect(tabs(o.page)).toHaveCount(0);
+  await expect(o.page.locator('#preset')).toBeHidden();
+  expect(o.savedPrefs().presetsApplied ?? []).toEqual([]);
+  await o.close();
+
+  // Loaded before and then removed: not offered on the Home.
+  o = await launch({ show: false, prefs: { presetsApplied: ['starcitizen'] } });
+  await o.show(sc);
+  await o.page.waitForTimeout(500);
+  await expect(o.page.locator('#preset')).toBeHidden();
 });
 
 test('a target=_blank link to the same site opens in its tab, to another site asks first', async () => {

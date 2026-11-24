@@ -51,8 +51,9 @@ test('a list named after a window title takes the application name, a predefined
   await expect(current(page).locator('.name')).toHaveText('My SC sites');
 });
 
-test('a removed predefined list is only offered on the Home', async () => {
-  o = await launch({ show: false, prefs: { presetsApplied: ['starcitizen'] } });
+// Disabled with the predefined lists (PRESETS_ENABLED in main.js).
+test.skip('a removed predefined list is only offered on the Home', async () => {
+  o = await launch({ show: false, presets: true, prefs: { presetsApplied: ['starcitizen'] } });
   const { page } = o;
   const sc = { exe: 'StarCitizen.exe', name: 'Star Citizen' };
   await o.show(sc);
@@ -68,7 +69,7 @@ test('a removed predefined list is only offered on the Home', async () => {
 
   // Offered again after a restart, and loaded on request.
   await o.close({ keepDir: true });
-  o = await launch({ dir: o.dir, show: false });
+  o = await launch({ dir: o.dir, show: false, presets: true });
   await o.show(sc);
   await expect(o.page.locator('#preset')).toBeVisible();
   await o.page.locator('#preset-use').click();

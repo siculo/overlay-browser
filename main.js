@@ -93,11 +93,12 @@ function loadPrefs() {
 // (match null), used when no application is detected, which always exists.
 // Before lists existed there was a single list (`sites`, `activeTab`): its
 // sites go to the general list, except those of the predefined lists (the
-// old default sites), which are offered again for their game.
+// old default sites), which are offered again for their game (kept while
+// the predefined lists are disabled, PRESETS_ENABLED).
 function loadLists(loaded) {
   let lists = Array.isArray(loaded.lists) ? loaded.lists : [];
   if (!Array.isArray(loaded.lists) && Array.isArray(loaded.sites)) {
-    const preset = presetUrls();
+    const preset = PRESETS_ENABLED ? presetUrls() : new Set();   // not offered: kept
     const sites = loaded.sites.filter((s) => !preset.has(urlKey(s?.url)));
     const activeTab = sites.some((s) => s.id === loaded.activeTab) ? loaded.activeTab : null;
     lists = [{ id: crypto.randomUUID(), name: null, match: null, sites, activeTab }];
@@ -282,6 +283,11 @@ async function fetchIcon(url) {
 // Ready-made site lists for known games, shipped with the app in lists/:
 // index.json maps executables to list files (see lists/README.md).
 
+// Disabled for now: no predefined list is loaded or offered (findPreset finds
+// none), the lists stay in lists/. UI tests turn them on to test them
+// (OVERLAY_TEST_PRESETS, see test/e2e/helpers.js).
+const PRESETS_ENABLED = TEST_DIR ? process.env.OVERLAY_TEST_PRESETS === '1' : false;
+
 const PRESETS_DIR = path.join(__dirname, 'lists');
 const PRESET_FILE = /^[\w-]+\.json$/;
 
@@ -311,6 +317,7 @@ function presetUrls() {
 // Predefined list for an executable (normalized, see index.html), or null:
 // { name, sites: [{ url, title }] }.
 async function findPreset(exe) {
+  if (!PRESETS_ENABLED) return null;
   let file = null;
   try {
     const index = await readPresetFile('index.json');
