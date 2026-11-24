@@ -131,3 +131,13 @@ Tutto ciò che dipende dal sistema operativo è in `platform/`, un modulo per si
 I testi dell'interfaccia sono in `locales/`, un file JSON per lingua (il nome del file è il codice della lingua, ad esempio `it.json`). Per aggiungere una lingua basta copiare `en.json` e tradurne i valori: l'app la rileva da sola. Le chiavi mancanti vengono prese dall'inglese.
 
 In IntelliJ sono disponibili le run configuration *Electron (npm start)* e *Electron (debug main)* nella cartella `.run/`.
+
+### Link simbolici su Windows
+
+Il repository contiene link simbolici: `.claude/skills/user-docs` punta a `.agents/skills/user-docs`, la skill che rigenera la documentazione utente (`docs/`), condivisa tra i coding agent. Su Windows, Git li crea come link veri solo se `core.symlinks` è attivo e se il sistema permette di creare link simbolici (la *Modalità sviluppatore* attiva, oppure Git eseguito come amministratore); altrimenti al posto del link c'è un file di testo che contiene il percorso. Prima di clonare, attiva la *Modalità sviluppatore* (*Impostazioni → Sistema → Per sviluppatori*), poi:
+
+```sh
+git clone -c core.symlinks=true https://github.com/siculo/overlay-browser.git
+```
+
+In un clone esistente (con la *Modalità sviluppatore* attiva): `git config core.symlinks true`, poi cancella il file `.claude/skills/user-docs` e ricrealo come link con `git checkout -- .claude/skills/user-docs`.

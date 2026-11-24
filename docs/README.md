@@ -2,6 +2,8 @@
 
 Guide per percorsi d'uso, con le schermate dell'app vera.
 
+La fonte è l'elenco dei percorsi, [percorsi.md](percorsi.md): le guide, le schermate e la presentazione si rigenerano da zero a partire da lì, solo su richiesta esplicita e insieme a chi la chiede, seguendo la skill `user-docs` (`.agents/skills/user-docs/SKILL.md`, collegata in `.claude/skills/`). Per una nuova versione dell'app: aggiorna i percorsi, poi chiedi la rigenerazione.
+
 ## Italiano
 
 - [Primo avvio: i siti del tuo gioco a portata di mano](it/primo-avvio.md)
@@ -11,6 +13,18 @@ Guide per percorsi d'uso, con le schermate dell'app vera.
 - [Personalizzare l'overlay](it/personalizza.md)
 - [Memoria e pagine chiuse](it/memoria.md)
 - [Nuove versioni](it/nuove-versioni.md)
+
+Le stesse guide come presentazione: [it/presentazione.html](it/presentazione.html) (da aprire nel browser, anche senza server).
+
+## Presentazione
+
+`it/presentazione.html` è generata dalle guide da `slideshow/build.js` con il modello `slideshow/template.html` (non va modificata a mano):
+
+```sh
+npm run docs:slideshow
+```
+
+Le guide e il loro ordine sono quelli di `percorsi.md` (un percorso senza la sua guida è segnalato e saltato). Ogni guida diventa una serie di slide: il titolo e l'introduzione, poi, per ogni sezione, ogni immagine con il testo che la precede, e il testo dopo l'ultima immagine come slide di solo testo. Si naviga con i pulsanti o con la tastiera (frecce, Fine/Inizio, Esc per il menu); ogni slide ha il suo indirizzo (`#primo-avvio/3`). Va rigenerata quando si cambia una guida. Per controllarla senza aprire un browser: `node docs/slideshow/preview.js <cartella>` salva le schermate del menu e delle slide.
 
 ## Schermate
 

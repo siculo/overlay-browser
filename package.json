@@ -15,7 +15,8 @@
     "dist:store": "electron-builder --win appx",
     "dist:linux": "electron-builder --linux",
     "dist:mac": "electron-builder --mac",
-    "docs:screenshots": "node docs/screenshots/run.js"
+    "docs:screenshots": "node docs/screenshots/run.js",
+    "docs:slideshow": "node docs/slideshow/build.js"
   },
   "keywords": [],
   "author": "Fabrizio Di Giuseppe",
