@@ -91,6 +91,46 @@ test('"Delete the cookies" removes those of the page\'s domain only', async () =
   await expect.poll(names).toEqual(['other']);
 });
 
+test('page zoom works from the navigation menu and with focus inside the page', async () => {
+  const a = site(server.url('/Zoom'), 'Zoom');
+  o = await launch({ prefs: { lists: [list(null, [a], { activeTab: a.id })] } });
+  const { page, app } = o;
+  await o.inSite(a.url, (d) => d.title);
+  const id = await o.contentsId(a.url);
+  const guestZoom = () => app.evaluate(({ webContents }, id) => webContents.fromId(id).getZoomFactor(), id);
+  const reset = page.locator('#nav-zoom-reset');
+
+  await page.locator('#nav-more').click();
+  await expect(reset).toHaveText('100%');
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  await expect(reset).toHaveText('110%');
+  await expect.poll(guestZoom).toBeCloseTo(1.1);
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  await expect(reset).toHaveText('100%');
+  await page.getByRole('button', { name: 'Zoom out' }).click();
+  await expect(reset).toHaveText('90%');
+  await reset.click();
+  await expect(reset).toHaveText('100%');
+  await page.keyboard.press('Escape');
+
+  const guestKey = (keyCode) => app.evaluate(({ webContents }, { id, keyCode }) => {
+    const guest = webContents.fromId(id);
+    guest.focus();
+    guest.sendInputEvent({ type: 'keyDown', keyCode, modifiers: ['control'] });
+    guest.sendInputEvent({ type: 'keyUp', keyCode, modifiers: ['control'] });
+  }, { id, keyCode });
+  await guestKey('=');
+  await expect.poll(guestZoom).toBeCloseTo(1.1);
+  await guestKey('-');
+  await expect.poll(guestZoom).toBeCloseTo(1);
+  await page.locator('#nav-url').focus();
+  await page.keyboard.press('Control+Minus');
+  await expect.poll(guestZoom).toBeCloseTo(0.9);
+  await guestKey('0');
+  await expect.poll(guestZoom).toBeCloseTo(1);
+  expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getZoomFactor())).toBe(1);
+});
+
 test('tabs have the same width, which does not change with the title', async () => {
   const sites = ['A', 'A much longer name of a site', 'C'].map((n) => site(server.url('/' + n.replaceAll(' ', '-')), n));
   o = await launch({ prefs: { lists: [list(null, sites, { activeTab: sites[1].id })] } });

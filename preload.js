@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('overlay', {
+  isMac: process.platform === 'darwin',
   loadState: () => ipcRenderer.invoke('state:load'),
   saveLists: (lists) => ipcRenderer.invoke('lists:save', lists),
   pinList: (id) => ipcRenderer.invoke('lists:pin', id),
@@ -32,5 +33,6 @@ contextBridge.exposeInMainWorld('overlay', {
   onForegroundApp: (callback) => ipcRenderer.on('app:foreground', (_e, app) => callback(app)),
   onOpenSite: (callback) => ipcRenderer.on('site:open', (_e, url, contentsId) => callback(url, contentsId)),
   onOpenSiteNew: (callback) => ipcRenderer.on('site:openNew', (_e, url, contentsId) => callback(url, contentsId)),
+  onPageZoom: (callback) => ipcRenderer.on('site:zoom', (_e, direction, contentsId) => callback(direction, contentsId)),
   onVisible:(callback) => ipcRenderer.on('win:visible', (_e, visible) => callback(visible)),
 });

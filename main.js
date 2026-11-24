@@ -696,8 +696,22 @@ function setShortcut(accelerator) {
 // reports the result to the page that opened it) are allowed, as child
 // windows of the overlay, on top of it, without menu bar.
 const TAB_DISPOSITIONS = new Set(['foreground-tab', 'background-tab']);
+
 app.on('web-contents-created', (_e, contents) => {
   if (contents.getType() !== 'webview') return;
+  // Guest pages receive their keyboard events separately from the overlay.
+  contents.on('before-input-event', (event, input) => {
+    const modifier = (input.control && !input.meta) ||
+      (process.platform === 'darwin' && input.meta && !input.control);
+    if (input.type !== 'keyDown' || input.alt || !modifier) return;
+    let direction;
+    if (input.key === '+' || input.key === '=') direction = 1;
+    else if (input.key === '-') direction = -1;
+    else if (input.key === '0') direction = 0;
+    else return;
+    event.preventDefault();
+    contents.hostWebContents?.send('site:zoom', direction, contents.id);
+  });
   contents.setWindowOpenHandler(({ url, disposition }) => {
     if (TAB_DISPOSITIONS.has(disposition)) {
       if (/^https?:/i.test(url)) win.webContents.send('site:open', url, contents.id);
