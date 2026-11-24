@@ -12,6 +12,8 @@ const { annotate, clearAnnotations } = require('./annotate');
 const OUT = path.join(__dirname, '..', 'it', 'img');
 // Il gioco sopra cui si apre l'overlay negli esempi (simulato).
 const GAME = { exe: 'tiny-glade', name: 'Tiny Glade', title: 'Tiny Glade' };
+// Il secondo gioco degli esempi (eseguibile come su Linux).
+const BROTATO = { exe: 'Brotato.x86_64', name: 'Brotato', title: 'Brotato' };
 
 // Avvia l'app con le preferenze `prefs` (più l'italiano) e restituisce
 // l'app (helpers.launch) con shot(nome, marks): schermata della finestra con
@@ -55,7 +57,7 @@ async function hideBanner(o, urlPrefix, text) {
   await o.page.waitForTimeout(500);
 }
 
-module.exports = { start, hideBanner, GAME };
+module.exports = { start, hideBanner, GAME, BROTATO };
 
 if (require.main === module) {
   (async () => {
