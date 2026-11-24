@@ -20,7 +20,7 @@ Clicca **Importa bookmark…**. Nella finestra:
 - **File…** ❷: importa invece un file HTML di bookmark, esportato da qualsiasi browser dal suo gestore dei bookmark. Su macOS è l'unico modo: esporta prima i bookmark dal browser.
 - **Cerca** ❸: trova bookmark e cartelle per nome o indirizzo.
 - **Le caselle** ❹: spunta i singoli bookmark o intere cartelle; *Tutti i bookmark* li seleziona tutti. Qui spuntiamo la cartella *Brotato*.
-- **Nella lista** ❺: la lista in cui aggiungerli, all'inizio quella attiva.
+- **Nella lista** ❺: la lista in cui aggiungerli, all'inizio quella attiva. Se è ancora *nuova*, come qui quella di Brotato, viene creata con i siti importati.
 - **Aggiungi** ❻: il pulsante dice quanti siti aggiungerai.
 
 ![La finestra di importazione con la cartella Brotato spuntata](img/importa-bookmark/02-importa.png)
