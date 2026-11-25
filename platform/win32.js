@@ -28,8 +28,14 @@ const win32 = (() => {
     const ntdll = koffi.load('ntdll.dll');
     koffi.pointer('HWND', koffi.opaque());
     koffi.struct('RECT', { left: 'long', top: 'long', right: 'long', bottom: 'long' });
+    koffi.struct('CURSORINFO', {
+      cbSize: 'uint32_t', flags: 'uint32_t', hCursor: 'void *', x: 'long', y: 'long',
+    });
     return {
       koffi,
+      GetCursorInfo: user32.func('bool __stdcall GetCursorInfo(_Inout_ CURSORINFO *)'),
+      GetClipCursor: user32.func('bool __stdcall GetClipCursor(_Out_ RECT *)'),
+      GetSystemMetrics: user32.func('int __stdcall GetSystemMetrics(int)'),
       GetWindowRect: user32.func('bool __stdcall GetWindowRect(HWND, _Out_ RECT *)'),
       GetClassNameW: user32.func('int __stdcall GetClassNameW(HWND, _Out_ uint8_t *, int)'),
       GetWindowTextW: user32.func('int __stdcall GetWindowTextW(HWND, _Out_ uint8_t *, int)'),
@@ -267,6 +273,30 @@ function foregroundApp() {
 function ownsForeground() {
   const hwnd = win32.GetForegroundWindow();
   return !!hwnd && processOf(hwnd) === process.pid;
+}
+
+// ---------- mouse cursor ----------
+//
+// Whether the cursor is hidden now, as games do (mouselook, or always): with
+// ShowCursor(FALSE) GetCursorInfo has no CURSOR_SHOWING; with SetCursor(NULL)
+// it is "showing" but without an image. `clipped`: confined by ClipCursor to
+// less than the whole desktop (mouselook usually also confines it), only
+// for the log.
+const CURSOR_SHOWING = 0x1;
+const SM_XVIRTUALSCREEN = 76, SM_YVIRTUALSCREEN = 77, SM_CXVIRTUALSCREEN = 78, SM_CYVIRTUALSCREEN = 79;
+
+function cursorState() {
+  const info = { cbSize: win32.koffi.sizeof('CURSORINFO'), flags: 0, hCursor: null, x: 0, y: 0 };
+  if (!win32.GetCursorInfo(info)) return null;
+  const hidden = !(info.flags & CURSOR_SHOWING) || !info.hCursor;
+  let clipped = null;
+  const r = {};
+  if (win32.GetClipCursor(r)) {
+    const x = win32.GetSystemMetrics(SM_XVIRTUALSCREEN), y = win32.GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const w = win32.GetSystemMetrics(SM_CXVIRTUALSCREEN), h = win32.GetSystemMetrics(SM_CYVIRTUALSCREEN);
+    clipped = r.left > x || r.top > y || r.right < x + w || r.bottom < y + h;
+  }
+  return { hidden, clipped };
 }
 
 // ---------- edge snapping with the taskbar hidden ----------
@@ -528,6 +558,7 @@ module.exports = win32 ? {
   beforeHide,
   foregroundApp,
   ownsForeground,
+  cursorState,
   memoryUsage,
   bookmarkStores,
 } : {

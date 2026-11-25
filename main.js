@@ -499,8 +499,35 @@ function toggleFromShortcut(source) {
     return;
   }
   lastShortcutToggle = now;
-  log(`shortcut: ${source}`);
+  // Visible but without the focus (the user clicked another window with
+  // hideOnBlur off): if that window hides the mouse cursor (a game in
+  // mouselook) the overlay cannot be clicked to take the focus back, so the
+  // overlay is brought to the foreground instead of hidden, as if shown again
+  // over that window. With the cursor visible a click suffices: hidden as usual.
+  // Read now, before the focus moves: the game shows the cursor again then.
+  if (win.isVisible() && !win.isMinimized() && !overlayFocused()) {
+    const cursor = cursorState();
+    log(`shortcut: ${source}, visible without focus, cursor ` +
+      (cursor ? `hidden=${cursor.hidden} clipped=${cursor.clipped ?? '?'}` : 'unknown'));
+    if (cursor?.hidden) {
+      showWindow(`shortcut ${source}, cursor hidden`);
+      return;
+    }
+  } else {
+    log(`shortcut: ${source}`);
+  }
   toggleWindow(`shortcut ${source}`);
+}
+
+// The mouse cursor now (see platform/index.js), set by the test in test mode.
+function cursorState() {
+  if (TEST_DIR) return global.overlayTest.cursor;
+  try {
+    return platform.cursorState();
+  } catch (err) {
+    logError(`platform ${platform.id}: ERROR in cursorState: ${err?.stack || err}`);
+    return null;
+  }
 }
 
 // ---------- low-level keyboard hook ----------
@@ -1241,8 +1268,11 @@ app.on('window-all-closed', () => app.quit());
 if (TEST_DIR) {
   global.overlayTest = {
     foregroundApp: null,
+    cursor: null,   // what cursorState() returns ({ hidden, clipped }, null = unknown)
     show: () => showWindow('test'),
     hide: () => hideWindow('test'),
+    // The shortcut pressed (from the hook or globalShortcut).
+    shortcut: () => { lastShortcutToggle = 0; toggleFromShortcut('test'); },
     prefs: () => prefs,
     // The keyboard hook's state (the hook itself is not started in tests).
     hook: () => ({ available: !!uiohook, suspended: hookSuspended, combo: hookCombo }),

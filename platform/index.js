@@ -51,6 +51,12 @@
 //                      window now, false if another one is, null if
 //                      unknown: lets main.js ignore a blur that is only a
 //                      keyboard focus change (see hideOnBlur)
+//   cursorState()      the mouse cursor now: { hidden, clipped } or null if
+//                      unknown. hidden: no cursor shown (e.g. a game in
+//                      mouselook), so the overlay cannot be clicked to take
+//                      the focus and the shortcut gives it instead (see
+//                      toggleFromShortcut in main.js); clipped: confined to
+//                      part of the screen (true/false/null), for the log
 //   memoryUsage(metrics) memory used by each process of the app, from
 //                      app.getAppMetrics(): { kind, bytes } where bytes is a
 //                      Map pid -> bytes and kind tells what was measured:

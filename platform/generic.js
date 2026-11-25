@@ -32,6 +32,7 @@ module.exports = {
   beforeHide() {},
   foregroundApp() { return null; },
   ownsForeground() { return null; },
+  cursorState() { return null; },
   bookmarkStores() { return []; },
   // Electron's values are in kilobytes.
   memoryUsage(metrics) {
