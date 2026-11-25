@@ -20,18 +20,17 @@ test('starts, shows the Home and the version at its top', async () => {
 });
 
 // The native reading of the cursor (platform.cursorState), which the
-// shortcut uses: here the cursor is the desktop's, visible. Unknown on macOS.
+// shortcut uses: here the cursor is the desktop's, visible. Unknown for now
+// on Linux and macOS (the shortcut then hides the overlay as before).
 test('the platform reads the state of the mouse cursor', async () => {
   const o = await launch();
   try {
     const cursor = await o.test('platformCursor');
-    if (process.platform === 'darwin') {
-      expect(cursor).toBeNull();
-    } else {
+    if (process.platform === 'win32') {
       expect(cursor).toMatchObject({ hidden: false });
-      // Linux: confinement not checked (null).
-      if (process.platform === 'linux') expect(cursor.clipped).toBeNull();
-      else expect(typeof cursor.clipped).toBe('boolean');
+      expect(typeof cursor.clipped).toBe('boolean');
+    } else {
+      expect(cursor).toBeNull();
     }
   } finally {
     await o.close();
