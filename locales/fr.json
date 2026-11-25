@@ -59,7 +59,7 @@
   "home.bookmarksDesc": "Importe dans les listes les favoris des navigateurs, ou exporte les listes dans un fichier de favoris à ouvrir dans un navigateur.",
   "home.version": "Version {version}",
   "about.open": "À propos d'Overlay Browser",
-  "about.description": "Une fenêtre de navigateur toujours au premier plan, affichée et masquée avec une combinaison de touches, pour garder wikis, calculateurs et autres sites à portée de main pendant que vous jouez.",
+  "about.description": "Un navigateur fait pour jouer : il reste au-dessus du jeu, s'ouvre et se ferme avec une combinaison de touches et retient les sites de chaque jeu.",
   "about.repo": "Projet sur GitHub",
   "about.issues": "Signaler un problème",
   "about.release": "Notes de version",

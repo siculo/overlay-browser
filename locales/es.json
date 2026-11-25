@@ -59,7 +59,7 @@
   "home.bookmarksDesc": "Importa a las listas los marcadores de los navegadores, o exporta las listas a un archivo de marcadores para abrir en un navegador.",
   "home.version": "Versión {version}",
   "about.open": "Acerca de Overlay Browser",
-  "about.description": "Una ventana de navegador siempre visible, que se muestra y oculta con una combinación de teclas, para tener a mano wikis, calculadoras y otros sitios mientras juegas.",
+  "about.description": "Un navegador hecho para jugar: se queda encima del juego, se abre y se cierra con una combinación de teclas y recuerda los sitios de cada juego.",
   "about.repo": "Proyecto en GitHub",
   "about.issues": "Informar de un problema",
   "about.release": "Notas de la versión",

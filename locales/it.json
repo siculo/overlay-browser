@@ -59,7 +59,7 @@
   "home.bookmarksDesc": "Importa nelle liste i bookmark dei browser, o esporta le liste in un file di bookmark da aprire in un browser.",
   "home.version": "Versione {version}",
   "about.open": "Informazioni su Overlay Browser",
-  "about.description": "Una finestra di browser sempre in primo piano, da mostrare e nascondere con una combinazione di tasti, per tenere a portata di mano wiki, calcolatori e altri siti mentre giochi.",
+  "about.description": "Un browser fatto per giocare: resta sopra il gioco, si apre e si chiude con una combinazione di tasti e ricorda per ogni gioco i suoi siti.",
   "about.repo": "Progetto su GitHub",
   "about.issues": "Segnala un problema",
   "about.release": "Note di rilascio",

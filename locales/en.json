@@ -59,7 +59,7 @@
   "home.bookmarksDesc": "Import the browsers' bookmarks into the lists, or export the lists to a bookmark file to open in a browser.",
   "home.version": "Version {version}",
   "about.open": "About Overlay Browser",
-  "about.description": "An always-on-top browser window, shown and hidden with a key combination, for keeping wikis, calculators and other sites at hand while you play.",
+  "about.description": "A browser made for gaming: it stays on top of the game, opens and closes with a key combination and remembers each game's sites.",
   "about.repo": "Project on GitHub",
   "about.issues": "Report a problem",
   "about.release": "Release notes",

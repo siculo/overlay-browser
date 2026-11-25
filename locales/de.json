@@ -59,7 +59,7 @@
   "home.bookmarksDesc": "Importiere die Lesezeichen der Browser in die Listen oder exportiere die Listen in eine Lesezeichendatei für einen Browser.",
   "home.version": "Version {version}",
   "about.open": "Über Overlay Browser",
-  "about.description": "Ein Browserfenster, das immer im Vordergrund bleibt und sich mit einer Tastenkombination ein- und ausblenden lässt, um Wikis, Rechner und andere Seiten beim Spielen griffbereit zu haben.",
+  "about.description": "Ein Browser fürs Spielen: Er bleibt über dem Spiel, öffnet und schließt sich mit einer Tastenkombination und merkt sich für jedes Spiel seine Seiten.",
   "about.repo": "Projekt auf GitHub",
   "about.issues": "Problem melden",
   "about.release": "Versionshinweise",
