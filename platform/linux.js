@@ -16,6 +16,7 @@
 //   WM_CLASS (steam_app_<AppID> for Steam games run with Proton), title,
 //   and through _NET_WM_PID the process: executable, command line (for
 //   Wine/Proton the game's .exe) and environment (SteamAppId).
+// - Whether the mouse cursor is hidden: from its image, through XFixes.
 //
 // Requests are sent to the root window: they never fail, even if the
 // window they refer to no longer exists (the window manager ignores them).
@@ -80,6 +81,18 @@ const x11 = (() => {
     api.NET_WM_NAME = api.XInternAtom(api.display, '_NET_WM_NAME', 0);
     api.NET_WM_PID = api.XInternAtom(api.display, '_NET_WM_PID', 0);
     api.UTF8_STRING = api.XInternAtom(api.display, 'UTF8_STRING', 0);
+    // XFixes, for the cursor image (see cursorState): optional.
+    try {
+      const xfixes = koffi.load('libXfixes.so.3');
+      koffi.struct('XFixesCursorImage', {
+        x: 'short', y: 'short', width: 'unsigned short', height: 'unsigned short',
+        xhot: 'unsigned short', yhot: 'unsigned short', cursor_serial: 'unsigned long',
+        pixels: 'void *', atom: 'unsigned long', name: 'void *',
+      });
+      api.XFixesGetCursorImage = xfixes.func('void *XFixesGetCursorImage(Display *)');
+    } catch (err) {
+      console.error('XFixes not available, cursor state unknown:', err);
+    }
     return api;
   } catch (err) {
     console.error('X11 API not available, using simplified focus handling:', err);
@@ -233,6 +246,29 @@ function beforeHide(win) {
   try { activate(previousActive); } catch (err) { console.error(err); }
 }
 
+// ---------- mouse cursor ----------
+//
+// X11 has no "cursor hidden" state: games (SDL, Wine) hide it by giving their
+// window an invisible cursor. So the cursor is hidden when the image XFixes
+// reports for it now has no visible pixel (ARGB, one per unsigned long).
+// Not seen: a cursor hidden with XFixesHideCursor. Confinement (a pointer
+// grab) is not checked: it could only be found by trying a grab, which would
+// send events to the game.
+function cursorState() {
+  if (!x11.XFixesGetCursorImage) return null;
+  const ptr = withoutXErrors(() => x11.XFixesGetCursorImage(x11.display));
+  if (!ptr) return null;   // XFixes missing on the server
+  try {
+    const image = x11.koffi.decode(ptr, 'XFixesCursorImage');
+    const n = image.width * image.height;
+    const pixels = n && image.pixels ? x11.koffi.decode(image.pixels, 'unsigned long', n) : [];
+    // Alpha in bits 24-31: visible if the pixel is at least 2^24.
+    return { hidden: !pixels.some((p) => Number(p) >= 0x1000000), clipped: null };
+  } finally {
+    x11.XFree(ptr);
+  }
+}
+
 // ---------- memory ----------
 
 // PSS of a process from /proc/<pid>/smaps_rollup (Linux 4.14+), in bytes;
@@ -292,5 +328,5 @@ module.exports = {
   trayImage(small, large) { return large; },
   memoryUsage,
   bookmarkStores,
-  ...(x11 ? { beforeShow, afterShow, beforeHide, foregroundApp } : {}),
+  ...(x11 ? { beforeShow, afterShow, beforeHide, foregroundApp, cursorState } : {}),
 };

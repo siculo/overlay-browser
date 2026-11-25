@@ -1269,6 +1269,7 @@ if (TEST_DIR) {
   global.overlayTest = {
     foregroundApp: null,
     cursor: null,   // what cursorState() returns ({ hidden, clipped }, null = unknown)
+    platformCursor: () => platform.cursorState(),   // the real one, read by the platform
     show: () => showWindow('test'),
     hide: () => hideWindow('test'),
     // The shortcut pressed (from the hook or globalShortcut).

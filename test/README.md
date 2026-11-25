@@ -45,7 +45,9 @@ like a web page. `helpers.js`:
   the predefined list test, whose sites are real.
 - `o.test(name, ...args)`: calls `global.overlayTest[name]` in the main
   process (`hook` for the keyboard hook's state, `send` for a message to
-  the page as `main.js` sends it); `o.contentsId(urlPrefix)`: a webview's
+  the page as `main.js` sends it, `shortcut` for a press of the shortcut,
+  whose cursor state is `global.overlayTest.cursor`, `platformCursor` for
+  the platform's real reading of the cursor); `o.contentsId(urlPrefix)`: a webview's
   webContents id, for the messages that name their page.
 - System dialogs (file open/save) are replaced from the main process
   (`app.evaluate(({ dialog }) => ...)`, see `bookmarks.spec.js`), and so is
