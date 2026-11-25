@@ -212,7 +212,7 @@
   .page h2 { margin: 40px 0 14px; font-weight: 500; font-size: 16px; color: #bbb; text-transform: uppercase; letter-spacing: 0.04em; }
   .page h1 + h2 { margin-top: 8px; }
   /* Head of the Home: logo and app name, below it the version, the newer
-     version and the project link */
+     version if any; at its right end the About button */
   #home-info { display: flex; align-items: center; gap: 14px; max-width: 720px; margin-bottom: 48px; padding-bottom: 20px; border-bottom: 1px solid #333; }
   #app-logo { flex: none; height: 44px; }
   /* name and version 3 px above the logo's center, to line up with it */
@@ -220,9 +220,24 @@
   #app-name { font-size: 28px; font-weight: 500; line-height: 1.2; }
   #app-meta { margin-top: 2px; font-size: 13px; color: #999; }
   #app-version { font-variant-numeric: tabular-nums; user-select: text; }
-  #app-repo, #app-update-link { color: var(--accent-text); text-decoration: none; }
-  #app-repo:hover, #app-update-link:hover { text-decoration: underline; }
-  #app-update-link { font-weight: 500; }
+  #app-update-link, #about-dialog a { color: var(--accent-text); text-decoration: none; }
+  #app-update-link:hover, #about-dialog a:hover { text-decoration: underline; }
+  #app-update-link, #about-update-link { font-weight: 500; }
+  /* About button, at the right end of the head: Material Icons "info_outline"
+     (Apache 2.0); flat, background only on hover */
+  #about-btn { margin-left: auto; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; background: none; border: none; color: #999; }
+  #about-btn:hover { background: #2a2a2a; color: #eee; }
+  #about-btn .icon { width: 20px; height: 20px; fill: currentColor; }
+  /* About dialog */
+  #about-head { display: flex; align-items: center; gap: 12px; }
+  #about-head img { flex: none; height: 36px; }
+  #about-name { font-size: 20px; font-weight: 500; line-height: 1.2; }
+  #about-meta { font-size: 13px; color: #999; }
+  #about-version { font-variant-numeric: tabular-nums; user-select: text; }
+  #about-desc { margin: 14px 0; line-height: 1.4; }
+  #about-system { font-size: 12px; color: #999; line-height: 1.5; white-space: pre-line; user-select: text; }
+  #about-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 14px 0 10px; }
+  #about-legal { font-size: 12px; color: #999; }
   .setting.check { align-items: flex-start; cursor: pointer; max-width: 720px; }
   .setting.check input { margin: 3px 0 0; width: 16px; height: 16px; cursor: pointer; }
   .setting .desc { display: block; font-size: 13px; color: #999; margin-top: 2px; }
@@ -357,8 +372,9 @@
       <img id="app-logo" src="assets/logo.png" alt="">
       <div>
         <div id="app-name">overlay browser</div>
-        <div id="app-meta"><span id="app-version"></span><span id="app-update" hidden> · <a href="#" id="app-update-link"></a></span> · <a href="#" id="app-repo">GitHub</a></div>
+        <div id="app-meta"><span id="app-version"></span><span id="app-update" hidden> · <a href="#" id="app-update-link"></a></span></div>
       </div>
+      <button id="about-btn" data-i18n-title="about.open" data-i18n-label="about.open"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg></button>
     </div>
     <div class="notice" id="pinned" hidden>
       <span id="pinned-label"></span>
@@ -488,6 +504,30 @@
         <button type="submit" id="dialog-ok" class="primary"></button>
       </div>
     </form>
+  </div>
+
+  <div id="about-dialog" class="modal" hidden>
+    <div class="box" role="dialog" aria-labelledby="about-name">
+      <div id="about-head">
+        <img src="assets/logo.png" alt="">
+        <div>
+          <div id="about-name">overlay browser</div>
+          <div id="about-meta"><span id="about-version"></span><span id="about-update" hidden> · <a href="#" id="about-update-link"></a></span></div>
+        </div>
+      </div>
+      <p id="about-desc" data-i18n="about.description"></p>
+      <div id="about-system"></div>
+      <div id="about-links">
+        <a href="#" data-link="repo" data-i18n="about.repo"></a>
+        <a href="#" data-link="issues" data-i18n="about.issues"></a>
+        <a href="#" data-link="release" data-i18n="about.release"></a>
+      </div>
+      <div id="about-legal">© 2026 Fabrizio Di Giuseppe · <a href="#" data-link="license" data-i18n="about.license"></a></div>
+      <div class="buttons">
+        <button type="button" id="about-copy" data-i18n="about.copy" data-i18n-title="about.copyTitle"></button>
+        <button type="button" id="about-close" class="primary" data-i18n="about.close"></button>
+      </div>
+    </div>
   </div>
 
   <div id="export-dialog" class="modal" hidden>
@@ -2294,6 +2334,49 @@
   $('export-cancel').onclick = () => closeDialog?.(null);
   exportDialog.addEventListener('mousedown', (e) => { if (e.target === exportDialog) closeDialog?.(null); });
 
+  // ---------- About dialog ----------
+  //
+  // From the button at the top of the Home: version (and the newer one, see
+  // renderUpdate), versions of Electron and system, links to the project
+  // (opened by main.js in the system browser, by name) and "Copy
+  // information", the same in English for a bug report (written by main.js).
+
+  const aboutDialog = $('about-dialog'), aboutCopy = $('about-copy');
+  let about = null;   // state.about: versions and system
+  let copiedTimer = null;
+
+  function openAboutDialog() {
+    closeDialog?.(null);   // one dialog at a time
+    logAction('about dialog opened');
+    $('about-system').textContent =
+      `Electron ${about.electron} · Chromium ${about.chrome} · Node ${about.node}
+` +
+      `${about.os} ${about.osVersion} (${about.arch})${about.store ? ' · Microsoft Store' : ''}`;
+    clearTimeout(copiedTimer);
+    aboutCopy.textContent = t('about.copy');
+    aboutDialog.hidden = false;
+    setTimeout(() => $('about-close').focus());
+    return new Promise((resolve) => {
+      closeDialog = () => {
+        closeDialog = null;
+        aboutDialog.hidden = true;
+        resolve();
+      };
+    });
+  }
+  $('about-btn').onclick = openAboutDialog;
+  $('about-close').onclick = () => closeDialog?.(null);
+  aboutDialog.addEventListener('mousedown', (e) => { if (e.target === aboutDialog) closeDialog?.(null); });
+  for (const a of aboutDialog.querySelectorAll('a[data-link]')) {
+    a.onclick = (e) => { e.preventDefault(); window.overlay.openAboutLink(a.dataset.link); };
+  }
+  aboutCopy.onclick = async () => {
+    await window.overlay.copyAbout();
+    aboutCopy.textContent = t('about.copied');
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => { aboutCopy.textContent = t('about.copy'); }, 2000);
+  };
+
   // When the window gets focus, the keyboard goes to the open site
   // (otherwise it would stay on the page holding the tabs), unless
   // a dialog is open.
@@ -2436,13 +2519,13 @@
 
   function renderUpdate() {
     updateBar.hidden = !update || update.dismissed;
-    $('app-update').hidden = !update;
+    $('app-update').hidden = $('about-update').hidden = !update;
     if (!update) return;
     $('update-msg').textContent = t('update.available', { version: update.version });
-    $('app-update-link').textContent = t('update.home', { version: update.version });
+    $('app-update-link').textContent = $('about-update-link').textContent = t('update.home', { version: update.version });
   }
   $('update-open').onclick = () => window.overlay.openUpdate();
-  $('app-update-link').onclick = (e) => { e.preventDefault(); window.overlay.openUpdate(); };
+  $('app-update-link').onclick = $('about-update-link').onclick = (e) => { e.preventDefault(); window.overlay.openUpdate(); };
   $('update-close').onclick = () => window.overlay.dismissUpdate();
   window.overlay.onUpdate((u) => { update = u; renderUpdate(); });
 
@@ -2858,7 +2941,8 @@
     initSearch(state.settings);
     initFixedTabs(state.settings.fixedTabs);
     $('app-version').textContent = t('home.version', { version: state.version });
-    $('app-repo').onclick = (e) => { e.preventDefault(); window.overlay.openRepo(); };
+    $('about-version').textContent = t('home.version', { version: state.version });
+    about = state.about;
     $('check-updates-setting').hidden = !state.updates;
     update = state.update;
     renderUpdate();
