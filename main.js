@@ -829,7 +829,8 @@ ipcMain.handle('state:load', () => ({
     browserBookmarks: bookmarkStores().length > 0,   // else bookmarks are imported from a file only
   },
   unloadRange: UNLOAD_RANGE,
-  version: app.getVersion(),   // shown on the Settings page
+  version: app.getVersion(),   // shown at the top of the Home and in the About dialog
+  about: aboutInfo(),          // versions and system, shown in the About dialog
   updates: UPDATES_ENABLED,    // false: no check for new versions, the option is hidden
   update: updateState(),       // newer version to tell about, or null
 }));
@@ -856,9 +857,47 @@ function setSetting(key, value) {
 // (Electron's: 'Browser', 'GPU', 'Tab', 'Utility'...), the bytes, the ids of
 // the webContents it hosts (the page matches them with its webviews) and
 // whether it hosts the overlay's own page.
-// Project page, linked next to the version on the Settings page.
+// ---------- About dialog ----------
+//
+// Opened from the button at the top of the Home: version, system, links to
+// the project, and "Copy information" (the text below, in English, to paste
+// into a bug report: versions and system only, nothing about the user).
+
 const REPO_URL = 'https://github.com/siculo/overlay-browser';
-ipcMain.handle('repo:open', () => shell.openExternal(REPO_URL));
+const OS_NAMES = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' };
+const aboutInfo = () => ({
+  electron: process.versions.electron,
+  chrome: process.versions.chrome,
+  node: process.versions.node,
+  os: OS_NAMES[process.platform] || process.platform,
+  osVersion: process.getSystemVersion(),
+  arch: process.arch,
+  store: !!process.windowsStore,
+});
+function aboutText() {
+  const i = aboutInfo();
+  return [
+    `Overlay Browser ${app.getVersion()}${i.store ? ' (Microsoft Store)' : ''}`,
+    `Electron ${i.electron} (Chromium ${i.chrome}, Node ${i.node})`,
+    `${i.os} ${i.osVersion} ${i.arch}`,
+  ].join('\n');
+}
+// The links of the dialog, by name: the page never passes an address.
+const ABOUT_LINKS = {
+  repo: () => REPO_URL,
+  issues: () => `${REPO_URL}/issues/new`,
+  release: () => `${REPO_URL}/releases/tag/v${app.getVersion()}`,
+  license: () => `${REPO_URL}/blob/main/LICENSE`,
+};
+ipcMain.handle('about:open', (_e, link) => {
+  if (!Object.hasOwn(ABOUT_LINKS, link)) return;
+  log(`ui: about: ${link} link opened`);
+  if (!TEST_DIR) shell.openExternal(ABOUT_LINKS[link]());
+});
+ipcMain.handle('about:copy', () => {
+  clipboard.writeText(aboutText());
+  log('ui: about: information copied');
+});
 
 // ---------- new versions ----------
 //
