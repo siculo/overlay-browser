@@ -205,6 +205,6 @@
   "shortcut.none": "aucun",
   "shortcut.press": "Appuyez sur la nouvelle combinaison (Échap pour annuler).",
   "shortcut.updated": "Raccourci mis à jour.",
-  "shortcut.needModifier": "Utilisez une touche de fonction (F1–F24) ou une combinaison avec Ctrl, Alt, Maj ou Win.",
+  "shortcut.needModifier": "Utilisez une touche de fonction (F1–F24) ou une combinaison avec Ctrl, Alt, Maj ou {meta}.",
   "shortcut.error": "Impossible d'utiliser {accelerator} : combinaison non valide ou déjà utilisée."
 }

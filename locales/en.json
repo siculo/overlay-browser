@@ -205,6 +205,6 @@
   "shortcut.none": "none",
   "shortcut.press": "Press the new combination (Esc to cancel).",
   "shortcut.updated": "Shortcut updated.",
-  "shortcut.needModifier": "Use a function key (F1–F24) or a combination with Ctrl, Alt, Shift or Win.",
+  "shortcut.needModifier": "Use a function key (F1–F24) or a combination with Ctrl, Alt, Shift or {meta}.",
   "shortcut.error": "Cannot use {accelerator}: invalid combination or already in use."
 }

@@ -205,6 +205,6 @@
   "shortcut.none": "nessuna",
   "shortcut.press": "Premi la nuova combinazione (Esc per annullare).",
   "shortcut.updated": "Scorciatoia aggiornata.",
-  "shortcut.needModifier": "Usa un tasto funzione (F1–F24) o una combinazione con Ctrl, Alt, Shift o Win.",
+  "shortcut.needModifier": "Usa un tasto funzione (F1–F24) o una combinazione con Ctrl, Alt, Shift o {meta}.",
   "shortcut.error": "Impossibile usare {accelerator}: combinazione non valida o già in uso."
 }

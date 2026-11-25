@@ -51,3 +51,17 @@ test('parseAccelerator with a table of key codes (no hook needed)', () => {
   assert.deepEqual(parseAccelerator('Ctrl+=', keys), { keycode: 13, ctrl: true, alt: false, shift: false, meta: false });
   assert.equal(parseAccelerator('Ctrl+F11', keys), null);
 });
+
+test('acceleratorLabel names the Super/Meta key as each OS does', () => {
+  const { acceleratorLabel, metaKeyName } = require('../../accelerator');
+  assert.equal(metaKeyName('win32'), 'Win');
+  assert.equal(metaKeyName('darwin'), 'Cmd');
+  assert.equal(metaKeyName('linux'), 'Super');
+  assert.equal(acceleratorLabel('Super+F10', 'win32'), 'Win+F10');
+  assert.equal(acceleratorLabel('Super+F10', 'linux'), 'Super+F10');
+  assert.equal(acceleratorLabel('Command+Shift+Space', 'darwin'), 'Cmd+Shift+Space');
+  assert.equal(acceleratorLabel('Ctrl+Meta+A', 'win32'), 'Ctrl+Win+A');
+  // Other keys unchanged.
+  assert.equal(acceleratorLabel('Ctrl+Alt+Shift+F9', 'win32'), 'Ctrl+Alt+Shift+F9');
+  assert.equal(acceleratorLabel('', 'win32'), '');
+});

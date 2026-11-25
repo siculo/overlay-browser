@@ -205,6 +205,6 @@
   "shortcut.none": "ninguno",
   "shortcut.press": "Pulsa la nueva combinación (Esc para cancelar).",
   "shortcut.updated": "Atajo actualizado.",
-  "shortcut.needModifier": "Usa una tecla de función (F1–F24) o una combinación con Ctrl, Alt, Mayús o Win.",
+  "shortcut.needModifier": "Usa una tecla de función (F1–F24) o una combinación con Ctrl, Alt, Mayús o {meta}.",
   "shortcut.error": "No se puede usar {accelerator}: combinación no válida o ya en uso."
 }

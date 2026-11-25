@@ -205,6 +205,6 @@
   "shortcut.none": "нет",
   "shortcut.press": "Нажмите новое сочетание клавиш (Esc — отмена).",
   "shortcut.updated": "Сочетание клавиш обновлено.",
-  "shortcut.needModifier": "Используйте функциональную клавишу (F1–F24) или сочетание с Ctrl, Alt, Shift или Win.",
+  "shortcut.needModifier": "Используйте функциональную клавишу (F1–F24) или сочетание с Ctrl, Alt, Shift или {meta}.",
   "shortcut.error": "Нельзя использовать {accelerator}: недопустимое сочетание или оно уже занято."
 }

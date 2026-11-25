@@ -538,6 +538,7 @@
   </div>
 
 <script src="urls.js"></script>
+<script src="accelerator.js"></script>
 <script>
   const { normalizeUrl, samePage, sameHost, cookieDomain } = OverlayUrls;
   const $ = (id) => document.getElementById(id);
@@ -2314,9 +2315,10 @@
   let capturing = false;
   let currentShortcut = null;
   let defaultShortcut = null;   // the platform's, from main.js
+  let os = null;                // process.platform, for the names of the keys
 
   function showShortcut(acc, msg, isError) {
-    shortcutEl.textContent = acc || t('shortcut.none');
+    shortcutEl.textContent = acc ? OverlayAccelerator.acceleratorLabel(acc, os) : t('shortcut.none');
     shortcutHint.textContent = msg || '';
     shortcutHint.classList.toggle('err', !!isError);
   }
@@ -2387,7 +2389,7 @@
     // Without modifiers only function keys are allowed, so as not to
     // "steal" from the whole system a key normally used for typing.
     if (!mods.length && !/^F\d+$/.test(key)) {
-      showShortcut('…', t('shortcut.needModifier'), true);
+      showShortcut('…', t('shortcut.needModifier', { meta: OverlayAccelerator.metaKeyName(os) }), true);
       return;
     }
     endCapture();
@@ -2848,6 +2850,7 @@
     renameContextList(state.foregroundApp);
     currentShortcut = state.shortcut;
     defaultShortcut = state.defaultShortcut;
+    os = state.platform.os;
     showShortcut(currentShortcut);
     initOptions(state.settings);
     initUnload(state.unloadRange, state.settings);

@@ -205,6 +205,6 @@
   "shortcut.none": "keine",
   "shortcut.press": "Drücke die neue Tastenkombination (Esc zum Abbrechen).",
   "shortcut.updated": "Tastenkombination aktualisiert.",
-  "shortcut.needModifier": "Verwende eine Funktionstaste (F1–F24) oder eine Kombination mit Strg, Alt, Umschalt oder Win.",
+  "shortcut.needModifier": "Verwende eine Funktionstaste (F1–F24) oder eine Kombination mit Strg, Alt, Umschalt oder {meta}.",
   "shortcut.error": "{accelerator} kann nicht verwendet werden: ungültige Kombination oder bereits belegt."
 }

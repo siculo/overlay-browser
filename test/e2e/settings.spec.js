@@ -49,6 +49,16 @@ test('invalid values in the preferences file fall back to the defaults', async (
   await expect(o.page.locator('#home')).toBeVisible();
 });
 
+test('the shortcut is shown with the name of the Super key on this OS', async () => {
+  o = await launch({ prefs: { shortcut: 'Super+F10' } });
+  const { page } = o;
+  await page.locator('#settings-btn').click();
+  const label = { win32: 'Win+F10', darwin: 'Cmd+F10' }[process.platform] ?? 'Super+F10';
+  await expect(page.locator('#shortcut')).toHaveText(label);
+  // Only the label: the saved accelerator stays the one Electron reads.
+  expect(await o.app.evaluate(() => global.overlayTest.prefs().shortcut)).toBe('Super+F10');
+});
+
 test('after recording a new shortcut the keyboard hook works again', async () => {
   o = await launch();
   const { page } = o;

@@ -5,7 +5,7 @@ const platform = require('./platform');
 const bookmarks = require('./bookmarks');
 const { OPACITY_RANGE, UNLOAD_RANGE, isValidSetting, loadSettings } = require('./settings');
 const { newestRelease } = require('./versions');
-const { parseAccelerator } = require('./accelerator');
+const { parseAccelerator, acceleratorLabel } = require('./accelerator');
 const { contextMenuItems } = require('./context-menu');
 
 platform.configureApp(app);
@@ -623,7 +623,7 @@ const ICON_16_PATH = path.join(__dirname, 'assets', 'icon-16.png');
 
 function updateTray() {
   if (!tray) return;
-  tray.setToolTip(shortcut ? `Overlay browser (${shortcut})` : 'Overlay browser');
+  tray.setToolTip(shortcut ? `Overlay browser (${acceleratorLabel(shortcut, process.platform)})` : 'Overlay browser');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: t(win.isVisible() ? 'tray.hide' : 'tray.show'), accelerator: shortcut || undefined, click: () => toggleWindow('tray menu') },
     { label: t('tray.home'), click: () => { showWindow('tray menu'); win.webContents.send('nav:home'); } },
@@ -682,7 +682,7 @@ function setShortcut(accelerator) {
   }
   if (previous) tryRegister(previous);
   log(`ui: shortcut ${accelerator} cannot be registered (used by another application?), kept ${previous || 'none'}`);
-  return { ok: false, shortcut: previous, error: t('shortcut.error', { accelerator }) };
+  return { ok: false, shortcut: previous, error: t('shortcut.error', { accelerator: acceleratorLabel(accelerator, process.platform) }) };
 }
 
 // ---------- site popups ----------
@@ -822,6 +822,7 @@ ipcMain.handle('state:load', () => ({
   // What the page must do itself depending on the platform.
   platform: {
     id: platform.id,
+    os: process.platform,   // names of the keys shown (Win, Cmd, Super)
     features: platform.features,
     opacity: platform.opacity,   // 'css': the page applies settings.opacity itself
     opacityRange: OPACITY_RANGE,
